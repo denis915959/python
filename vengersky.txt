@@ -1,0 +1,152 @@
+# python vengersky.txt
+
+import copy
+
+A=[[32.0, 28.0, 4.0, 26.0, 4.0], [17.0, 19.0, 4.0, 17.0, 4.0], [4.0, 4.0, 5.0, 4.0, 4.0], [17.0, 14.0, 4.0, 14.0, 4.0], [21.0, 16.0, 4.0, 13.0, 4.0]]
+
+
+n=len(A[1])
+# print(n)
+for i in range(0, n):
+	for j in range(0, n):
+		print(A[i][j], "   ", end="")
+	print("")
+
+print("")
+#первый пункт, вычитание минимума из строки
+for i in range(0, n):
+	min_str=min(A[i])
+	for j in range(0, n):
+		A[i][j]=A[i][j]-min_str
+
+for j in range(0, n): #если в каких-то столбцах нет нулей, то они там появятся (по аналогии со строкой)
+	flag=False
+	for i in range(0, n):
+		if(A[i][j]==0):
+			flag=True
+	if(flag==False):
+		column=[]
+		for k in range(0, n):
+			column.append(A[k][j])
+		"""for k in range(0, n):
+			print(column[k])"""
+		min_str=min(column)
+		for i in range(0, n):
+			A[i][j]=A[i][j]-min_str
+		column.clear()
+		print("")
+
+
+
+for i in range(0, n):
+	for j in range(0, n):
+		print(A[i][j], "   ", end="")
+	print("")
+
+null_count=[]
+for i in range(0, n):
+	count=0
+	for j in range(0, n):
+		if(A[i][j]==0):
+			count=count+1
+	null_count.append(count)
+
+
+
+"""for i in range(0, n):
+	for j in range(0, n):
+		print(A[i][j], "   ", end="")
+		#print(A_temp[i][j], "   ", end="")
+	print("")"""
+zero_in_A=True
+A_temp=copy.deepcopy(A) #рекурсивный метод
+num_zero_string=[] #массив номеров вычеркнутых строк
+num_zero_column=[] #массив номеров вычеркнутых столбцов
+while(zero_in_A):
+	null_count=[] #сначала смотрим строки
+	for i in range (0, n):
+		count=0
+		for j in range(0, n):
+			if(A_temp[i][j]==0):
+				count=count+1
+		null_count.append(count)
+	for j in range (0, n): #потом смотрим столбцы в порядке возрастания
+		count=0
+		for i in range(0, n):
+			if(A_temp[i][j]==0):
+				count=count+1
+		null_count.append(count)
+	"""for i in range(0, 2*n):
+		print(null_count[i])"""
+	max_zero=max(null_count)
+	num_max=-1
+	for i in range(0, 2*n):
+		if(null_count[i]==max_zero):
+			num_max=i
+			break
+	print("num_max = ", num_max)
+	if(num_max<n): #код для строки
+		num_zero_string.append(num_max)
+		for j in range(0, n):
+			A_temp[num_max][j]=-1
+	else:  #код для столбца
+		num_zero_column.append(num_max-n)
+		for i in range(0, n):
+			A_temp[i][num_max-n]=-1
+	#Проверка матрицы A_temp на наличие нулей
+	zero_in_A=False
+	for i in range(0, n):
+		for j in range(0, n):
+			if (A_temp[i][j]==0):
+				zero_in_A=True
+				break
+		if (zero_in_A==True):
+			break
+
+
+	"""for i in range(0, n):
+		for j in range(0, n):
+			print(A_temp[i][j], "   ", end="")
+		print("")"""
+
+#находим минимум среди всех ненулевых элементов в A_temp
+
+
+no_zero_arr=[]
+for i in range(0, n):
+	for j in range(0, n):
+		if (A_temp[i][j]!=-1):
+			no_zero_arr.append(A_temp[i][j])
+min_temp=min(no_zero_arr)
+print(min_temp)
+for i in range(0, n): #вычитаем min_temp из невычеркнутых элементов
+	for j in range(0, n):
+		if (A_temp[i][j]!=-1):
+			A_temp[i][j]=A_temp[i][j]-min_temp
+
+#переход к исходной матрице
+for i in range(0, n): #
+	for j in range(0, n):
+		if (A_temp[i][j]!=-1):
+			A[i][j]=A_temp[i][j]
+
+# к элементам в пересечениях зачеркнутых линий прибавляем min
+for i in range(0, len(num_zero_string)):
+	for j in range(0, len(num_zero_column)):
+		A[num_zero_string[i]][num_zero_column[j]]=A[num_zero_string[i]][num_zero_column[j]]+min_temp
+
+for i in range(0, n):
+	for j in range(0, n):
+		print(A[i][j], "   ", end="")
+		#print(A_temp[i][j], "   ", end="")
+	print("")
+
+
+"""print("num_zero_string")
+for i in range(0, len(num_zero_string)):
+	print(num_zero_string[i])
+
+print("num_zero_column")
+for i in range(0, len(num_zero_column)):
+	print(num_zero_column[i])"""
+
