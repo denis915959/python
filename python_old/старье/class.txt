@@ -1,0 +1,17 @@
+#self - ключевое слово, ссылка на сам класс. Обязательно первый параметр в конструкторе. Также ВСЕГДА является первым параметром методов класса
+#__init__ - конструктор
+class fighter:
+    __speed=None;#с __ приватная переменная
+    def __init__(self, speed1, climb, guns):#по сути, в конструкторе объявляем переменные!
+        self.__speed=speed1
+        self.climb=climb
+        self.guns=guns
+    def get_speed(self):
+        return(self.__speed)
+    def set_speed(self, speed1):
+        self.__speed=speed1
+yak_3=fighter(650, 1100, 160)
+yak_3.set_speed(645)
+print(yak_3.get_speed())#можно через get, через .поле что-то другое возникает 
+
+#python class.txt

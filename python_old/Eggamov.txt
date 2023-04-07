@@ -1,0 +1,144 @@
+# python Eggamov.txt
+import math
+# \n в конце файла обязательно сделать!
+
+def standart(x1, x2):  #эталонное значение интеграла
+	I=(x2**9)/9-(x1**9)/9
+	return(I)
+
+
+def Simpson(x1, x2):  #Формула Симпсона
+	I=(x2-x1)*(x1**8 + 4*(((x1+x2)/2)**8)+x2**8)/6
+	return(I)
+
+
+def method_3_8(x1, x2):  #метод 3/8
+	I=(x2-x1)*(x1**8 + 3*(((2*x1+x2)/3)**8) + 3*(((x1+2*x2)/3)**8) + x2**8)/8
+	return(I)
+
+
+def method_5_point(x1, x2):  #метод 5-и точия
+	I=(x2-x1)*(7*(x1**8)+32*(((3*x1+x2)/4)**8) + 12*(((x1+x2)/2)**8) + 32*(((x1+3*x2)/4)**8) + 7*(x2**8))/90
+	return(I)
+
+
+def Simpson_error(x1, x2):  # ошибка в формуле Симпсона
+	err=((x2-x1)**5)*1680*(x2**4)/2880
+	return(err)
+
+
+def method_3_8_error(x1, x2):  # ошибка в формуле Симпсона
+	err=((x2-x1)**5)*1680*(x2**4)/6480
+	return(err)
+
+
+def method_5_point_error(x1, x2):  # ошибка в формуле Симпсона
+	err=((x2-x1)**7)*40320*(x2**2)/945
+	return(err)
+
+
+input_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\test_input_Eggamov.txt", "r") #считываем ребра из файла
+size_file=0
+
+while(1):
+	s=input_file.readline()
+	if (s==''):
+		break
+	size_file=size_file+1
+#print(size_file)
+input_file.seek(0)  #каретка в начало файла
+
+X=[]
+Y=[]
+# записываем данные о ребрах из файла в двумерный массив Е
+"""for j in range(0, size_file):
+	X.append(int(input_file.readline()))"""
+
+#print(float(2))
+
+"""for j in range(0, size_file):
+	tmp_str=[]
+	array_tmp=[]
+	string_tmp_input=input_file.readline()
+	sz=len(string_tmp_input)
+	i=0
+	while string_tmp_input[i]!=' ':
+		#tmp=tmp*10+int(string_tmp_input[i])
+		tmp_str.append(string_tmp_input[i])
+		i=i+1
+	#tmp_s=tmp_str.join()
+	array_tmp.append(float("".join(tmp_str)))
+	tmp_str.clear()
+	i=i+1
+	for i in range(i, sz-1):
+		tmp_str.append(string_tmp_input[i])
+	array_tmp.append(float("".join(tmp_str)))
+	X.append(array_tmp)
+
+for j in range(0, size_file):
+	print(X[j][0], X[j][1])
+
+
+
+for j in range(0, size_file):
+	Y.append(method_5_point(X[j][0], X[j][1]))
+
+for j in range(0, len(Y)):
+	print(Y[j])
+"""
+stand=[]
+simp=[]
+m_3_8=[]
+m_5_p=[]
+
+stand_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\Egg_res_standart.txt")
+simp_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\Egg_res_Simpson.txt")
+m_3_8_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\Egg_res_method_3_8.txt")
+m_5_point_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\Egg_res_method_5_point.txt")
+
+for j in range(0, size_file):
+	tmp_str=[]
+	array_tmp=[]
+	string_tmp_input=input_file.readline()
+	sz=len(string_tmp_input)
+	i=0
+	while string_tmp_input[i]!=' ':
+		#tmp=tmp*10+int(string_tmp_input[i])
+		tmp_str.append(string_tmp_input[i])
+		i=i+1
+	#tmp_s=tmp_str.join()
+	array_tmp.append(float("".join(tmp_str)))
+	tmp_str.clear()
+	i=i+1
+	for i in range(i, sz-1):
+		tmp_str.append(string_tmp_input[i])
+	array_tmp.append(float("".join(tmp_str)))
+	X.append(array_tmp)
+
+
+for j in range(0, size_file):
+	stand.append(float(stand_file.readline()))
+
+for j in range(0, size_file):
+	simp.append(float(simp_file.readline()))
+
+for j in range(0, size_file):
+	m_3_8.append(float(m_3_8_file.readline()))
+
+for j in range(0, size_file):
+	m_5_p.append(float(m_5_point_file.readline()))
+
+
+output_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\Egg_real_error.txt", "w") #, "a")
+#sz_Y=len(Y)
+for j in range (0, size_file):
+	output_file.write(str(X[j][0]) + ' ' + str(simp[j]-stand[j]) + ' ' + str(m_3_8[j]-stand[j]) + ' ' + str(m_5_p[j]-stand[j])+'\n')
+
+stand_file.close()
+simp_file.close()
+m_3_8_file.close()
+m_5_point_file.close()
+output_file.close()
+
+"""for j in range(0, len(X)):
+	print(X[j])"""

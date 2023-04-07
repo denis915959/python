@@ -1,0 +1,407 @@
+#основной алгоритм
+#      python make_sklad_function.txt
+
+import serial
+import time
+import struct
+arduino=serial.Serial('COM5', 9600) #на складе 28, на обычной ардуине 5
+
+
+class mesh_2D: #то, с чем мы работаем при создании склада
+    def __init__(self, number, led_num, udalennost):
+        self.number=number
+        self.led_num=led_num
+        self.udalennost=udalennost
+
+
+class Mesh:#это вводит пользователь
+    def __init__(self, number, led_num, floor, udalennost):#int, int, int, bool
+        self.number=number
+        self.led_num=led_num
+        self.floor=floor
+        self.udalennost=udalennost
+	
+
+class Signal:
+    def __init__(self, led_num, signal_num):#int, int
+        self.led_num=led_num
+        self.signal_num=signal_num
+
+
+class pin:
+	def __init__(self, pin1, led1):
+		self.pin=pin1
+		self.led=led1
+
+
+def value_in_array(val, arr):#массив можно передавать как массив, и возвращать как массив без всяких указателей!
+	size=len(arr)
+	flag=False
+	for i in range(0, size):
+		if (val==arr[i]):
+			flag=True
+			break
+	return flag
+
+def make_centr(sklad_2D, n1, n2):
+	led_size=sklad_2D[len(sklad_2D)-1].led_num
+	N=n1+n2
+	centr=[]
+	centr.append(0)
+	centr.append(n1+1)
+	j=2
+	while led_size>(centr[j-1]+N+1):
+		centr.append(centr[j-1]+N+1)
+		j=j+1
+	print(centr) #потом убрать
+	return(centr)
+
+
+
+def make_pin_array(N, size_centr, uno_used_pin, mega_used_pin): #ширина в ячейках, размер centr (находится len(centr)), 2 массива         НИЧЕГО НЕ ВОЗВРАЩАЕТ
+	pin_count=2
+	led_count=1
+	number_of_leds=size_centr*(N+1) #т.к количество светодиодов на 1 больше, чем количество ячеек	
+	pin_array=[]
+	if (number_of_leds<=6):
+		#print('Используйте Arduino UNO')
+		for i in range(0, number_of_leds):
+			pin_array.append(pin(pin_count, led_count))  
+			pin_count=pin_count+1
+			led_count=led_count+1
+			while (value_in_array(pin_count, uno_used_pin)):  #отличаются этой строчкой
+				pin_count=pin_count+1
+	elif (number_of_leds<=46):
+		#print('Используйте Arduino MEGA')
+		for i in range(0, number_of_leds):
+			pin_array.append(pin(pin_count, led_count))  
+			pin_count=pin_count+1
+			led_count=led_count+1
+			while (value_in_array(pin_count, mega_used_pin)):
+				pin_count=pin_count+1
+	
+
+	return (pin_array)
+
+
+
+
+
+def choice_MK(pin_array):  #возвращает строку
+	size=len(pin_array)
+	if(size<=6):
+		return ('Arduino UNO')
+	else:
+		return ('Arduino MEGA')
+
+
+
+def make_signals(mesh, centr):       #главный алгоритм
+	i=0  #счетчик цикла
+	j=0
+	c=0
+	k=0 #счетчик массива signal
+	rotate=False
+	vector=True
+	vector_stel=False
+	rotate_num=True
+	
+	signal=[]#массив сигналов
+	signal.append(Signal(0, 0))
+	while (mesh[i].led_num!=0):
+		if (rotate_num==True):#поворот
+			number_row=mesh[i].led_num//(N+1)+1
+			if mesh[i].led_num%(N+1)==0:
+				number_row=number_row-1
+			range1=(number_row-1)*(N+1)+1
+			range2=number_row*(N+1)
+			j=0
+			while ((centr[j]>range2)or(centr[j]<range1)):
+				j=j+1
+			c=centr[j] #номер центрального светодиода на данной итерации
+			print(c)#потом убрать
+			#print(range1)
+			#print(range2)
+			#c=0 
+			signal[k].led_num=c
+			if (mesh[i].led_num<c):
+				if (vector==True):
+					signal[k].signal_num=6
+					rotate=False #0-влево, 1 - вправо
+				else: #vector==false
+					signal[k].signal_num=5
+					rotate=True #0-влево, 1 - вправо
+				vector_stel=False
+			if (mesh[i].led_num>c):
+				if (vector==True):
+					signal[k].signal_num=5
+					rotate=True #0-влево, 1 - вправо
+				else: #vector==false
+					signal[k].signal_num=6
+					rotate=False #0-влево, 1 - вправо
+				vector_stel=True	
+			rotate_num=False #для тестов
+			k=k+1
+			signal.append(Signal(0, 0))
+			#print(signal[0].led_num)
+			#print(signal[0].signal_num)
+			
+		if (rotate_num==False):
+			signal[k].led_num=mesh[i].led_num
+			if ((mesh[i-1].led_num==mesh[i].led_num)and(i==1)):
+				if (mesh[i-1].udalennost==mesh[i].udalennost):
+					if (mesh[i].floor==1):
+						signal[k].signal_num=9
+					if (mesh[i].floor==2):
+						signal[k].signal_num=10
+					rotate=rotate
+				else: #udalennostи не равны
+					if (mesh[i].floor==1):
+						signal[k].signal_num=11
+					if (mesh[i].floor==2):
+						signal[k].signal_num=12
+					rotate=not(rotate)
+			#конец блока "захват с того же светодиода
+			else:
+				if (vector_stel==False):
+					if (mesh[i].udalennost==False):
+						if (mesh[i].floor==1):
+							signal[k].signal_num=3 #Вправо и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=4 #Вправо и захват
+						rotate=True
+					else: #udalennost==True
+						if (mesh[i].floor==1):
+							signal[k].signal_num=1 #Влево и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=2 #Влево и захват
+						rotate=False
+				#конец блока (v_s==False)
+	
+				if (vector_stel==True):
+					if (mesh[i].udalennost==False):
+						if (mesh[i].floor==1):
+							signal[k].signal_num=1 #влево и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=2 #влево и захват
+						rotate=False
+					else: #udalennost==True
+						if (mesh[i].floor==1):
+							signal[k].signal_num=3 #вправо и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=4 #вправо и захват
+						rotate=True
+				#конец блока (v_s==True)
+			#конец блока else
+			k=k+1
+			signal.append(Signal(0, 0))
+	
+			#проверяем, входит ли (i+1)-й светодиод в диапазон, найденный ранее 
+			if ((mesh[i+1].led_num>=range1)and(mesh[i+1].led_num<=range2)): #входит
+				signal[k].led_num=mesh[i].led_num
+				if (mesh[i+1].led_num>mesh[i].led_num): #второй ящик находится ПРАВЕЕ первого
+					if (vector_stel==False):
+						if (rotate==False):
+							signal[k].signal_num=6 #Влево 
+						else:
+							signal[k].signal_num=5 #Вправо
+						rotate=rotate
+					elif (vector_stel==True):
+						if (rotate==False):
+							signal[k].signal_num=5 #Вправо
+						else:
+							signal[k].signal_num=6 #Влево 
+						rotate=not(rotate)
+					vector_stel=True
+					k=k+1
+					signal.append(Signal(0, 0))
+				#конец блока "второй ящик находится ПРАВЕЕ первого"
+	
+				if (mesh[i+1].led_num<mesh[i].led_num): #второй ящик находится Левее первого
+					if (vector_stel==False):
+						if (rotate==False):
+							signal[k].signal_num=5 #Вправо 
+						else:
+							signal[k].signal_num=6 #Влево
+						rotate=not(rotate)
+					elif (vector_stel==True):
+						if (rotate==False):
+							signal[k].signal_num=6 #Влево 
+						else:
+							signal[k].signal_num=5 #Вправо
+						rotate=rotate
+					vector_stel=False
+					k=k+1
+					signal.append(Signal(0, 0))
+				#конец блока "второй ящик находится Левее первого"
+			#конец блока "входит"
+	
+			else:# 2 поворота
+				#первый поворот
+				signal[k].led_num=mesh[i].led_num
+				if(mesh[i].led_num>c):#правее магистрали
+					if (vector_stel==False):
+						if (rotate==False):#то есть влево   
+							signal[k].signal_num=5 #Вправо
+						else:       
+							signal[k].signal_num=6 #Влево 
+						rotate=not(rotate)
+					else:
+						if (rotate==False):#то есть влево  
+							signal[k].signal_num=6 #Влево 
+						else:      
+							signal[k].signal_num=5 #вправо
+						rotate=rotate
+					vector_stel=False
+				if(mesh[i].led_num<c): #левее магистрали
+					if (vector_stel==False):
+						if (rotate==False):#то есть влево   
+							signal[k].signal_num=6 #Влево 
+						else:       
+							signal[k].signal_num=5 #Вправо
+						rotate=rotate
+					else:
+						if (rotate==False):#то есть влево  
+							signal[k].signal_num=5 #Вправо 
+						else:       
+							signal[k].signal_num=6 #Влево
+						rotate=not(rotate)
+					vector_stel=True
+				
+				k=k+1
+				signal.append(Signal(0, 0))
+
+				#второй поворот
+				signal[k].led_num=c
+				if (mesh[i+1].led_num>range2): #второй ящик дальше от зрителя, чем первый
+					vector=True
+					if (vector_stel==False):
+						signal[k].signal_num=5 #6 Влево
+					else:
+						signal[k].signal_num=6 #5 Вправо
+					rotate=vector_stel
+				#конец блока "второй ящик дальше от зрителя, чем первый"
+				if (mesh[i+1].led_num<range1): #второй ящик ближе к зрителю, чем первый
+					
+					vector=False
+					if (vector_stel==False):
+						signal[k].signal_num=6 #5 Вправо
+					else:
+						signal[k].signal_num=5 #6 Влево
+					rotate=not(vector_stel)
+				#конец блока "второй ящик ближе к зрителю, чем первый"
+				rotate_num=True
+				k=k+1
+				signal.append(Signal(0, 0))
+			#конец блока "не входит"
+		#конец блока "rotate_num==False"
+		i=i+1
+	#конец цикла
+	return (signal)
+
+
+
+
+
+
+M=0
+N=0
+n1=0
+n2=0
+uno_used_pin = [8, 9, 10, 11, 12, 13]#массив виден внутри функции
+mega_used_pin = [48, 49, 50, 51, 52, 53]
+sklad_2D=[]#массив ячеек
+#centr=[]#массив номеров центральных светодиодов
+
+
+def create_sklad(M, n1, n2, first_is_line_of_mesh):
+	N=n1+n2
+	number=-1    #совпадает с нумерацией массива
+	led_num=1
+	udalennost=False
+	sklad_2D=[]
+	centr=[]
+
+	# начало блока создания склада
+	if (first_is_line_of_mesh==True):
+		udalennost=True
+	else:
+		udalennost=False
+	r=N*M
+	while ((number+1)<r):
+		i=0
+		for i in range(0, n1):
+			number=number+1
+			sklad_2D.append(mesh_2D(0, 0, False))
+			sklad_2D[number].led_num=led_num
+			sklad_2D[number].udalennost=udalennost
+			sklad_2D[number].number=number
+			led_num=led_num+1
+		led_num=led_num+1
+		i=0
+		for i in range(0, n2):
+			number=number+1
+			sklad_2D.append(mesh_2D(0, 0, False))
+			sklad_2D[number].led_num=led_num
+			sklad_2D[number].udalennost=udalennost
+			sklad_2D[number].number=number
+			led_num=led_num+1
+		if (udalennost==True):
+			led_num=led_num-N-1
+		udalennost=not(udalennost)
+	make_centr(sklad_2D, n1, n2)
+	return (sklad_2D)
+
+
+
+
+
+#конец блока формирования склада
+
+
+
+i=0 #счетчик цикла
+k=0 #счетчик массива signal
+
+mesh=[]#массив выбранных ячеек
+signal=[]#массив сигналов
+centr=make_centr(sklad_2D, n1, n2)
+print('centr2')
+print(centr)
+
+num_mesh=1
+i=0
+floor=0
+while ((num_mesh!=-1)and(i<2)):
+	num_mesh=int(input('Введите номер ячейки, для завершения введите -1: '))
+	if (num_mesh==-1):
+		break
+	floor=int(input('Введите номер Этажа: '))
+	mesh.append(Mesh(num_mesh, sklad_2D[num_mesh].led_num, floor, sklad_2D[num_mesh].udalennost))#именно n, совпадает с нумерацией массива
+	i=i+1
+
+	
+mesh.append(Mesh(0, 0, False, 0))
+
+print(mesh[0].led_num, mesh[0].floor, mesh[0].udalennost)
+print(mesh[1].led_num, mesh[1].floor, mesh[1].udalennost)
+
+
+
+
+
+
+
+
+make_route(mesh, sklad_2D, centr, M, n1, n2)
+
+
+
+choice_MK(N, len(centr)-1, uno_used_pin, mega_used_pin)
+sig_size=len(signal)
+arduino.write(struct.pack('>B', sig_size))
+print(sig_size)
+for j in range(0, sig_size): #отправляет сигналы
+	arduino.write(struct.pack('>B', signal[j].led_num))
+	arduino.write(struct.pack('>B', signal[j].signal_num))
+

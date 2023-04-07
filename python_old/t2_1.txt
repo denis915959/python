@@ -1,0 +1,962 @@
+#   python t2_1.txt
+#  C:\Users\denis\OneDrive\Рабочий стол\python\для\tx_test.txt
+
+
+from tkinter import * 
+import tkinter.filedialog as fd
+from functools import partial 
+import serial
+import time
+import struct
+# arduino=serial.Serial('COM30', 9600)    #arduino
+choice_counter=0  #счетчик нажатий на кнопку
+mesh=[] #глобальный массив выбранных ячеек
+Font='Arial 16'
+sklad_2D=[]  #массив ячеек склада
+uno_used_pin = [8, 9, 10, 11, 12, 13]#массив виден внутри функции
+mega_used_pin = [48, 49, 50, 51, 52, 53]
+M=0   #дождитесь, пока робот возьмет ящики 
+n1=0
+n2=0              #проверить, может ли несколько раз отработать (т.е после того, как все сделаю загнать выбор ячеек в цикл как-то)
+first_is_line_of_mesh=False
+port_save_to_file=' '
+
+
+class mesh_2D: #то, с чем мы работаем при создании склада  (отсутствует номер этажа)
+    def __init__(self, number, led_num, udalennost):
+        self.number=number
+        self.led_num=led_num
+        self.udalennost=udalennost
+
+
+class Mesh:   #присутствует номер этажа, на вход главного алгоритма
+    def __init__(self, number, led_num, floor, udalennost):#int, int, int, bool
+        self.number=number
+        self.led_num=led_num
+        self.floor=floor
+        self.udalennost=udalennost
+	
+
+class Signal:
+    def __init__(self, led_num, signal_num):#int, int
+        self.led_num=led_num
+        self.signal_num=signal_num
+
+
+class pin:
+	def __init__(self, pin1, led1):
+		self.pin=pin1
+		self.led=led1
+	
+
+
+
+def make_pin_array(N, size_centr, uno_used_pin, mega_used_pin): #ширина в ячейках, размер centr (находится len(centr)), 2 массива         
+	pin_count=2
+	led_count=1
+	number_of_leds=size_centr*(N+1) #т.к количество светодиодов на 1 больше, чем количество ячеек	
+	pin_array=[]
+	if (number_of_leds<=6):
+		#print('Используйте Arduino UNO')
+		for i in range(0, number_of_leds):
+			pin_array.append(pin(pin_count, led_count))  
+			pin_count=pin_count+1
+			led_count=led_count+1
+			while (value_in_array(pin_count, uno_used_pin)):  #отличаются этой строчкой
+				pin_count=pin_count+1
+	elif (number_of_leds<=46):
+		#print('Используйте Arduino MEGA')
+		for i in range(0, number_of_leds):
+			pin_array.append(pin(pin_count, led_count))  
+			pin_count=pin_count+1
+			led_count=led_count+1
+			while (value_in_array(pin_count, mega_used_pin)):
+				pin_count=pin_count+1
+	
+
+	return (pin_array)
+
+
+
+def value_in_array(val, arr):#массив можно передавать как массив, и возвращать как массив без всяких указателей!
+	size=len(arr)
+	flag=False
+	for i in range(0, size):
+		if (val==arr[i]):
+			flag=True
+			break
+	return flag
+
+
+
+def choice_MK(pin_array):  #возвращает строку
+	size=len(pin_array)
+	if(size<=6):
+		return ('Arduino UNO')
+	else:
+		return ('Arduino MEGA')
+
+
+
+def write_data_of_MK_file(pin_arr, mk_name):   #массив пинов, название микроконтроллера, путь до файла
+	new_file = fd.asksaveasfile(title="Сохранить схему подключения светодиодов", defaultextension=".txt", filetypes=(("Текстовый файл", "*.txt"),))
+	if new_file:
+		new_file.write('Используйте микроконтроллер '+ mk_name)
+		new_file.write('\nled       pin')
+		pin_arr_sz=len(pin_arr)
+		for i in range(0, pin_arr_sz):
+			new_file.write('\n'+str(pin_arr[i].led) + '          ' + str(pin_arr[i].pin))
+	new_file.close()
+
+
+
+def write_data_of_sklad_to_file():  #  сохранение склада в файл
+	global M
+	global n1
+	global n2
+	global first_is_line_of_mesh
+	global sklad_2D
+	global port_save_to_file
+	new_file = fd.asksaveasfile(title="Сохранить склад", defaultextension=".txt", filetypes=(("Текстовый файл", "*.txt"),))
+	if new_file:
+		new_file.write(str(port_save_to_file)+'\n')
+		new_file.write(str(M)+'\n')  # порядок записи: M, n1, n2, first, sklad_2D
+		new_file.write(str(n1)+'\n')
+		new_file.write(str(n2)+'\n')
+		new_file.write(str(first_is_line_of_mesh)+'\n')
+		
+		arr_sz=len(sklad_2D)
+		for i in range(0, arr_sz):
+			new_file.write(str(sklad_2D[i].number)+'\n')
+			new_file.write(str(sklad_2D[i].led_num)+'\n')
+			new_file.write(str(sklad_2D[i].udalennost)+'\n')
+	new_file.close()
+
+
+
+def open_sklad_from_file():
+	global M
+	global n1
+	global n2
+	global N
+	global first_is_line_of_mesh
+	port=' '
+	filetypes = (("Текстовый файл", "*.txt"), ("Изображение", "*.jpg *.gif *.png"), ("Любой", "*"))
+	file_path = fd.askopenfilename(title="Открыть склад", initialdir="/", filetypes=filetypes)  #получаем путь до файла!
+	if file_path:
+		file=open(file_path, "r")
+		size_file=0
+		st=' '
+		#считаем количество строк в файле	
+		while(1):
+			st=file.readline()
+			if (st==''):
+				break
+			size_file=size_file+1	
+		file.seek(0,0)  #каретка в начало файла
+		port_read=str(file.readline())
+		port=port_read.replace("\n", "")
+		M=int(file.readline())
+		n1=int(file.readline())
+		n2=int(file.readline())
+		first_is_line_of_mesh=bool(file.readline())
+		
+		print('port: ', port)
+		print('M=', M)
+		print('n1=', n1)
+		print('n2=', n2)
+		print('first_is_line_of_mesh=', first_is_line_of_mesh)
+	
+		#записываем данные в sklad_2D
+		size_sklad_2D=int((size_file-4)/3)
+		for j in range(0, size_sklad_2D):  
+			number=int(file.readline())
+			led_num=int(file.readline())
+			udalennost_str=file.readline()
+			if (udalennost_str=='True\n'):
+				udalennost=True
+			if (udalennost_str=='False\n'):
+				udalennost=False
+			sklad_2D.append(mesh_2D(number, led_num, udalennost))
+	
+		sz=len(sklad_2D)
+		for j in range(0, sz):
+			print(sklad_2D[j].number)
+			print(sklad_2D[j].led_num)
+			print(sklad_2D[j].udalennost)
+			print(' ')
+		N=n1+n2
+		print('end')
+		file.close()
+	return(port)
+
+
+
+def make_signals(mesh, centr):       #главный алгоритм
+	i=0  #счетчик цикла
+	j=0
+	c=0
+	k=0 #счетчик массива signal
+	rotate=False
+	vector=True
+	vector_stel=False
+	rotate_num=True
+	global n1
+	global n2
+	N=n1+n2
+
+	
+	signal=[]#массив сигналов
+	signal.append(Signal(0, 0))
+	while (mesh[i].led_num!=0):
+		if (rotate_num==True):#поворот
+			number_row=mesh[i].led_num//(N+1)+1
+			if mesh[i].led_num%(N+1)==0:
+				number_row=number_row-1
+			range1=(number_row-1)*(N+1)+1
+			range2=number_row*(N+1)
+			j=0
+			while ((centr[j]>range2)or(centr[j]<range1)):
+				j=j+1
+			c=centr[j] #номер центрального светодиода на данной итерации
+			print(c)#потом убрать
+			#print(range1)
+			#print(range2)
+			#c=0 
+			signal[k].led_num=c
+			if (mesh[i].led_num<c):
+				if (vector==True):
+					signal[k].signal_num=6
+					rotate=False #0-влево, 1 - вправо
+				else: #vector==false
+					signal[k].signal_num=5
+					rotate=True #0-влево, 1 - вправо
+				vector_stel=False
+			if (mesh[i].led_num>c):
+				if (vector==True):
+					signal[k].signal_num=5
+					rotate=True #0-влево, 1 - вправо
+				else: #vector==false
+					signal[k].signal_num=6
+					rotate=False #0-влево, 1 - вправо
+				vector_stel=True	
+			rotate_num=False #для тестов
+			k=k+1
+			signal.append(Signal(0, 0))
+			#print(signal[0].led_num)
+			#print(signal[0].signal_num)
+			
+		if (rotate_num==False):
+			signal[k].led_num=mesh[i].led_num
+			if ((mesh[i-1].led_num==mesh[i].led_num)and(i==1)):
+				if (mesh[i-1].udalennost==mesh[i].udalennost):
+					if (mesh[i].floor==1):
+						signal[k].signal_num=9
+					if (mesh[i].floor==2):
+						signal[k].signal_num=10
+					rotate=rotate
+				else: #udalennostи не равны
+					if (mesh[i].floor==1):
+						signal[k].signal_num=11
+					if (mesh[i].floor==2):
+						signal[k].signal_num=12
+					rotate=not(rotate)
+			#конец блока "захват с того же светодиода
+			else:
+				if (vector_stel==False):
+					if (mesh[i].udalennost==False):
+						if (mesh[i].floor==1):
+							signal[k].signal_num=3 #Вправо и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=4 #Вправо и захват
+						rotate=True
+					else: #udalennost==True
+						if (mesh[i].floor==1):
+							signal[k].signal_num=1 #Влево и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=2 #Влево и захват
+						rotate=False
+				#конец блока (v_s==False)
+	
+				if (vector_stel==True):
+					if (mesh[i].udalennost==False):
+						if (mesh[i].floor==1):
+							signal[k].signal_num=1 #влево и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=2 #влево и захват
+						rotate=False
+					else: #udalennost==True
+						if (mesh[i].floor==1):
+							signal[k].signal_num=3 #вправо и захват
+						if (mesh[i].floor==2):
+							signal[k].signal_num=4 #вправо и захват
+						rotate=True
+				#конец блока (v_s==True)
+			#конец блока else
+			k=k+1
+			signal.append(Signal(0, 0))
+	
+			#проверяем, входит ли (i+1)-й светодиод в диапазон, найденный ранее 
+			if ((mesh[i+1].led_num>=range1)and(mesh[i+1].led_num<=range2)): #входит
+				signal[k].led_num=mesh[i].led_num
+				if (mesh[i+1].led_num>mesh[i].led_num): #второй ящик находится ПРАВЕЕ первого
+					if (vector_stel==False):
+						if (rotate==False):
+							signal[k].signal_num=6 #Влево 
+						else:
+							signal[k].signal_num=5 #Вправо
+						rotate=rotate
+					elif (vector_stel==True):
+						if (rotate==False):
+							signal[k].signal_num=5 #Вправо
+						else:
+							signal[k].signal_num=6 #Влево 
+						rotate=not(rotate)
+					vector_stel=True
+					k=k+1
+					signal.append(Signal(0, 0))
+				#конец блока "второй ящик находится ПРАВЕЕ первого"
+	
+				if (mesh[i+1].led_num<mesh[i].led_num): #второй ящик находится Левее первого
+					if (vector_stel==False):
+						if (rotate==False):
+							signal[k].signal_num=5 #Вправо 
+						else:
+							signal[k].signal_num=6 #Влево
+						rotate=not(rotate)
+					elif (vector_stel==True):
+						if (rotate==False):
+							signal[k].signal_num=6 #Влево 
+						else:
+							signal[k].signal_num=5 #Вправо
+						rotate=rotate
+					vector_stel=False
+					k=k+1
+					signal.append(Signal(0, 0))
+				#конец блока "второй ящик находится Левее первого"
+			#конец блока "входит"
+	
+			else:# 2 поворота
+				#первый поворот
+				signal[k].led_num=mesh[i].led_num
+				if(mesh[i].led_num>c):#правее магистрали
+					if (vector_stel==False):
+						if (rotate==False):#то есть влево   
+							signal[k].signal_num=5 #Вправо
+						else:       
+							signal[k].signal_num=6 #Влево 
+						rotate=not(rotate)
+					else:
+						if (rotate==False):#то есть влево  
+							signal[k].signal_num=6 #Влево 
+						else:      
+							signal[k].signal_num=5 #вправо
+						rotate=rotate
+					vector_stel=False
+				if(mesh[i].led_num<c): #левее магистрали
+					if (vector_stel==False):
+						if (rotate==False):#то есть влево   
+							signal[k].signal_num=6 #Влево 
+						else:       
+							signal[k].signal_num=5 #Вправо
+						rotate=rotate
+					else:
+						if (rotate==False):#то есть влево  
+							signal[k].signal_num=5 #Вправо 
+						else:       
+							signal[k].signal_num=6 #Влево
+						rotate=not(rotate)
+					vector_stel=True
+				
+				k=k+1
+				signal.append(Signal(0, 0))
+
+				#второй поворот
+				signal[k].led_num=c
+				if (mesh[i+1].led_num>range2): #второй ящик дальше от зрителя, чем первый
+					vector=True
+					if (vector_stel==False):
+						signal[k].signal_num=5 #6 Влево
+					else:
+						signal[k].signal_num=6 #5 Вправо
+					rotate=vector_stel
+				#конец блока "второй ящик дальше от зрителя, чем первый"
+				if (mesh[i+1].led_num<range1): #второй ящик ближе к зрителю, чем первый
+					
+					vector=False
+					if (vector_stel==False):
+						signal[k].signal_num=6 #5 Вправо
+					else:
+						signal[k].signal_num=5 #6 Влево
+					rotate=not(vector_stel)
+				#конец блока "второй ящик ближе к зрителю, чем первый"
+				rotate_num=True
+				k=k+1
+				signal.append(Signal(0, 0))
+			#конец блока "не входит"
+		#конец блока "rotate_num==False"
+		i=i+1
+	#конец цикла
+	return (signal)
+
+
+def send_array_to_arduino(arduino, pin_array, signals):   # объект serial, массив пинов, массив сигналов
+	time.sleep(2)   #без нее не получается, меньше нельзя (ардуина тормознутая просто)
+
+	# отправка массива пинов
+	"""pin_array_size=len(pin_array)
+	arduino.write(struct.pack('>B', pin_array_size))
+	for j in range(0, pin_array_size): #отправляет сигналы
+		arduino.write(struct.pack('>B', pin_array[j].pin))
+		arduino.write(struct.pack('>B', pin_array[j].led))"""
+
+	# отправка сигналов
+	sig_size=len(signals)
+	arduino.write(struct.pack('>B', sig_size))
+	for j in range(0, sig_size): #отправляет сигналы
+		arduino.write(struct.pack('>B', signals[j].led_num))
+		arduino.write(struct.pack('>B', signals[j].signal_num))
+
+	#блок ожидания ответа от ардуины
+	flag_end_sending=0
+	while (flag_end_sending==0):
+		arduinoData=arduino.read()
+		arduinoData=str(arduinoData)
+
+		sz=len(arduinoData)
+		for i in range (0, sz):  #расшифровка
+			if (arduinoData[i]=='1'):
+				flag_end_sending=1
+				print('Конец')
+				break  
+
+
+
+def make_centr(sklad_2D, n1, n2):
+	led_size=sklad_2D[len(sklad_2D)-1].led_num
+	N=n1+n2
+	centr=[]
+	centr.append(0)
+	centr.append(n1+1)
+	j=2
+	while led_size>(centr[j-1]+N+1):
+		centr.append(centr[j-1]+N+1)
+		j=j+1
+	print(centr) #потом убрать
+	return(centr)
+
+
+def create_sklad(M, n1, n2, first_is_line_of_mesh):
+	N=n1+n2
+	number=-1    #совпадает с нумерацией массива
+	led_num=1
+	udalennost=False
+	sklad_2D=[]
+	centr=[]
+
+	# начало блока создания склада
+	if (first_is_line_of_mesh==True):
+		udalennost=True
+	else:
+		udalennost=False
+	r=N*M
+	while ((number+1)<r):
+		i=0
+		for i in range(0, n1):
+			number=number+1
+			sklad_2D.append(mesh_2D(0, 0, False))
+			sklad_2D[number].led_num=led_num
+			sklad_2D[number].udalennost=udalennost
+			sklad_2D[number].number=number
+			led_num=led_num+1
+		led_num=led_num+1
+		i=0
+		for i in range(0, n2):
+			number=number+1
+			sklad_2D.append(mesh_2D(0, 0, False))
+			sklad_2D[number].led_num=led_num
+			sklad_2D[number].udalennost=udalennost
+			sklad_2D[number].number=number
+			led_num=led_num+1
+		if (udalennost==True):
+			led_num=led_num-N-1
+		udalennost=not(udalennost)
+	make_centr(sklad_2D, n1, n2)
+	return (sklad_2D)
+
+
+def draw_sklad(window, sklad_2D, centr, M, n1, n2, first_is_line_of_mesh, w_window, h_window):
+	N=n1+n2
+
+	x_label=1100
+	y_label=300   # координата данных первого выбранного ящике
+
+	#w_window = int(window.winfo_screenwidth()) -60 #  ? -60 с запасом 
+	#h_window = int(window.winfo_screenheight()) -40 #  ? -40 с запасом 
+	print(w_window)
+	print(h_window) 
+	canvas = Canvas(height=840, width=1535, bg="white", highlightthickness=0)#создаем холст поверх текущего!
+	canvas.place(x=0, y=0)
+	button_array=[] #массив классов типа кнопка
+
+
+	#ЭТАЛОНЫ
+	h_button_standard=4 #высота кнопки в шрифтах, 3
+	w_button_standard=8 #ширина ПОЛОВИНЫ кнопки в ШИРИНЕ шрифта, 8
+	h_shift_standard=6 #отступ вверх в шрифтах
+	w_shift_standard=7  #отступ в ШИРИНЕ шрифта
+	convert=2.39
+	bd_size_standard=6 #размер границы в пикселях
+
+
+	x=0#переменные
+	y=0#, так как сверху надпись высотой 40 пикселей
+
+
+	j=0
+	i=0
+	k=0   #счетчик массива button_array
+	sklad_count=0 #счетчик массива sklad
+	h_sklad=(len(centr)-1)*h_shift_standard+h_button_standard*M +2*1 +1    
+	w_sklad=int((N*w_button_standard*2+w_shift_standard)/convert) +2*1 +1    #невозможно конвертировать пиксели в размеры склада в высоте шрифта, так как мы не знаем конкретное значения шрифта. поэтому берем худший случай - bd_size в шрифтах = 1*2 h_font (так как шрифт < 6  не используется), +1 обеспечивает округление в большую сторону. Если будет выходить за границы поля - вместо 1*2+1 сделать 5. этого хватит точно!
+	if (h_sklad<=w_sklad):
+
+		tmp1=h_window/h_sklad-2
+		tmp2=w_window/w_sklad-2
+		print('tmp1=',tmp1)
+		print('tmp2=',tmp2)
+	
+		h_font1=int(tmp1)  #?
+		h_font2=int(tmp2)  #?
+	
+		print('h_font1=',h_font1)
+		print('h_font2=',h_font2)
+
+		if (h_font2>=h_font1):
+			h_font=h_font1
+		else:
+			h_font=h_font2
+	
+		if (h_font>30):
+			h_font=30
+		print('h_font=', h_font)
+
+		Font='Arial ' + str(h_font)
+	
+		bd_size=int((h_font/30)*bd_size_standard)
+		print('bd_size', bd_size)
+
+		h_sklad_pixels=h_font*h_sklad+2*M*bd_size              # 
+		w_sklad_pixels=int(h_font*w_sklad)+2*N*bd_size          # изменить на масштабированную границу
+
+		h_button_pixels=h_font*h_button_standard+2*bd_size                  # изменить на масштабированную границу
+		w_button_pixels=int(h_font*w_button_standard/convert)+2*bd_size  # изменить на масштабированную границу
+		h_shift_pixels=h_font*h_shift_standard  #в высотах шрифта
+		w_shift_pixels=h_font*w_shift_standard  #в высотах шрифта 
+
+		x_start=int((w_window-w_sklad_pixels)/2)    #выравнивание по центру
+		y_start=h_window-int((h_window-h_sklad_pixels)/2)    #выравнивание по центру
+
+		y=y_start
+
+		for i in range (0, M):
+			#y=y-h_button* ratio
+			x=int(x_start/2) #  ??????
+			print('x= ', x)
+			udalennost=sklad_2D[sklad_count].udalennost  
+			for j in range (0, n1):
+				m=1
+
+				string=str(sklad_count)+'.'+str(m)
+
+				color='color'
+				if (sklad_count%2==1):
+					color='yellow'
+				else:
+					color='orange'
+				button_array.append(Button(window,  bd=bd_size, text=string, font=Font, background=color, height = int(h_button_standard/2), width = int(w_button_standard/2), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label))) #sclad_count - номер ячейки, m - номер этажа, вместо i sklad_count
+				button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+				print('width=', w_button_pixels)
+				x=x+w_button_pixels 
+				k=k+1
+				m=2
+				string=str(sklad_count)+'.'+str(m)
+				button_array.append(Button(window, bd=bd_size,text=string, font=Font, background=color, height = int(h_button_standard/2), width = int(w_button_standard/2), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label)))
+				button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+				x=x+w_button_pixels             #??????????7
+				print('x= ', x)
+				k=k+1
+				sklad_count=sklad_count+1
+			x=x+w_shift_pixels
+			j=0
+			for j in range (0, n2):
+				m=1
+				string=str(sklad_count)+'.'+str(m)
+				color='color'
+				if (sklad_count%2==1):
+					color='yellow'
+				else:
+					color='orange'
+				button_array.append(Button(window, text=string, bd=bd_size,font=Font, background=color, height = int(h_button_standard/2), width = int(w_button_standard/2), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label)))
+				button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+				x=x+w_button_pixels
+				print('x= ', x)
+				k=k+1
+				m=2
+				string=str(sklad_count)+'.'+str(m)
+				button_array.append(Button(window, text=string,bd=bd_size, font=Font, background=color, height = int(h_button_standard/2), width = int(w_button_standard/2), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label)))
+				button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+				x=x+w_button_pixels 
+				print('x= ', x)
+				k=k+1	
+				sklad_count=sklad_count+1
+			y=y-h_button_pixels	
+			if (udalennost==True):
+				y=y-h_shift_pixels #+
+			print('end iteration : ', y)
+
+
+
+	else:
+		tmp1=h_window/w_sklad-4  #-2    h_sklad
+		tmp2=w_window/h_sklad-4  #-2    w_sklad
+		print('tmp1=',tmp1)
+		print('tmp2=',tmp2)
+
+
+		h_font1=int(tmp1)  #?
+		h_font2=int(tmp2)  #?
+
+		print('h_font1=',h_font1)
+		print('h_font2=',h_font2)
+
+		if (h_font2>=h_font1):
+			h_font=h_font1
+		else:
+			h_font=h_font2
+	
+		if (h_font>30):
+			h_font=30
+		print('h_font=', h_font)
+
+		Font='Arial ' + str(h_font)
+	
+		bd_size=int((h_font/30)*bd_size_standard)
+		print('bd_size', bd_size)
+
+		h_sklad_pixels=h_font*h_sklad+2*M*bd_size             # h_sklad
+		w_sklad_pixels=int(h_font*w_sklad)+2*N*bd_size           # w_sklad
+
+		h_button_pixels=h_font*h_button_standard+2*bd_size                  # изменить на масштабированную границу
+		w_button_pixels=int(h_font*w_button_standard/convert)+2*bd_size  # /convert
+		h_shift_pixels=h_font*h_shift_standard
+		w_shift_pixels=h_font*w_shift_standard
+
+		x_start=int((w_window-h_sklad_pixels)/2)    #выравнивание по центру
+		y_start=h_window-int((h_window-w_sklad_pixels)/2)    #выравнивание по центру
+
+		x=x_start
+
+		for i in range (0, M):
+			#y=y-h_button* ratio
+			y=y_start #  ??????
+
+			print('y= ', y)
+			udalennost=sklad_2D[sklad_count].udalennost  
+			for j in range (0, n1):
+				m=1
+
+				if (sklad_count<10):
+					string=str(sklad_count)+'.'+str(m)+'  '
+				else:
+					string=str(sklad_count)+'.'+str(m)
+
+				color='color'
+				if (sklad_count%2==1):
+					color='yellow'
+				else:
+					color='orange'
+				button_array.append(Button(window,  bd=bd_size, text=string, font=Font, background=color,  height= int(w_button_standard/4), width = int(h_button_standard/(2*convert)), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label))) #      Я ПОМЕНЯЛ МЕСТАМИ h и w!!!!!!
+				button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+				print('width=', w_button_pixels)
+				y=y-w_button_pixels 
+				print('y= ', y)
+				k=k+1
+				m=2
+				if (sklad_count<10):
+					string=str(sklad_count)+'.'+str(m)+'  '
+				else:
+					string=str(sklad_count)+'.'+str(m)
+				button_array.append(Button(window, bd=bd_size,text=string, font=Font, background=color, height= int(w_button_standard/4), width = int(h_button_standard/(2*convert)), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label)))
+				button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+				y=y-w_button_pixels             #??????????7
+				print('y= ', y)
+				k=k+1
+				sklad_count=sklad_count+1
+			y=y-w_shift_pixels
+			j=0
+			for j in range (0, n2):
+				m=1
+				if (sklad_count<10):
+					string=str(sklad_count)+'.'+str(m)+'  '
+				else:
+					string=str(sklad_count)+'.'+str(m)
+				color='color'
+				if (sklad_count%2==1):
+					color='yellow'
+				else:
+					color='orange'
+				button_array.append(Button(window, text=string, bd=bd_size,font=Font, background=color, height= int(w_button_standard/4), width = int(h_button_standard/(2*convert)), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label)))
+				button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+				y=y-w_button_pixels
+				print('y= ', y)
+				k=k+1
+				m=2
+				if (sklad_count<10):
+					string=str(sklad_count)+'.'+str(m)+'  '
+				else:
+					string=str(sklad_count)+'.'+str(m)
+				button_array.append(Button(window, text=string,bd=bd_size, font=Font, background=color, height= int(w_button_standard/4), width = int(h_button_standard/(2*convert)), command=lambda window=window, sklad_count=sklad_count, m=m, x_label=x_label, y_label=y_label: choice_mesh(window, sklad_count, m, x_label, y_label)))
+				button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+				y=y-w_button_pixels 
+				print('y= ', y)
+				k=k+1	
+				sklad_count=sklad_count+1
+			x=x+h_button_pixels	
+			if (udalennost==True):
+				x=x+h_shift_pixels #+
+				#print('if: ', y)
+			print('end iteration : ', y)
+
+
+	#window.mainloop()    #функция, которая ждет действий от пользователя (бесконечный цикл)
+
+
+
+def call_open_sklad(window, x_tablo): # инициирует открытие ранее сохраненного склада
+	global Font
+	global port_save_to_file
+	x_button=x_tablo+100
+	port_save_to_file=open_sklad_from_file()
+	arduino=serial.Serial(port_save_to_file, 9600)
+	centr=make_centr(sklad_2D, n1, n2)
+
+	size_centr=len(centr)-1
+	pin_array=make_pin_array(N, size_centr, uno_used_pin, mega_used_pin)  #так как массив пинов будет дальше использоваться
+
+	w_sklad = x_tablo -60 #int(window.winfo_screenwidth()) -60 #  ? -60 с запасом 
+	h_sklad = int(window.winfo_screenheight()) -40 #  ? -40 с запасом
+	
+	draw_sklad(window, sklad_2D, centr, M, n1, n2, first_is_line_of_mesh, w_sklad, h_sklad)
+	label_data = Label(window, text="    ", font='Arial 335').place(x=x_tablo, y=650, anchor='sw')   # так рисуется окно вывода данных справа
+	label_instruction1 = Label(window, text="Для выбора ячеек нажмие на них", font=Font).place(x=x_tablo+5, y=190, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	label_instruction2 = Label(window, text="(первая цифра на кнопке - номер ячейки,", font=Font).place(x=x_tablo+5, y=220, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	label_instruction3 = Label(window, text="вторая цифра - номер яруса)", font=Font).place(x=x_tablo+5, y=250, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+
+	button_go = Button(window, width=20, height=3, background='green',  text="Взять палеты", command=lambda *args:go(x_tablo, pin_array, arduino), font=Font)
+	button_go.place(anchor='sw', x=x_tablo+100, y=120) 
+	
+	return 
+
+
+
+def choice_mesh(window, sklad_count, m, x_label, y_label): #при нажатии на ячейку                        положение виджета задается извне
+	global choice_counter
+	global Font
+	global mesh_choice
+	global sklad_2D
+	global array_choice_mesh_message
+	num_mesh=sklad_count
+	fl=m
+
+	if (choice_counter==0):
+		y=y_label
+		label_paint_over_correct_job = Label(window, text="                                                 ", font='Arial 30').place(x=x_label, y=455, anchor='sw')
+		string='ПЕРВЫЙ ПАЛЕТ: '
+		num_message=Label(window, text=string, font=Font).place(x=x_label+100, y=y)
+		y=y+30
+		string='номер ячейки:  ' + str(sklad_count)   #сообщение о выбранной ячейке
+		choice_mesh_message=Label(window, text=string, font=Font).place(x=x_label+100, y=y)
+		y=y+30
+		string='номер яруса:  ' + str(m)
+		floor=Label(window, text=string, font=Font).place(x=x_label+100, y=y)
+		mesh.append(Mesh(num_mesh, sklad_2D[num_mesh].led_num, fl, sklad_2D[num_mesh].udalennost))
+		
+	elif (choice_counter==1):
+		y=y_label+150
+		string='ВТОРОЙ ПАЛЕТ: '
+		num_message=Label(window, text=string, font=Font).place(x=x_label+100, y=y)
+		y=y+30
+		string='номер ячейки:  ' + str(sklad_count)   #сообщение о выбранной ячейке
+		choice_mesh_message=Label(window, text=string, font=Font).place(x=x_label+100, y=y)
+		y=y+30
+		string='номер яруса:  ' + str(m)
+		floor=Label(window, text=string, font=Font).place(x=x_label+100, y=y)
+		mesh.append(Mesh(num_mesh, sklad_2D[num_mesh].led_num, fl, sklad_2D[num_mesh].udalennost))
+	else:   
+		string='Ошибка: не более 2 ящиков'
+		error=Label(window, text=string, font=Font).place(x=x_label+100, y=600)  #error
+
+	choice_counter=choice_counter+1
+
+
+
+def go(x_tablo, pin_array, arduino):   #пока робот не отработает, приложение виснет!      pin_array не планируется менять вообще
+	global window
+	
+	global choice_counter
+	global array_choice_mesh_message
+	#global arduino
+	
+	i=0
+
+	#label_clean0 = Label(window, text="    ", font='Arial 335').place(x=x_tablo, y=650, anchor='sw')
+	#label_go1.place(x=1100, y=400, anchor='sw')  #x=x_tablo+20
+	#label_go2 = Label(window, text="возьмет выбранные вами палеты ", font='Arial 18').place(x=x_tablo+20, y=450, anchor='sw')
+
+	mesh.append(Mesh(0, 0, False, 0))
+
+	for i in range(0, len(mesh)):                                            #потом убрать, только для тестов
+		print(mesh[i].number, mesh[i].led_num, mesh[i].floor, mesh[i].udalennost)
+	print('  ')
+
+	centr=make_centr(sklad_2D, n1, n2)
+	signals=make_signals(mesh, centr)  #массив сигналов
+
+	print('led     ', '       signal')                   #потом убрать, только для тестов	
+	i=0
+	for i in range(0, len(signals)):                                   
+		print(signals[i].led_num, '              ', signals[i].signal_num)
+
+	send_array_to_arduino(arduino, pin_array, signals) #общение с ардуино
+	
+	
+	choice_counter=0  #можно снова выбирать ящики
+	mesh.clear()
+	
+	label_clean = Label(window, text="    ", font='Arial 335').place(x=x_tablo, y=650, anchor='sw')
+	label_correct_job = Label(window, text="Палеты успешно взяты со склада", font='Arial 18').place(x=x_tablo+20, y=450, anchor='sw')
+	label_instruction1 = Label(window, text="Для выбора ячеек нажмие на них", font=Font).place(x=x_tablo+5, y=190, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	label_instruction2 = Label(window, text="(первая цифра на кнопке - номер ячейки,", font=Font).place(x=x_tablo+5, y=220, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	label_instruction3 = Label(window, text="вторая цифра - номер яруса)", font=Font).place(x=x_tablo+5, y=250, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+
+	return
+
+
+
+
+def call_make_sklad(window, button_cs, num1, num2, num3, num4, x_tablo, port_str): #инициирует создание склада
+	global Font
+	global sklad_2D
+	x_button=x_tablo+100
+	button_cs.destroy()
+	global n1
+	global n2
+	global M
+	global first_is_line_of_mesh
+	global uno_used_pin 
+	global mega_used_pin
+	global port_save_to_file
+
+	port_num=str(port_str.get())
+	port_save_to_file='COM'+port_num
+	print(port_save_to_file)
+	arduino=serial.Serial(port_save_to_file, 9600)
+	
+	n1 =int(num1.get()) 
+	n2 =int(num2.get()) 
+	N=n1+n2
+	M =int(num3.get())
+	first_int =int(num4.get())
+	#path=str(number_path.get())    #  C:\Users\denis\OneDrive\Рабочий стол\python\для\tx_test.txt
+	#print(path)
+	if(first_int==0):
+		first_is_line_of_mesh=False
+	else:
+		first_is_line_of_mesh=True
+	if (len(sklad_2D)>0):
+		sklad_2D.clear()
+
+	sklad_2D=create_sklad(M, n1, n2, first_is_line_of_mesh)
+	centr=make_centr(sklad_2D, n1, n2)
+
+	size_centr=len(centr)-1
+	pin_array=make_pin_array(N, size_centr, uno_used_pin, mega_used_pin)
+	mk_name=choice_MK(pin_array)
+	#удаляются старые виджеты, здесь создается виджет, считывающий путь до файла. вызывается make_pin_array, choice_MK. затем write_to_file
+
+	write_data_of_MK_file(pin_array, mk_name)
+
+	w_sklad = x_tablo -60 #int(window.winfo_screenwidth()) -60 #  ? -60 с запасом 
+	h_sklad = int(window.winfo_screenheight()) -40 #  ? -40 с запасом
+	
+	draw_sklad(window, sklad_2D, centr, M, n1, n2, first_is_line_of_mesh, w_sklad, h_sklad)
+	label_data = Label(window, text="    ", font='Arial 335').place(x=x_tablo, y=650, anchor='sw')   # так рисуется окно вывод аданных справа
+	label_instruction1 = Label(window, text="Для выбора ячеек нажмие на них", font=Font).place(x=x_tablo+5, y=190, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	label_instruction2 = Label(window, text="(первая цифра на кнопке - номер ячейки,", font=Font).place(x=x_tablo+5, y=220, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	label_instruction3 = Label(window, text="вторая цифра - номер яруса)", font=Font).place(x=x_tablo+5, y=250, anchor='sw')   #  y, x корректировать. сразу шрифт изменить
+	#label_go1 = Label(window, text="Подождите, пока робот ", font='Arial 18')
+
+	button_go = Button(window, width=20, height=3, background='green',  text="Взять палеты", command=lambda *args:go(x_tablo, pin_array, arduino), font=Font)
+	button_go.place(anchor='sw', x=x_tablo+100, y=120) 
+	
+	return 
+
+
+
+def command_make_sklad(window):
+	x_tablo=1100  
+	x_make_sklad=450  #600
+	#c.create_line(x_label, 0, x_label, 860, fill='green')
+
+	labelPath2 = Label(window, text='                                                                                           ', font='Arial 30').place(x=300, y=300, anchor='sw')   #закрашиваем первое сообщение
+
+	number1 = StringVar()   #ЭТО НЕ ЗНАЧЕНИЕ! значение получаем через get
+	number2 = StringVar() 
+	number3 = StringVar()
+	number4 = StringVar()
+	port_num=StringVar()
+	
+	
+	labelNum0 = Label(window, text="длину и ширину склада вводить в ячейках", font=Font).place(x=x_make_sklad, y=200, anchor='sw')          #ввод данных о складе (сообщения)
+	labelNum1 = Label(window, text="ширина левой части", font=Font).place(x=x_make_sklad, y=250, anchor='sw')
+	labelNum2 = Label(window, text="ширина правой части", font=Font).place(x=x_make_sklad, y=300, anchor='sw') 
+	labelNum3 = Label(window, text="длина склада", font=Font).place(x=x_make_sklad, y=350, anchor='sw')
+	labelNum4 = Label(window, text="first(0 - False, иначе True)", font=Font).place(x=x_make_sklad, y=400, anchor='sw')
+	label_com_num = Label(window, text="Введите номер Порта, к которому подключен склад.", font=Font).place(x=x_make_sklad, y=450, anchor='sw')
+	label_COM = Label(window, text="COM", font=Font).place(x=x_make_sklad, y=480, anchor='sw')
+
+	#labelResult = Label(window) 
+	#labelResult.grid(row=7, column=2) 
+	x_vvod=x_make_sklad+270
+	entryNum1 = Entry(window, textvariable=number1, font=Font).place(x=x_vvod, y=250, anchor='sw')               #ввод данных о складе
+	entryNum2 = Entry(window, textvariable=number2, font=Font).place(x=x_vvod, y=300, anchor='sw')
+	entryNum3 = Entry(window, textvariable=number3, font=Font).place(x=x_vvod, y=350, anchor='sw')
+	entryNum4 = Entry(window, textvariable=number4, font=Font).place(x=x_vvod, y=400, anchor='sw')
+	entry_com_num = Entry(window, textvariable=port_num, width=3, font=Font).place(x=x_make_sklad+60, y=480, anchor='sw') 	
+
+	button_save_pin_array=Button(window, text="Сохранить схему подключения в файл", command=lambda *args: write_data_of_MK_file(pin_arr, mk_name), font=Font)  # кнопка, которя нигде не отборажается. без кнопки нельзя, так как pin_array создается только при создании склада, то есть сильно после
+
+	button_cs = Button(window, text="Создать склад", command=lambda *args:call_make_sklad(window, button_cs, number1, number2, number3, number4, x_tablo, port_num), font=Font)
+	button_cs.place(x=x_make_sklad+100, y=550, anchor='sw') #command=call_result
+
+
+
+
+
+
+
+window = Tk() 
+window.state('zoomed')#полноэкранный режим
+window.resizable (False, False)
+main_menu=Menu()
+file_menu=Menu()
+file_menu.add_command(label = "Создать склад", font='Arial 14', command=lambda *args:command_make_sklad(window))
+file_menu.add_command(label = "Открыть склад", font='Arial 14', command= lambda *args:call_open_sklad(window, 1100))
+file_menu.add_command(label = "Сохранить склад", font='Arial 14', command= write_data_of_sklad_to_file)
+main_menu.add_cascade(label="Файл", font='Arial 20', menu=file_menu)
+window.config(menu=main_menu)
+
+labelPath2 = Label(window, text='нажмите "файл" и создайте новый склад, либо откройте ранее созданный склад', font='Arial 18').place(x=300, y=300, anchor='sw')
+
+window.mainloop() 

@@ -1,0 +1,134 @@
+import copy
+def showmenu():
+    spisok=['0. Выход', '1. Добавить товар на склад', '2. Отсканировать товар']
+    size=len(spisok)
+    for i in range(size):
+        print(spisok[i])
+class tovar:
+    __kod=None
+    __name=None
+    __cost=None
+    __sale=None
+    __numbers_on_sklad=None
+    __numbers_in_check=0
+    def __init__(self, kod, name, cost, sale, numbers_on_sklad):
+        self.__kod=kod
+        self.__name=name
+        self.__cost=cost
+        self.__sale=sale
+        self.__numbers_on_sklad=numbers_on_sklad
+        str(self.__kod)
+    def get_kod(self):
+        return(self.__kod)
+    def get_name(self):
+        return(self.__name)
+    def get_cost(self):
+        return(self.__cost)
+    def get_sale(self):
+        return(self.__sale)
+    def low_numbers_on_sklad(self):
+        self.__numbers_on_sklad=self.__numbers_on_sklad-1
+    def get_numbers_on_sklad(self):
+        return(self.__numbers_on_sklad)
+    def high_numbers_on_sklad(self):
+        self.__numbers_on_sklad=self.__numbers_on_sklad+1
+
+class Sklad:#self писать всегда внутри класса(исключение - если создается паременная), так как это ссылка на класс!
+    __spisok=[] #так создается динамический массив
+    __numbers_different=0
+    def __init__(self, num):#Возможно, убрать num
+        self.__numbers_different=num
+    def set_tovar(self, kod, name, cost, sale, numbers_on_sklad):
+        tmp=tovar(kod, name, cost, sale, numbers_on_sklad)
+        self.__spisok.append(tmp)
+        self.__numbers_different=len(self.__spisok)
+    def skan_tovar(self, kod):#проверить на работоспособность
+        flag=False
+        for i in range(self.__numbers_different):
+            if self.__spisok[i].get_kod()==kod and self.__spisok[i].get_numbers_on_sklad()>0:
+                self.__spisok[i].low_numbers_on_sklad()
+                flag=True #Только с БОЛЬШОЙ БУКВЫ!
+                return self.__spisok[i]
+            elif self.__spisok[i].get_numbers_on_sklad()<=0:
+                self.__spisok[i].low_numbers_on_sklad()
+                flag=True
+                return self.__spisok[i]
+                self.__spisok[i].high_numbers_on_sklad()     
+        if flag==False:
+            tmp=tovar('0', 0, 0, 0, 0)
+            return(tmp)        
+    
+
+
+
+
+
+
+
+class Kassa:
+    check=[]
+    size_diff_check=0
+    def __init__(self, sz=0):
+        size_diff_check=sz
+    def menu(self):
+        sklad=Sklad(0)
+        showmenu()
+        number_menu=int(input())
+        while number_menu!=0:
+            if number_menu==1:
+                print('Введите код: ')
+                kod=str(input())
+                print('Введите название товара: ')
+                name=str(input())
+                print('Введите стоимость товара без скидки: ')
+                cost=float(input())
+                print('Введите скидку (если ее нет, введите 0): ')
+                sale=int(input())
+                print('Введите Количество товаров нв складе: ')
+                numbers_on_sklad=int(input())
+                sklad.set_tovar(kod, name, cost, sale, numbers_on_sklad)
+            if number_menu==2:
+                print('Введите код: ')
+        
+                kod=str(input())#нет конструктора копирования
+                #new_list = copy.deepcopy(old_list)
+                tmp=sklad.skan_tovar(kod)#tmp=tovar('0', 0, 0, 0, 0)
+                if tmp.get_kod()=='0':
+                    print('Такого товара на складе не обнаружено')
+                elif tmp.get_numbers_on_sklad()==-1:# else if!
+                    print('Товар закончился')
+                else:
+                    print(' ')
+                    print('Название товара:', tmp.get_name())
+                    print('Стоимость товара без скидки: %.2f' % tmp.get_cost(), 'руб')
+                    print('Текущая скидка:', tmp.get_sale())
+                    print(' ')
+            showmenu()
+            number_menu=int(input())
+
+
+
+kassa=Kassa()
+kassa.menu()
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+#size=len(spisok)
+
+#showmenu()
+
+
+#array.append(х)
+
+
+#python Kassa.txt

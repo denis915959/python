@@ -1,0 +1,619 @@
+# python heuristic.txt
+
+class Mesh:
+	def __init__(self, m_number):
+		self.number=m_number 
+
+class Branch:
+	def __init__(self, adjacted_node1, cost1):
+		self.adjacted_node=adjacted_node1
+		self.cost=cost1
+
+class Node:
+	def __init__(self, num, branch_arr, flag1):
+		self.number=num
+		self.branch_array=branch_arr
+		self.railroad=flag1 #True - Перекресток, нет - рядом с ячейками находится
+		self.traveled_path=0
+		self.previous_node=-1
+
+class robot_path_node:
+	def __init__(self, action1, counter1):
+		self.action=action1
+		self.counter=counter1
+
+
+
+#Ограничение:размер блока не менее 2 ячеек
+#ограничений на число блоков нет
+def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node):  #генерация графа, работает 
+	Nodes=[]
+	sz=len(N_sizes)
+	count=0;
+	N_size=sum(N_sizes)+len(N_sizes)+1
+	b=[]
+	b.append(Branch(number_to_zero_node, cost_between_rows))
+	Nodes.append(Node(count, b, True))
+	
+	#самый первый ряд!!
+	count=count+1
+	branchs=[Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]   #это работает
+	Nodes.append(Node(count, branchs, True))       #самая левая вершина
+
+	for k in range(0, (sz-1)):
+		count=count+1  #ручной режим
+		branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
+
+		for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
+			count=count+1
+			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
+
+		count=count+1 #ручной режим
+		branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
+		Nodes.append(Node(count, branchs, False))
+		
+		count=count+1 
+		branchs=[Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
+		Nodes.append(Node(count, branchs, True))
+
+	count=count+1  #ручной режим
+	branchs=[Branch(count+1, cost_between_mesh), Branch(count-1, cost_between_blocks)]  
+	Nodes.append(Node(count, branchs, False))       #самая левая вершина
+	
+	for j in range(1, (N_sizes[sz-1]-1)):  #крайний правый блок
+		count=count+1
+		branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
+
+	count=count+1  #ручной режим
+	branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
+	Nodes.append(Node(count, branchs, False))
+
+	count=count+1
+	branchs=[Branch(count+N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
+	Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
+	
+	for i in range(1, int(M/2)):
+		count=count+1
+		branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]
+		Nodes.append(Node(count, branchs, True))       #самая левая вершина
+		for k in range(0, (sz-1)):
+
+			count=count+1  #ручной режим
+			branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
+
+			for j in range(1, (N_sizes[k]-1)):
+				count=count+1
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+				Nodes.append(Node(count, branchs, False))
+
+			count=count+1  #ручной режим
+			branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
+			Nodes.append(Node(count, branchs, False))
+
+			count=count+1  
+			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
+			Nodes.append(Node(count, branchs, True))
+		
+		count=count+1  #ручной режим
+		branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
+
+		for j in range(1, (N_sizes[sz-1]-1)):  #крайний правый блок
+			count=count+1
+			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
+
+		count=count+1  #ручной режим
+		branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
+		Nodes.append(Node(count, branchs, False))
+
+		count=count+1
+		branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
+		Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
+
+
+	count=count+1
+	branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]
+	Nodes.append(Node(count, branchs, True))       #самая левая вершина
+
+	for k in range(0, (sz-1)):
+		count=count+1  #ручной режим
+		branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
+
+		for j in range(1, (N_sizes[k]-1)):
+			count=count+1
+			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
+
+		count=count+1 #ручной режим
+		branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
+		Nodes.append(Node(count, branchs, False))
+
+		count=count+1
+		branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
+		Nodes.append(Node(count, branchs, True))
+
+	count=count+1  #ручной режим
+	branchs=[Branch(count+1, cost_between_mesh), Branch(count-1, cost_between_blocks)]  
+	Nodes.append(Node(count, branchs, False))        #самая левая вершина
+	
+	for j in range(1, (N_sizes[sz-1]-1)):  #крайний правый блок
+		count=count+1
+		branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
+
+	count=count+1  #ручной режим
+	branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
+	Nodes.append(Node(count, branchs, False))
+
+	count=count+1
+	branchs=[Branch(count-N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
+	Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
+	return(Nodes)
+
+
+
+def get_crossroad(node, N_sizes, N_size_big):  #работает!!!
+	N_size=sum(N_sizes)
+	
+	Sum=0
+	sz=len(N_sizes)
+	block_node=0
+	node_tmp=node%N_size
+
+	for i in range(0, sz):
+		Sum=Sum+N_sizes[i]
+		if(node_tmp<Sum): #<=
+			block_node=i
+			break
+	
+	cross_row=0
+	if(int((node/N_size)%2)==0):
+		cross_row=int(node/(2*N_size))
+	if(int((node/N_size)%2)==1):
+		cross_row=int(node/(2*N_size))+1  #номер горизонтальной магистрали
+	return(cross_row*N_size_big+(node_tmp+2)+block_node)
+
+
+
+def choose_node(reachable, goal_node, cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size): #goal_node это объект класса
+	sz_reachable=len(reachable)
+	H=[]
+
+	for k in range(0, sz_reachable):  #расчет эвристики в цикле для проверки
+		node1_abs=reachable[k]
+		node2_abs=goal_node
+		
+		node1=(node1_abs.number-1)%N_size+1
+		node2=(node2_abs.number-1)%N_size+1
+
+		if ((node1_abs.number%N_size)>(node2_abs.number%N_size)):  #(node1>node2):# #node1 левее node2 всегда!!!
+			tmp=node1_abs
+			node1_abs=node2_abs
+			node2_abs=tmp
+		if (node1>node2):  #(node1>node2):# #node1 левее node2 всегда!!!
+			tmp=node1
+			node1=node2
+			node2=tmp
+
+		#print("node1 = ", node1_abs.number)
+		#print("node2 = ", node2_abs.number)
+
+		sz=len(N_sizes)
+		Sum=1 
+		for i in range(0, sz): #не N_size!!
+			if(node1==Sum):
+				flag1=True
+				block_node1=i
+				break
+			Sum=Sum+N_sizes[i]+1
+			if(node1<Sum): #<=
+				block_node1=i
+				break
+		if((node1==1)and(node2!=N_size)):
+			block_node1=-1 
+			flag1=True
+		if (node1==N_size):
+			block_node1=sz
+			flag1=True
+		Sum=1
+		
+		for i in range(0, sz):
+			if(node2==Sum):
+				flag2=True
+				block_node2=i
+				break
+			Sum=Sum+N_sizes[i] + 1
+			if(node2<Sum):
+				block_node2=i
+				break
+		if(node2==1):  #для n2 это не актуально, так как node2>=node1
+			block_node2=-1  #т.е =-1
+			flag2=True
+		if (node2==N_size):
+			block_node2=sz
+			flag2=True
+		if((node1==1)and(node2==N_size)):
+			block_node1=-1
+
+		heuristic=0
+		if((block_node1==block_node2)and(block_node1!=3)and(block_node1!=-1)and(node1_abs.railroad!=True)and(node2_abs.railroad!=True)):  #
+			Sum=1
+			for j in range(0, block_node1):
+				Sum=Sum+N_sizes[j]+1
+			h1=node1-Sum
+			h2=node2-Sum
+			S1=h1+h2
+
+			Sum=1
+			for j in range(0, (block_node1+1)):
+				Sum=Sum+N_sizes[j]+1
+			h1=abs(node1-Sum)
+			h2=abs(node2-Sum)
+			S2=h1+h2
+			if(S1>S2):
+				Min=S2
+			else:
+				Min=S1	
+			heuristic=(Min-2)*cost_between_mesh+2*cost_between_blocks
+		else:
+			for j in range(node1, node2):
+				if ((Nodes[j].railroad==True)or(Nodes[j+1].railroad==True)):  #-1
+					heuristic = heuristic + cost_between_blocks
+				if ((Nodes[j].railroad==False) and (Nodes[j+1].railroad==False)):  #-1
+					heuristic = heuristic + cost_between_mesh
+	
+		row_node1=int((node1_abs.number-1)/N_size)
+		row_node2=int((node2_abs.number-1)/N_size)
+		row_difference=abs(row_node2-row_node1) 
+		heuristic=heuristic+row_difference*cost_between_rows  #вернуть!	
+		#print("heuristic = ", heuristic)
+		H.append(heuristic+reachable[k].traveled_path)
+
+	min=int(1000000*cost_between_mesh)
+	for i in range(0, sz_reachable):
+		if(H[i]<min):
+			min=H[i]
+	num=0
+	for i in range(0, sz_reachable):
+		if(H[i]==min):
+			num=i
+	return(reachable[num])
+
+
+
+def check_node_on_reachable(reachable, node): #True - входит, False - не входит
+	sz=len(reachable)
+	flag=False
+	for i in range(0, sz):
+		if(reachable[i].number==node.number):
+			flag=True
+			break
+	return(flag)
+
+
+
+def make_path(Nodes, goal_node):
+	path=[]
+	node=Nodes[goal_node.number]
+	
+	while (node.previous_node!=-1):
+		path.append(node)
+		node=Nodes[node.previous_node]
+	path.append(node) #добавляем в маршрут стартовую вершину
+	path.reverse()
+	return(path)
+	
+
+
+
+def A_star(Nodes, start_node, goal_node, cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size):   #goal_node это объект класса
+	reachable=[]
+	explored=[]
+	k=0
+	reverse=False
+	if(start_node.number==goal_node.number):
+		path=[]
+		path.append(Nodes[start_node.number])
+		path.append(Nodes[goal_node.number])
+		return(path)
+
+	else:
+		if(start_node.number>goal_node.number):
+			tmp=start_node
+			start_node=goal_node
+			goal_node=tmp
+			reverse=True
+
+		if(start_node.number==0):
+			node=Nodes[Nodes[0].branch_array[0].adjacted_node]
+			Nodes[Nodes[0].branch_array[0].adjacted_node].previous_node=0 #на нулевую вершину указывает, но почему-то не работает
+			sz=len(node.branch_array)
+			for i in range(0, sz):
+				reachable.append(Nodes[node.branch_array[i].adjacted_node])
+			explored.append(Nodes[0])
+			k=0
+	
+		if(start_node.number!=0): #тут возможно тоже что-то с нулевой вершиной сделать?
+			sz=len(start_node.branch_array)
+			for i in range(0, sz):
+				reachable.append(Nodes[start_node.branch_array[i].adjacted_node])
+			explored.append(Nodes[start_node.number])
+			k=1
+	
+		while(len(reachable)>0):
+			node=Nodes[choose_node(reachable, goal_node, cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size).number]
+			if(k==1):
+				Nodes[node.number].previous_node=Nodes[start_node.number].number
+				k=2
+
+			if(node.number==goal_node.number):
+				path=make_path(Nodes, goal_node)
+				if(start_node.number==0):
+					path.insert(0, Nodes[Nodes[0].branch_array[0].adjacted_node])
+					path.insert(0, Nodes[0])
+
+				if(reverse==True):
+					path.reverse()
+				return(path)
+
+			reachable.remove(node)
+			explored.append(node)
+
+			adjacent_nodes=[]
+			new_reachable_nodes=[] #этот массив не обновляется
+
+			sz_adj_node=len(node.branch_array)
+		
+			for i in range(0, sz_adj_node):
+				adjacent_nodes.append(Nodes[node.branch_array[i].adjacted_node])
+
+			sz_explored=len(explored) #вот это переписать надо
+			new_reachable_nodes=adjacent_nodes
+			for i in range(0, sz_explored):
+				for j in range(0, len(new_reachable_nodes)):  #sz_adj_node):
+					if(new_reachable_nodes[j].number==explored[i].number): #reachable
+						new_reachable_nodes.remove(explored[i]) #reachable
+						break 
+
+			sz_adj_node=len(new_reachable_nodes)
+			for i in range(0, sz_adj_node): #проверить этот блок, удалить break, написать make_path, протестировать алгоритм
+				if(check_node_on_reachable(reachable, new_reachable_nodes[i])==False): #т.е не знаем, как попасть в эту вершину              """and (check_node_on_reachable(explored, new_reachable_nodes[i])==True)"""
+					Nodes[new_reachable_nodes[i].number].previous_node=node.number
+					reachable.append(Nodes[new_reachable_nodes[i].number])
+			k=2	
+
+
+def make_robot_action(path, orientation, N_mesh_size, N_size, floor, start_mesh, goal_mesh): #этаж конечной вершины
+	sz=len(path)
+	robot_path=[]
+	udalennost=int(goal_mesh//N_mesh_size)%2
+	
+	if(path[0].number==path[1].number):
+		action=-1
+		if(start_mesh==goal_mesh):
+			if(floor==1):
+				action=9
+			if(floor==2):
+				action=10
+		else:
+			if(floor==1):
+				action=11
+			if(floor==2):
+				action=12
+		robot_path.append(robot_path_node(action, 1))
+
+	else:
+		for i in range(0, (sz-1)):
+			dx=path[i+1].number-path[i].number
+			if(abs(dx)==N_size):
+				if(dx>0):
+					if(orientation==2):
+						action=6
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==3):
+						action=18
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==4):
+						action=5
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					action=0
+					counter=1
+					robot_path.append(robot_path_node(action, counter))
+					orientation=1
+				if(dx<0):
+					if(orientation==1):
+						action=18
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==2):
+						action=5
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==4):
+						action=6
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					action=0
+					counter=1
+					robot_path.append(robot_path_node(action, counter))
+					orientation=3	
+
+			if(abs(dx)==1):
+				if(dx>0):
+					if(orientation==1):
+						action=5
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==3):
+						action=6
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==4):
+						action=18
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					action=0
+					counter=1
+					robot_path.append(robot_path_node(action, counter))
+					orientation=2
+				if(dx<0):
+					if(orientation==1):
+						action=6
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==2):
+						action=18
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					if(orientation==3):
+						action=5
+						counter=1
+						robot_path.append(robot_path_node(action, counter))
+					action=0
+					counter=1
+					robot_path.append(robot_path_node(action, counter))
+					orientation=4
+	
+		action=-1
+		if ((udalennost==0)and(orientation==2)):
+			if(floor==1):
+				action=1
+			if(floor==2):
+				action=2
+		if ((udalennost==1)and(orientation==2)):
+			if(floor==1):
+				action=3
+			if(floor==2):
+				action=4
+		if ((udalennost==0)and(orientation==4)):
+			if(floor==1):
+				action=3
+			if(floor==2):
+				action=4
+		if ((udalennost==1)and(orientation==4)):
+			if(floor==1):
+				action=1
+			if(floor==2):
+				action=2
+		robot_path.append(robot_path_node(action, 1))
+
+	robot_action=[]
+	sz=len(robot_path)
+	i=0
+	while(i<sz):
+		if(robot_path[i].action>0):
+			robot_action.append(robot_path[i])
+		if(robot_path[i].action==0):
+			count=0
+			while (robot_path[i].action==0):
+				count=count+1
+				i=i+1
+			robot_action.append(robot_path_node(robot_path[i-1].action, count))
+		else:
+			i=i+1
+	return(robot_action)
+
+
+
+
+
+
+
+
+
+N_sizes=[3, 2, 4]
+N_size=sum(N_sizes)+len(N_sizes)+1
+M=6
+
+
+"""N_sizes=[5, 5]
+N_size=sum(N_sizes)+len(N_sizes)+1
+print("N_size = ", N_size)
+M=6"""
+
+
+number_to_zero_node=5
+cost_between_blocks=1.5
+cost_between_rows=4
+cost_between_mesh=1
+Nodes=generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node)
+reachable=[]
+
+
+"""Nodes[33].traveled_path=cost_between_blocks
+Nodes[35].traveled_path=cost_between_blocks
+Nodes[47].traveled_path=cost_between_rows
+Nodes[21].traveled_path=cost_between_rows
+reachable.append(Nodes[33])
+reachable.append(Nodes[35])  #6
+reachable.append(Nodes[47])
+reachable.append(Nodes[21])"""
+
+#придумать штук 20 примеров на разные случаи!!!!!!
+
+
+#choose_node(reachable, Nodes[11], cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size)
+
+
+
+"""for i in range(0, len(Nodes)):   #печать вершин графа
+	print("Number = ", Nodes[i].number)
+	print("flag = ", Nodes[i].railroad)
+	sz=len(Nodes[i].branch_array)
+	for j in range(0, sz):
+		print("Branch = ", Nodes[i].branch_array[j].adjacted_node)
+		print("Branch.cost = ", Nodes[i].branch_array[j].cost)
+	print(" ")"""
+
+
+
+mesh1=0
+mesh2=0
+print("Введите номер первой ячейки: ")
+mesh1=int(input())
+print("Введите номер второй ячейки: ")
+mesh2=int(input())
+
+node1=int(get_crossroad(int(mesh1), N_sizes, N_size))
+node2=int(get_crossroad(int(mesh2), N_sizes, N_size))
+
+if (mesh1==-1):
+	node1=0
+if (mesh2==-1):
+	node2=0
+
+#print(node1)
+#print(node2)
+
+path = A_star(Nodes, Nodes[node1], Nodes[node2], cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
+for i in range(0, len(path)):
+	print("path[i] = ", path[i].number)
+
+
+print(" ")
+print(" ")
+robot_action=[]
+floor=2
+robot_action=make_robot_action(path, 2, sum(N_sizes), N_size, floor, mesh1, mesh2)
+for i in range(0, len(robot_action)):
+	print("action = ", robot_action[i].action)
+	print("count = ", robot_action[i].counter)
+	print(" ")
+	
+
+#A_star(Nodes, Nodes[4], Nodes[316], cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size)
+
+
+# насчет нулевой вершины - А стар начинается с той вершины, которая после нулевой идет!!!!!!  эвристика для нулевой вершины не считается
+
+
+

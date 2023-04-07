@@ -1,0 +1,38 @@
+
+from tkinter import *
+
+def box1():  
+    lbl.configure(text="Я же просил 1...")
+def box2():  
+    lbl.configure(text="Я же просил 2...")
+
+
+window = Tk()
+window.geometry('600x400')
+window.title("Добро пожаловать в приложение PythonRu")
+lbl = Label(window, text="", font=("Arial Bold", 30))
+#lbl = Label(window, text="Ячейка 1")  
+#lbl.grid(column=0, row=0)
+ 
+lbl.grid(column=0, row=0)  
+canvas = Canvas(height=400, width=400, bg="white", highlightthickness=0)#создаем холст поверх текущего!
+canvas.place(x=0, y=0)
+canvas.create_line(0, 200, 400, 200)
+btn1 = Button(window, text="Ячейка 1", height = 3, width = 10, command=box1)#первый высота  
+btn2 = Button(window, text="Ячейка 2", height = 3, width = 10, command=box2)#первый высота  
+btn3 = Button(window, text="Ячейка 3", height = 3, width = 10, command=box1)#первый высота
+btn1.place(x=0, y=0)#grid(column=0, row=0)
+btn2.place(x=80, y=0)#первая - горизонталь
+btn3.place(x=0, y=345)
+window.mainloop()#функция, которая ждет действий от пользователя (бесконечный цикл)
+
+
+
+
+#Place – это менеджер геометрии, который размещает виджеты, используя абсолютное позиционирование.
+#Pack – это менеджер геометрии, который размещает виджеты по горизонтали и вертикали.
+#Grid – это менеджер геометрии, который размещает виджеты в двухмерной сетке.
+
+
+
+#python graf.txt

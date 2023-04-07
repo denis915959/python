@@ -1,0 +1,111 @@
+#  python make_centr.txt
+class mesh_2D: #то, с чем мы работаем при создании склада
+    def __init__(self, number, led_num, udalennost):
+        self.number=number
+        self.led_num=led_num
+        self.udalennost=udalennost
+
+
+
+def make_centr(sklad_2D, n1, n2):
+	led_size=sklad_2D[len(sklad_2D)-1].led_num
+	N=n1+n2
+	centr=[]
+	centr.append(0)
+	centr.append(n1+1)
+	j=2
+	while led_size>(centr[j-1]+N+1):
+		centr.append(centr[j-1]+N+1)
+		j=j+1
+	print(centr) #потом убрать
+	return(centr)
+
+def create_sklad(M, n1, n2, first_is_line_of_mesh):
+	N=n1+n2
+	number=-1    #совпадает с нумерацией массива
+	led_num=1
+	udalennost=False
+	sklad_2D=[]
+	centr=[]
+
+	# начало блока создания склада
+	if (first_is_line_of_mesh==True):
+		udalennost=True
+	else:
+		udalennost=False
+	r=N*M
+	while ((number+1)<r):
+		i=0
+		for i in range(0, n1):
+			number=number+1
+			sklad_2D.append(mesh_2D(0, 0, False))
+			sklad_2D[number].led_num=led_num
+			sklad_2D[number].udalennost=udalennost
+			sklad_2D[number].number=number
+			led_num=led_num+1
+		led_num=led_num+1
+		i=0
+		for i in range(0, n2):
+			number=number+1
+			sklad_2D.append(mesh_2D(0, 0, False))
+			sklad_2D[number].led_num=led_num
+			sklad_2D[number].udalennost=udalennost
+			sklad_2D[number].number=number
+			led_num=led_num+1
+		if (udalennost==True):
+			led_num=led_num-N-1
+		udalennost=not(udalennost)
+	make_centr(sklad_2D, n1, n2)
+	return (sklad_2D)
+
+
+
+
+
+
+M=4
+n1=1
+n2=1
+first_is_line_of_mesh=True
+
+sklad_2D=create_sklad(M, n1, n2, first_is_line_of_mesh)
+
+
+#вывод в консоль для проверки
+i=0
+size=len(sklad_2D)
+for i in range(0, size):  #number +1
+	print('num: ', sklad_2D[i].number)
+	#print(sklad_2D[i].number)
+	print('led_num: ', sklad_2D[i].led_num)
+	#print(sklad_2D[i].led_num)
+	print('udalennost: ', sklad_2D[i].udalennost)
+	#print(sklad_2D[i].udalennost)
+	print(' ')
+
+
+"""n1=2
+n2=1
+N=3
+number_row=0;#номер ряда стеллажей
+
+led_number=5 #вводится пользователем, в основном коде удалить!!!!!
+
+led_count=12 #количество светодиодов
+centr=[]
+centr.append(0)
+centr.append(n1+1)
+i=2
+while led_count>(centr[i-1]+N+1):
+	centr.append(centr[i-1]+N+1)
+	i=i+1
+print(centr)
+
+number_row=led_number//(N+1)+1
+if led_number%(N+1)==0:
+	number_row=number_row-1
+range1=(number_row-1)*(N+1)+1
+range2=number_row*(N+1)
+print(range1)
+print(range2)
+"""

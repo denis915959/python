@@ -1,0 +1,22 @@
+#  python send_to_python.txt
+
+import serial
+ser = serial.Serial('COM30', baudrate = 9600)   #, timeout=2) #настройка порта
+
+flag_end_sending=0
+while (flag_end_sending==0):
+	arduinoData=ser.read()
+	arduinoData=str(arduinoData)
+	#print(arduinoData)
+
+
+
+	sz=len(arduinoData)
+	for i in range (0, sz):  #расшифровка
+		if (arduinoData[i]=='1'):
+			flag_end_sending=1
+			print(flag_end_sending)
+			break
+	
+	#if (arduinoData=="b'1'"):
+		#print('Победа!')

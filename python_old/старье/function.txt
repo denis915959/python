@@ -1,0 +1,16 @@
+cost = [3000.75, 5000, 1000, 10000]#квадратные скобки - массив, круглые - кортеж!
+for i in range(0, 3):
+    float(cost[i])
+def cost_with_sale(sale, cost):#массив можно передавать как массив, и возвращать как массив без всяких указателей!
+    size=len(cost)
+    for i in range(0, size):
+        cost[i]=(100-sale)*cost[i]/100
+    return cost
+sale=int(input())
+#cost=float(input())
+cost=cost_with_sale(sale, cost)
+size=len(cost)
+for i in range(0, size):
+    print('Цена со скидкой', i+1, '-го товара %.2f' % cost[i])#без запятой только где %.f 
+
+#python function.txt

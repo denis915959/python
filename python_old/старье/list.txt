@@ -1,0 +1,15 @@
+#python list.txt
+#то есть создается пустой массив, к нему с помощью append добавляются элементы. доступ через []
+class signal:
+	def __init__(self, f, d):#по сути, в конструкторе объявляем переменные!
+		self.f=f
+		self.d=d
+s1=signal(3, 1)
+s2=signal(5, 2)
+centr=[]
+s=[]
+s.append(signal(0, 0))
+s[0].f=1
+centr.append(s2)
+s3=centr[0]
+print(s3.f)

@@ -1,0 +1,140 @@
+#    python to_file.txt
+#    C:\Users\denis\OneDrive\Рабочий стол\python\для\save_1.txt
+from tkinter import *
+import tkinter.filedialog as fd
+window = Tk()
+
+class mesh_2D: #то, с чем мы работаем при создании склада  (отсутствует номер этажа)
+    def __init__(self, number, led_num, udalennost):
+        self.number=number
+        self.led_num=led_num
+        self.udalennost=udalennost
+
+
+sklad_2D=[]
+	
+
+def open_sklad_from_file():
+	filetypes = (("Текстовый файл", "*.txt"), ("Изображение", "*.jpg *.gif *.png"), ("Любой", "*"))
+	file_path = fd.askopenfilename(title="Открыть файл", initialdir="/", filetypes=filetypes)  #получаем путь до файла!
+	if file_path:
+		file=open(file_path, "r")
+		port_r=str(file.readline())
+		port_arr=[]
+		j=0
+		"""while (port_r[j]!='\\'):
+			port_arr.append(port_r[j])
+			j=j+1"""
+		#port=str(port_arr)
+		port=port_r
+		print(port)
+		"""size_file=0
+		st=' '
+		#считаем количество строк в файле	
+		while(1):
+			st=file.readline()
+			if (st==''):
+				break
+			size_file=size_file+1	
+		file.seek(0,0)  #каретка в начало файла
+		M=int(file.readline())
+		n1=int(file.readline())
+		n2=int(file.readline())
+		first_is_line_of_mesh=bool(file.readline())
+		
+		print('M=', M)
+		print('n1=', n1)
+		print('n2=', n2)
+		print('first_is_line_of_mesh=', first_is_line_of_mesh)
+	
+		#записываем данные в sklad_2D
+		size_sklad_2D=int((size_file-4)/3)
+		for j in range(0, size_sklad_2D):  
+			number=int(file.readline())
+			led_num=int(file.readline())
+			udalennost_str=file.readline()
+			if (udalennost_str=='True\n'):
+				udalennost=True
+			if (udalennost_str=='False\n'):
+				udalennost=False
+			sklad_2D.append(mesh_2D(number, led_num, udalennost))
+	
+		sz=len(sklad_2D)
+		for j in range(0, sz):
+			print(sklad_2D[j].number)
+			print(sklad_2D[j].led_num)
+			print(sklad_2D[j].udalennost)
+			print(' ')
+		print('end')"""
+
+
+
+
+
+button_save_pin_array=Button(window, text="Сохранить схему подключения в файл", command=open_sklad_from_file).place(x=100, y=200)
+window.mainloop()
+
+
+
+"""def write_data_of_MK_file(file):  #массив пинов, название микроконтроллера, путь до файла
+	file=open(path, "r") 
+	size_file=0
+	str=None
+
+	#считаем количество строк в файле	
+	while(1):
+		str=file.readline()
+		if (str==''):
+			break
+		size_file=size_file+1	
+	
+	file.seek(0,0)  #каретка в начало файла
+	M=int(file.readline())
+	n1=int(file.readline())
+	n2=int(file.readline())
+	first_is_line_of_mesh=bool(file.readline())
+	
+	print('M=', M)
+	print('n1=', n1)
+	print('n2=', n2)
+	print('first_is_line_of_mesh=', first_is_line_of_mesh)
+
+	i=0
+	#записываем данные в sklad_2D
+	size_sklad_2D=int((size_file-4)/3)
+	for j in range(0, size_sklad_2D):  
+		number=int(file.readline())
+		led_num=int(file.readline())
+		udalennost=bool(file.readline())
+		sklad_2D.append(mesh_2D(number, led_num, udalennost))
+
+
+	sz=len(sklad_2D)
+	for j in range(0, size_sklad_2D):
+		print(sklad_2D[j].number)
+		print(sklad_2D[j].led_num)
+		print(sklad_2D[j].udalennost)
+		print(' ')
+
+	file.close()"""
+
+
+
+	
+
+
+
+#1) разбираемся с измененем пути  +
+#2) пробуем записать массив строк  +
+#3) пишем функцию записи массива строк (в параметрах путь и массив)    +
+#4) окончательную схему вызова функций формируем   +
+#5) делаем все, кроме отправки signals на склад (пока в консоль печатаем)    +
+#6) функция отправки массива на склад  +
+#7)полная реализация!!!  +
+
+
+#import pathlib
+#from pathlib import Path
+
+#  C:\Users\denis\OneDrive\Рабочий стол\python\для\tx_test.txt
+

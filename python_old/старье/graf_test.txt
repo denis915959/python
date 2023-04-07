@@ -1,0 +1,142 @@
+# python graf_test.txt
+
+
+from tkinter import *
+import tkinter.filedialog as fd
+window = Tk()
+
+	
+
+def choose_file():
+	filetypes = (("Текстовый файл", "*.txt"), ("Изображение", "*.jpg *.gif *.png"), ("Любой", "*"))
+	filename = fd.askopenfilename(title="Открыть файл", initialdir="/", filetypes=filetypes)
+	if filename:
+		print(filename)
+
+btn_file = Button(text="Выбрать файл", command=choose_file)
+btn_file.pack(padx=60, pady=10)
+window.mainloop()
+
+
+
+
+
+
+
+"""def write_data_of_MK_file(pin_arr, mk_name):   #новая функция записи в файл
+	new_file = fd.asksaveasfile(title="Сохранить файл", defaultextension=".txt", filetypes=(("Текстовый файл", "*.txt"),))
+	if new_file:
+		new_file.write('Используйте микроконтроллер '+ mk_name)
+		new_file.write('\nled       pin')
+		pin_arr_sz=len(pin_arr)
+		for i in range(0, pin_arr_sz):
+			new_file.write('\n'+str(pin_arr[i].led) + '          ' + str(pin_arr[i].pin))
+	new_file.close()
+
+
+
+window = Tk()
+mk_name='Arduino UNO'
+btn_save = Button(window, text="Сохранить", command=lambda *args: write_data_of_MK_file(pin_arr, mk_name)).place(x=200, y=200)
+
+window.mainloop()"""
+
+
+
+
+"""def ft():
+    global kh, label_data
+    if label_data is None:
+        label_data = Label(root,text = 'Введенное число %s')
+        label_data.pack()
+    
+    if kh == 1:
+        kh = 0
+        label_data.pack_forget()
+        label_data = None
+    else:
+        kh += 1
+root = Tk()
+ 
+name = Label(root,text='Введите число и нажмите кнопкy ')
+name.pack()
+entr = Entry(root)
+entr.pack(pady=10)
+ 
+button = Button(root, text='Нажать кнопку', command = ft)
+ 
+button.pack()
+ 
+root.mainloop()
+"""
+
+
+
+
+"""from tkinter import * 
+#import tkinter as tk
+count=0
+def box1():  
+	global count
+	count=count+1
+def test(window1, centr):
+	bt1=Button(window1, text='1',font=12, height = 10, width = 10, command = box1)
+	bt1.place(x=1200, y=0)
+	print(centr)
+	window1.mainloop()
+window = Tk()
+centr=[]
+centr.append(1)
+centr2=[]
+centr2.append(2)
+test(window, centr2)
+
+print('count=', count)"""
+
+"""screen_width = int(window.winfo_screenwidth())  #0.83
+screen_height = int(window.winfo_screenheight())
+#window.geometry('1530x800')
+window.state('zoomed')
+print(screen_width)
+print(screen_height)
+
+font_size=30
+k=1
+m=2
+
+Font='Arial ' + str(font_size)
+
+
+string=str(k)+'.'+str(m)
+print(string)
+
+w_button=5  #3
+h_button=3  #2
+
+
+
+bt1=Button(window, text=string,font=Font, height = h_button, width = w_button, command = box1)
+bt1.place(x=1200, y=0)
+"""
+
+
+
+"""print('height = ', bt1.winfo_height())
+print('width = ', bt1.winfo_width())
+
+x=w_button*font_size
+k=k+1
+string=str(k)+'.'+str(m)
+
+bt2=Button(window, text=string,font=Font, height = h_button, width = w_button, command = box1)
+bt2.place(x=x, y=0)
+
+
+k=k+1
+string=str(k)+'.'+str(m)
+#bt3=Button(window, text=string,font=Font, height = h_button, width = w_button, command = box1)
+#bt2.place(x=x, y=0)
+"""
+
+
+

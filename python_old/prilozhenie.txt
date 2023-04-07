@@ -1,0 +1,114 @@
+# python prilozhenie.txt
+
+"""from tkinter import *
+
+def command_make_sklad(window):
+	n1_label=Label(text='Введите ширину левой части склада:', font='Arial 13')#.place(x=1200, y=100, anchor='sw')
+	
+	n1_entry=Entry().place(x=1500, y=100, anchor='sw')    #window
+	n1_entry.bind('<Return>', get)
+	button_call_make_sklad=Button(window, text='Создать склад', font='Arial 14', height = 12, width = 2, command=lambda *args:call_make_sklad(n1_entry)).place(x=1200, y=400, anchor='sw')
+	#n1=int(n1_entry.get())
+
+def get(event): #срабатывает при наступлении любого события
+	n1=n1_label.get()
+	print(n1)
+
+
+def call_make_sklad(n1_entry):    #Название сменить
+	n1_text =n1_entry.get()   #Что-то здесь не так
+	#num2 =(n2.get()) 
+	#result = int(num1)+int(num2) 
+	n1_str=str(n1_text)
+	label_res_test=Label(text=n1_str, font='Arial 13').place(x=1200, y=600, anchor='sw') 
+	#return 
+
+
+window = Tk()
+
+window.state('zoomed')#полноэкранный режим
+#window.geometry('1535x840')#дляя полноэкранного режима не актуально?
+window.resizable (False, False)
+main_menu=Menu()
+file_menu=Menu()
+file_menu.add_command(label = "Создать склад", font='Arial 14', command=lambda *args:command_make_sklad(window))
+file_menu.add_command(label = "Открыть склад", font='Arial 14')  #command=
+main_menu.add_cascade(label="Файл", menu=file_menu)
+window.config(menu=main_menu)
+window.mainloop()"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import tkinter as tk 
+from functools import partial 
+  
+  
+def call_result(root,  n1, n2, M, first_is_line_of_mesh): # label_result
+	num1 =n1.get()
+	num2 =n2.get()
+	num3 =M.get()
+	num4 =first_is_line_of_mesh.get()
+	str1='n1=' +str(num1)
+	str2='n2=' +str(num2)
+	str3='M=' +str(num3)
+	str4='first=' +str(num4)
+	l1=tk.Label(root, text=str1).grid(row=6, column=0)
+	l2=tk.Label(root, text=str2).grid(row=7, column=0)
+	l3=tk.Label(root, text=str3).grid(row=8, column=0)
+	l4=tk.Label(root, text=str4).grid(row=9, column=0)
+	#label_result.config(text="Result = %d" % result) 
+	return 
+  
+root = tk.Tk() 
+root.geometry('400x200+100+200') 
+ 
+root.title('Calculator') 
+  
+"""n1_buf = tk.StringVar() #считывает введенное значение из виджета 
+n2_buf = tk.StringVar()
+M_buf = tk.StringVar() 
+first_is_line_of_mesh_buf = tk.StringVar() """ 
+ 
+labelNum1 = tk.Label(root, text="n1").grid(row=1, column=0) 
+ 
+labelNum2 = tk.Label(root, text="n2").grid(row=2, column=0) 
+ 
+labelM = tk.Label(root, text="M").grid(row=3, column=0) 
+ 
+labelfirst = tk.Label(root, text="first").grid(row=4, column=0)
+
+
+n1_buf = tk.StringVar() #считывает введенное значение из виджета 
+n2_buf = '0' #tk.StringVar()
+M_buf = '0' #tk.StringVar() 
+first_is_line_of_mesh_buf = tk.StringVar()   
+ 
+entry_n1 = tk.Entry(root, textvariable=n1_buf).grid(row=1, column=2) 
+ 
+entry_n2 = tk.Entry(root, textvariable=n2_buf).grid(row=2, column=2) 
+
+entry_M = tk.Entry(root, textvariable=M_buf).grid(row=1, column=2) 
+ 
+entry_first_is_line_of_mesh = tk.Entry(root, textvariable=first_is_line_of_mesh_buf).grid(row=1, column=2) 
+
+
+
+
+#entry_first_is_line_mesh = tk.Entry(root, textvariable=number2).grid(row=2, column=2) 
+#call_result = partial(call_result, labelResult, number1, number2) 
+ 
+buttonCal = tk.Button(root, text="Calculate", command=lambda *args:call_result(root,  n1_buf, n2_buf, M_buf, first_is_line_of_mesh_buf)).grid(row=5, column=0) #command=call_result #"""labelResult,"""
+ 
+root.mainloop() 

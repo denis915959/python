@@ -1,0 +1,131 @@
+# python heuristic.txt
+
+class Mesh:
+	def __init__(self, m_number):
+		self.number=m_number 
+
+class Branch:
+	def __init__(self, adjacted_node1, cost1):
+		self.adjacted_node=adjacted_node1
+		self.cost=cost1
+
+class Node:
+	def __init__(self, num, branch_arr):
+		self.number=num
+		self.branch_array=branch_arr
+
+def get_heuristic(node1 , node2, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh): # cost_between_blocks- расстояние между ПЕРЕКРЕСТКАМИ справа и слева
+	result=0
+	N_size=sum(N_sizes) #находим длину ряда стеллажей (заменить на N?????????)
+
+	if (node1>node2):
+		tmp=node1
+		node1=node2
+		node2=tmp
+
+	row_node1=int(node1/N_size)
+	row_node2=int(node2/N_size)
+	row_difference=abs(row_node2-row_node1)
+	#print(row_difference)
+
+	if((row_node1%2==0)and(row_node2%2==1)):
+		result=result+(int(row_difference/2) + 1)*cost_between_rows
+	else:
+		result=result+int(row_difference/2)*cost_between_rows
+	
+	#print(int(3/2))
+
+	#difference_abs=abs(node2-node1) #абсолютная разница между ячейками
+	node1=node1%N_size
+	node2=node2%N_size
+
+	"""if (node1>node2):
+		tmp=node1
+		node1=node2
+		node2=tmp"""
+
+	Sum=0
+	block_node1=0
+	block_node2=0
+	for i in range(0, N_size):
+		Sum=Sum+N_sizes[i]
+		if(node1<Sum):
+			block_node1=i
+			break
+
+	Sum=0
+	for i in range(0, len(N_sizes)):
+		Sum=Sum+N_sizes[i]
+		if(node2<Sum):
+			block_node2=i
+			break
+	result=result + abs(block_node2-block_node1)*cost_between_blocks
+	print("diff=", block_node2-block_node1)
+
+
+	result=result+(abs(node2-node1)-abs(block_node2-block_node1))*cost_between_mesh
+	print(result)
+
+
+
+
+N_sizes=[3, 2, 4]
+get_heuristic(36, 45, N_sizes, 3, 4, 1)
+
+"""input_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\test_heuristic.txt", "r") #считываем ребра из файла
+size_file=0
+
+while(1):
+	s=input_file.readline()
+	if (s==''):
+		break
+	size_file=size_file+1
+#print(size_file)
+input_file.seek(0)  #каретка в начало файла
+
+mesh_array=[]
+node_array=[]
+
+# записываем данные о ребрах из файла в двумерный массив Е
+for j in range(0, size_file):
+	array_tmp=[]
+	string_tmp_input=input_file.readline()
+	
+	i=0
+	tmp=0
+	while string_tmp_input[i]!=' ':
+		tmp=tmp*10+int(string_tmp_input[i])
+		i=i+1
+	mesh_array.append(Mesh(tmp))
+	tmp=0
+	tmp_branch_node=0
+	tmp_cost=0
+	i=i+1
+	while string_tmp_input[i]!=' ':
+		tmp=tmp*10+int(string_tmp_input[i])
+		i=i+1
+
+	i=i+1
+	while string_tmp_input[i]!=' ':
+		tmp_branch_node=tmp_branch_node*10+int(string_tmp_input[i])
+		i=i+1
+
+
+	i=i+1
+	for j in range(i, len(string_tmp_input)-1):
+		tmp_cost=tmp_cost*10+int(string_tmp_input[j])
+
+	node_array.append(Node(tmp, Branch(tmp_branch_node, tmp_cost)))
+
+size=len(node_array)
+for i in range(0, size):
+	print("mesh_array.number = ", mesh_array[i].number)
+	print("node_array.number = ", node_array[i].number)
+	print("node_array.branch_array.adjacted_node = ", node_array[i].branch_array.adjacted_node)
+	print("node_array.branch_array.cost = ", node_array[i].branch_array.cost)
+
+
+
+input_file.close()
+"""
+

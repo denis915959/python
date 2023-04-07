@@ -1,0 +1,16 @@
+from tkinter import *
+#window = Tk()
+#window.geometry('2000x1000')
+#window.title("Добро пожаловать в приложение PythonRu")
+tk=Tk()
+canvas = Canvas(tk, height=2000, width=1000, bg="white", highlightthickness=0)#создаем холст поверх текущего!
+canvas.pack()
+My_image=PhotoImage(file='C:\\Users\\denis\\OneDrive\\Рабочий стол\\ZVEZDA.gif') 
+canvas.create_image(0, 0, anchor = NW, image = My_image) #anchor = NW указывает точку отсчета (левый верхний угол в нашем случае)
+tk.mainloop()#функция, которая ждет действий от пользователя (бесконечный цикл)
+
+
+
+
+
+#python graf2.txt

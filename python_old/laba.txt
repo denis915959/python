@@ -1,0 +1,325 @@
+# python test_rand.txt
+import random 
+import time
+import math
+
+# признак конца файла входных данных - пустая строка 
+
+class Node:  #класс вершина для реализации дерева
+	def __init__(self, number1, parent1):
+		self.number=number1 #
+		self.parent=parent1
+
+class node_generate_graf:
+	def __init__(self, n1, rank1):
+		self.n=n1
+		self.rank=rank1
+
+
+def find(elem, K):   #нумерация с нуля!!!!!!!!
+	res=-1
+	for i in range(0, len(K)):
+		for j in range(0, len(K[i])):
+			if(K[i][j]==elem):
+				res=i
+	return res
+
+
+
+
+def union(num1, num2, K):   #объединяет 2 массива из множества К, содержащие elem1 и elem2
+	tmp=[]
+	for i in range(0, len(K[num1])):
+		tmp.append(K[num1][i])
+	for i in range(0, len(K[num2])):
+		tmp.append(K[num2][i])
+	K.pop(num1)
+	K.insert(num1, tmp)
+	K.pop(num2)
+	return(K)
+
+def Ram(E, m, n): 
+	comp=[]
+	E_temp=[]
+	node_list=[] #массив с номерами вершин
+	#size_E=len(E)
+
+	# массив с неповторяющимися номерами вершин
+	for i in range(0, n):
+		node_list.append(i+1)
+
+	K=[] #коллекция компонент связности, т.е двумерный массив 
+	for i in range(0, len(node_list)):
+		tmp=[]
+		tmp.append(node_list[i])
+		K.append(tmp)
+	n=len(K)
+
+	#сам алгоритм Рэма:
+	for i in range(0, m):
+		n1=find(E[i][0], K)
+		n2=find(E[i][1], K)
+		if (n1!=n2):
+			K=union(n1, n2, K)
+	#формируем массив comp
+	for i in range(1, n+1):
+		comp.append(find(i, K))
+
+	return(comp)
+
+
+
+
+
+
+
+def find_tree(elem, K):   #нумерация с нуля!!!!!!!!
+	num = elem-1
+	flag=False #была ли хоть одна итерация цикла
+	while K[num].parent!=-1:    #так как массив начинается с 0, а вершины графа с 1
+		num=K[num].parent-1 
+		flag=True
+	if flag==True:
+		return (num+1)
+	else:
+		return (K[elem-1].number)  #так как массив начинается с 0, а вершины графа с 1
+
+
+def union_tree(num1, num2, K):
+	root1=find_tree(num1, K)
+	root2=find_tree(num2, K)
+	if (K[root1-1].number > K[root2-1].number):
+		K[root1-1].parent=root2
+	else:
+		K[root2-1].parent=root1
+	
+	return(K)
+
+
+def Ram_tree(E, m, n): 
+	comp=[]
+	E_temp=[]
+	node_list=[] #массив с номерами вершин
+
+	# массив с неповторяющимися номерами вершин
+
+	for i in range(0, n):
+		node_list.append(i+1)
+
+	K=[] #коллекция компонент связности, т.е двумерный массив 
+	for i in range(0, len(node_list)):
+		tmp=Node(node_list[i], -1) #все вершины в начале - корни
+		K.append(tmp) # К - массив объектов класса
+	n=len(K) 
+
+	for i in range(0, m): #сам алгоритм Рэма
+		n1=find_tree(E[i][0], K)
+		n2=find_tree(E[i][1], K)
+		if (n1!=n2):
+			K=union_tree(n1, n2, K)
+	
+	comp=[]
+	for i in range(1, n+1):
+		comp.append(find_tree(i, K))
+
+	return(comp)
+
+def check_connectivity(E, m, n): #проверка графа на связность
+	comp=[]
+	comp=Ram_tree(E, m, n)
+	
+	comp.sort() #находим число компонент связности
+	comp_list=[]
+	comp_list.append(comp[0])
+	comp_sz=len(comp)
+	for i in range (1, comp_sz):
+		if(comp[i-1]!=comp[i]):
+			comp_list.append(comp[i])
+	if (len(comp_list)==1):
+		return (True)
+	else:
+		return (False)
+
+
+
+
+
+
+
+
+E=[]
+input_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\test_data.txt", "r") #считываем ребра из файла
+size_file=0
+
+while(1):
+	s=input_file.readline()
+	if (s==''):
+		break
+	size_file=size_file+1
+#print(size_file)
+input_file.seek(0)  #каретка в начало файла
+
+
+# записываем данные о ребрах из файла в двумерный массив Е
+for j in range(0, size_file):
+	array_tmp=[]
+	string_tmp_input=input_file.readline()
+	
+	i=0
+	tmp=0
+	while string_tmp_input[i]!=' ':
+		tmp=tmp*10+int(string_tmp_input[i])
+		i=i+1
+	array_tmp.append(tmp)
+	tmp=0
+	i=i+1
+	for i in range(i, len(string_tmp_input)-1):
+		tmp=tmp*10+int(string_tmp_input[i])
+	array_tmp.append(tmp)
+	E.append(array_tmp)
+input_file.close()
+
+"""
+#для выполнения задания 2.4
+output_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\test_res4.txt", "a")
+output_file.write(str(1) + ' ' + str(0) + '\n')
+n=11
+step=10
+while(n<1001):
+	V=[] #массив вершин, нумерация элементов с 0, номера вершин с 1
+	for i in range(0, n): #формируем массив V
+		V.append(node_generate_graf(i+1, 0))
+	E=[] #2D массив ребер графа
+	flag_connectivity=False
+	while(not flag_connectivity):
+		n1_tmp=random.randint(1,n)
+		while(V[n1_tmp-1].rank==n-1):
+			n1_tmp=random.randint(1, n)
+		V[n1_tmp-1].rank=V[n1_tmp-1].rank+1
+
+		n2_tmp=random.randint(1, n)
+		flag_repeat=False #фдаг наличия ребра в массиве Е
+		if(n1_tmp>n2_tmp): # делаем E[i][0] < E[i][1] чтобы делать меньше проверок в цикле
+			t=n2_tmp
+			n2_tmp=n1_tmp
+			n1_tmp=t
+		E_size=len(E)
+		for j in range(0, E_size):
+			if((E[j][0]==n1_tmp) and (E[j][1]==n2_tmp)): #если ребро уже существует, генерируем другой индекс второй вершины
+				flag_repeat=True
+				break
+			else:
+				flag_repeat=False
+		while ((n1_tmp==n2_tmp) or (flag_repeat==True)):
+			n2_tmp=random.randint(1, n)
+			flag_repeat=False #фдаг наличия ребра в массиве Е
+			if(n1_tmp>n2_tmp): # делаем E[i][0] < E[i][1] чтобы делать меньше проверок в цикле
+				t=n2_tmp
+				n2_tmp=n1_tmp
+				n1_tmp=t
+			for k in range(0, E_size):
+				if((E[k][0]==n1_tmp) and (E[k][1]==n2_tmp)): #если ребро уже существует, генерируем другой индекс второй вершины
+					flag_repeat=True
+					break
+				else:
+					flag_repeat=False
+
+
+		tmp_to_E=[]
+		tmp_to_E.append(n1_tmp)
+		tmp_to_E.append(n2_tmp)	
+		E.append(tmp_to_E)
+
+		flag_connectivity=check_connectivity(E, len(E), n)
+
+	output_file.write(str(n) + ' ' + str(len(E)) + '\n')
+	print(len(E))
+	"""for i in range (0, len(E)):	 #выводим ребра графа на экран
+		print('ребро', i+1)
+		print(E[i][0], '         ', E[i][1])
+		print('')"""
+	n=n+step
+	
+
+
+
+
+"""
+
+
+
+
+ #для выполнения задания 2.1-2.3
+n=1
+step=10
+output_file=open("C:\\Users\\denis\\OneDrive\\Рабочий стол\\python\\test_res1.txt", "a")
+while (n<=1001):
+
+	print(n)
+
+	V=[] #массив вершин, нумерация элементов с 0, номера вершин с 1
+	m=int(n*n/10)
+	print('m=', m)
+
+	for i in range(0, n): #формируем массив V
+		V.append(node_generate_graf(i+1, 0))
+
+	E=[] #2D массив ребер графа
+
+	for i in range(0, m): #формируем массив ребер
+		n1_tmp=random.randint(1,n)
+		while(V[n1_tmp-1].rank==n-1):
+			n1_tmp=random.randint(1, n)
+		V[n1_tmp-1].rank=V[n1_tmp-1].rank+1
+
+		n2_tmp=random.randint(1, n)
+		flag_repeat=False #фдаг наличия ребра в массиве Е
+		if(n1_tmp>n2_tmp): # делаем E[i][0] < E[i][1] чтобы делать меньше проверок в цикле
+			t=n2_tmp
+			n2_tmp=n1_tmp
+			n1_tmp=t
+		E_size=len(E)
+		for j in range(0, E_size):
+			if((E[j][0]==n1_tmp) and (E[j][1]==n2_tmp)): #если ребро уже существует, генерируем другой индекс второй вершины
+				flag_repeat=True
+				break
+			else:
+				flag_repeat=False
+		while ((n1_tmp==n2_tmp) or (flag_repeat==True)):
+			n2_tmp=random.randint(1, n)
+			flag_repeat=False #фдаг наличия ребра в массиве Е
+			if(n1_tmp>n2_tmp): # делаем E[i][0] < E[i][1] чтобы делать меньше проверок в цикле
+				t=n2_tmp
+				n2_tmp=n1_tmp
+				n1_tmp=t
+			for k in range(0, E_size):
+				if((E[k][0]==n1_tmp) and (E[k][1]==n2_tmp)): #если ребро уже существует, генерируем другой индекс второй вершины
+					flag_repeat=True
+					break
+				else:
+					flag_repeat=False
+
+
+		tmp_to_E=[]
+		tmp_to_E.append(n1_tmp)
+		tmp_to_E.append(n2_tmp)	
+		E.append(tmp_to_E)
+
+	comp=[]
+	t1=time.process_time()
+	comp=Ram(E, m, n)
+	t2=time.process_time()
+	t_Ram=t2-t1
+	print('Ram time = ', t_Ram)
+
+	t1=time.process_time()
+	comp = Ram_tree(E, m, n) #len(E)
+	t2=time.process_time()
+	t_Ram_tree=t2-t1
+	print('Ram tree time  = ', '%.8f' % t_Ram_tree)
+
+	output_file.write(str(n) + ' ')
+	output_file.write(str('%.10f' % t_Ram) + ' ')
+	output_file.write(str('%.10f' % t_Ram_tree)+'\n')
+	
+	n=n+step

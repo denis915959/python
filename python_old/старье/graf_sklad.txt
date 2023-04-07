@@ -1,0 +1,361 @@
+#   python graf_sklad.txt
+
+from tkinter import *
+
+def box1():  
+	print(' ')#lbl.configure(text="Я же просил 1...")
+	#lbl.configure(text=str(k))
+	#s = "Hello World"
+	#text.insert(1.0, s)
+	#s = text.get(1.0, END)
+	#label['text'] = s
+
+	
+def box2():  
+	print(k)#lbl.configure(text="Я же просил 1...")
+	#lbl.configure(text=str(k))
+	#s = "Hello World"
+	#text.insert(1.0, s)
+	#s = text.get(1.0, END)
+	#label['text'] = s
+
+
+class mesh_2D: #то, с чем мы работаем при создании склада
+	def __init__(self, number, led_num, udalennost):
+		self.number=number
+		self.led_num=led_num
+		self.udalennost=udalennost
+
+window = Tk()
+
+window.state('zoomed')#полноэкранный режим
+#window.geometry('1535x840')#дляя полноэкранного режима не актуально?
+window.resizable (False, False)#.title("Добро пожаловать в приложение PythonRu")
+#lbl = Label(window, text="", font=("Arial Bold", 30))
+window_width = int(window.winfo_screenwidth())  #1536
+window_height = int(window.winfo_screenheight()) -200 #864          -50
+print(window_width)
+print(window_height)
+
+#lbl.grid(column=0, row=0)  
+canvas = Canvas(height=840, width=1535, bg="white", highlightthickness=0)#создаем холст поверх текущего!
+canvas.place(x=0, y=0)
+#canvas.create_line(0, 200, 400, 200)
+#btn1 = Button(window, text="Ячейка 1", height = 3, width = 10, command=box1)#первый высота  
+
+#btn1.place(x=0, y=0)#grid(column=0, row=0)
+
+button_array=[] #массив классов типа кнопка
+sklad_2D=[]
+
+#M=int(input('Введите M = '))  #M=13 #фактически - блок констант.  до 15 все отлично 
+M=2
+n1=1
+n2=1
+N=n1+n2
+r=0
+first_is_line_of_mesh=True
+
+number=-1
+led_num=1
+if (first_is_line_of_mesh==True):
+	udalennost=True
+else:
+	udalennost=False
+r=N*M
+while ((number+1)<r):
+	i=0
+	for i in range(0, n1):
+		number=number+1
+		sklad_2D.append(mesh_2D(0, 0, False))
+		sklad_2D[number].led_num=led_num
+		sklad_2D[number].udalennost=udalennost
+		sklad_2D[number].number=number
+		led_num=led_num+1
+	led_num=led_num+1
+	i=0
+	for i in range(0, n2):
+		number=number+1
+		sklad_2D.append(mesh_2D(0, 0, False))
+		sklad_2D[number].led_num=led_num
+		sklad_2D[number].udalennost=udalennost
+		sklad_2D[number].number=number
+		led_num=led_num+1
+	if (udalennost==True):
+		led_num=led_num-N-1
+	udalennost=not(udalennost)
+
+centr=[]#массив номеров центральных светодиодов
+centr.append(0)
+centr.append(n1+1)
+j=2
+while led_num>(centr[j-1]+N+1):
+	centr.append(centr[j-1]+N+1)
+	j=j+1
+print(centr) #потом убрать
+
+
+#sklad_2D.append(mesh_2D(0, 1, True))
+#sklad_2D.append(mesh_2D(1, 2, True))
+#sklad_2D.append(mesh_2D(2, 4, True))
+#sklad_2D.append(mesh_2D(3, 1, False))
+#sklad_2D.append(mesh_2D(4, 2, False))
+#sklad_2D.append(mesh_2D(5, 4, False))
+
+
+button_scale=0
+
+#ЭТАЛОНЫ
+h_button_standard=3 #высота кнопки в шрифтах, 3
+w_button_standard=6 #ширина кнопки в ШИРИНЕ шрифта, 10
+h_shift_standard=10 #отступ вверх в шрифтах
+w_shift_standard=14  #отступ в ШИРИНЕ шрифта
+convert=2.39
+
+
+#button_scale
+
+
+#h_button=3 #высота кнопки в условных единицах, 3
+#shift_up=100 #отступ вверх в пикселях, 100
+
+
+x=0#переменные
+y=0#, так как сверху надпись высотой 40 пикселей
+
+
+j=0
+i=0
+k=0   #счетчик массива button_array
+sklad_count=0 #счетчик массива sklad
+h_font=30
+
+
+
+h_sklad=(len(centr)-1)*h_shift_standard+h_button_standard*M
+w_sklad=(N*w_button_standard+w_shift_standard)/convert
+print ('h_sklad=', h_sklad)
+print ('w_sklad=', w_sklad)
+
+
+#h_sklad=h_button*ratio_height*M+shift_up*(len(centr)-1)  #высота склада
+#w_sklad=w_button*ratio_width*N*2+shift_right  #длина склада
+#print('h_sklad=', h_sklad)
+#print('w_sklad=', w_sklad)
+
+"""first_is_line_of_mesh=True
+
+w_sklad=N+4/3
+if ((first_is_line_of_mesh==True)and(M%2==0)):
+	h_sklad=(M + 2*M//2)/1.75
+else:
+	h_sklad=(M+2*M//2+1)/1.75
+
+"""
+
+
+
+
+if (h_sklad<=w_sklad):
+
+
+	"""ratio_width=7.7 #коэффициэнт перехода по горизонтали от условных единиц к пикселям
+	ratio_height=15.4 #коэффициэнт перехода по вертикали от условных единиц к пикселям, 15,4->21
+	sum_width=N*w_button*ratio_width+shift_right  #сумма эталонной ширины
+	sum_height=M*h_button*ratio_height+shift_up*(len(centr)-1)   #сумма эталонной высоты
+	width_scale=window_width/sum_width
+	height_scale=window_height/sum_height
+	#выбираем наименьший из этих 2 масштабов
+
+	if (width_scale>=height_scale):
+		button_scale=height_scale
+	else:
+		button_scale=width_scale
+	if (button_scale>2):  #максимальный масштаб 2
+		button_scale=2
+	print('button_scale=', button_scale)
+
+	ratio_height=(2-button_scale)*3.5+ratio_height	
+
+	h_button=int(3*button_scale) #высота кнопки в условных единицах, 3
+	w_button=int(10*button_scale) #ширина кнопки в условных единицах, 10
+	shift_up=int(100*button_scale) #отступ вверх в пикселях, 100
+	shift_right=int(100*button_scale) #отступ вправо в пикселях, 100
+
+	x_start=int((window_width-N*w_button*ratio_width-shift_right)/2)
+	y_start=int((window_height-M*h_button*ratio_height-shift_up*(len(centr)-1))/2)
+"""
+
+
+
+	w_button_standard=int(w_button/2)  
+	w_button_pixels=int(w_button*ratio_width)
+	h_button_pixels=int(h_button*ratio_height)
+	y=window_height-y_start
+	print('start: ', y)
+	for i in range (0, M):
+		#y=y-h_button* ratio
+		x=x_start
+		udalennost=sklad_2D[sklad_count].udalennost  
+		#print(sklad_count)
+		#if (udalennost==False):
+		#	y=y-shift_up #+
+		for j in range (0, n1):
+			m=1
+			string=str(sklad_count)+'.'+str(m)
+			color='color'
+			if (sklad_count%2==1):
+				color='yellow'
+			else:
+				color='orange'
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+			x=x+w_button_pixels
+			k=k+1
+			m=2
+			string=str(sklad_count)+'.'+str(m)
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+			x=x+w_button_pixels
+			k=k+1
+			sklad_count=sklad_count+1
+		x=x+shift_right
+		j=0
+		for j in range (0, n2):
+			m=1
+			string=str(sklad_count)+'.'+str(m)
+			color='color'
+			if (sklad_count%2==1):
+				color='yellow'
+			else:
+				color='orange'
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+			x=x+w_button_pixels
+			k=k+1
+			m=2
+			string=str(sklad_count)+'.'+str(m)
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+			x=x+w_button_pixels
+			k=k+1	
+			sklad_count=sklad_count+1
+		y=y-h_button_pixels
+			
+		if (udalennost==True):
+			y=y-shift_up #+
+			print('if: ', y)
+		print('end iteration : ', y)
+
+
+
+
+
+else:
+	ratio_width=9.5 #коэффициэнт перехода по горизонтали от условных единиц к пикселям, 10.4
+	ratio_height=13 #коэффициэнт перехода по вертикали от условных единиц к пикселям, 14
+	sum_width=M*h_button*ratio_height+shift_up*(len(centr)-1)  #сумма эталонной ширины
+	sum_height=N*w_button*ratio_width+shift_right   #сумма эталонной высоты
+	width_scale=window_width/sum_width
+	height_scale=window_height/sum_height
+	#выбираем наименьший из этих 2 масштабов
+
+	if (width_scale>=height_scale):
+		button_scale=height_scale
+	else:
+		button_scale=width_scale
+	if (button_scale>2):  #максимальный масштаб 2
+		button_scale=2
+	print('button_scale=', button_scale)
+
+	ratio_width=(2-button_scale)*3.5+ratio_width #3.5
+	#ratio_height=(2-button_scale)*0.5+ratio_height	#2.5
+
+	h_button=int(3*button_scale) #высота кнопки в условных единицах, 3
+	w_button=int(10*button_scale) #ширина кнопки в условных единицах, 10
+	shift_up=int(100*button_scale) #отступ вверх в пикселях, 100
+	shift_right=int(100*button_scale) #отступ вправо в пикселях, 100
+
+
+
+	w_button=int(w_button/2)
+	w_button_pixels=int(w_button*ratio_width) #7.7->9?
+	h_button_pixels=int(h_button*ratio_height)
+
+
+
+	"""#ratio_width=7.7 #коэффициэнт перехода по горизонтали от условных единиц к пикселям
+	#ratio_height=15.4 #коэффициэнт перехода по вертикали от условных единиц к пикселям, 15,4->21
+	w_button=int(w_button/2)
+	w_button_pixels=int(w_button*ratio_width) #7.7->9?
+	h_button_pixels=int(h_button*ratio_height)"""
+
+	x_start=int((window_width-M*h_button_pixels-shift_up*(len(centr)-1))/2)
+	y_start=int((window_height-N*w_button_pixels-shift_right)/2)
+	x=x_start
+	for i in range(0, M):
+		y=window_height-int(y_start/2)  #??????????????
+		udalennost=sklad_2D[sklad_count].udalennost  
+		#print(sklad_count)
+		#if (udalennost==False):
+		#	y=y-shift_up #+
+		for j in range (0, n1):
+			m=1
+			string=str(sklad_count)+'.'+str(m)
+			color='color'
+			if (sklad_count%2==1):
+				color='yellow'
+			else:
+				color='orange'
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+			y=y-w_button_pixels
+			k=k+1
+			m=2
+			string=str(sklad_count)+'.'+str(m)
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y) #anchor sw - отсчет с левого нижнего угла
+			y=y-w_button_pixels
+			k=k+1
+			sklad_count=sklad_count+1
+		y=y-shift_right
+		j=0
+		for j in range (0, n2):
+			m=1
+			string=str(sklad_count)+'.'+str(m)
+			color='color'
+			if (sklad_count%2==1):
+				color='yellow'
+			else:
+				color='orange'
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+			y=y-w_button_pixels
+			k=k+1
+			m=2
+			string=str(sklad_count)+'.'+str(m)
+			button_array.append(Button(window, text=string, background=color, height = h_button, width = w_button, command=box1()))
+			button_array[k].place(anchor= 'sw', x=x, y=y)  #anchor sw - отсчет с левого нижнего угла
+			y=y-w_button_pixels
+			k=k+1	
+			sklad_count=sklad_count+1
+		x=x+h_button_pixels
+			
+		if (udalennost==True):
+			x=x+shift_up #+
+			print('if: ', y)
+		print('end iteration : ', y)
+
+
+
+window.mainloop()#функция, которая ждет действий от пользователя (бесконечный цикл)
+
+
+
+
+#Place – это менеджер геометрии, который размещает виджеты, используя абсолютное позиционирование.
+#Pack – это менеджер геометрии, который размещает виджеты по горизонтали и вертикали.
+#Grid – это менеджер геометрии, который размещает виджеты в двухмерной сетке.
+
+
+

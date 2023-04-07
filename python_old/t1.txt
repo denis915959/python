@@ -1,0 +1,65 @@
+#   python t1.txt
+
+import tkinter as tk 
+from functools import partial 
+  
+Font='Arial 14'
+def call_result(root, n1, n2, n3, n4): 
+	global Font
+	n1 =int(n1.get()) 
+	n2 =int(n2.get()) 
+	M =int(n3.get())
+	first_int =int(n4.get())
+	if(first_int==0):
+		first=False
+	else:
+		first=True
+
+	#result = int(num1)+int(num2)+int(num3) +int(num4)
+	#l1=tk.Label(root, text=result).grid(row=6, column=0)
+
+	str1='ширина левой части='+str(n1)
+	str2='ширина правой части='+str(n2)
+	str3='длина склада='+str(M)
+	str4='first='+str(first)
+
+	n1=tk.Label(root, text=str1, font=Font).grid(row=7, column=0)
+	n2=tk.Label(root, text=str2, font=Font).grid(row=8, column=0)
+	n3=tk.Label(root, text=str3, font=Font).grid(row=9, column=0)
+	n4=tk.Label(root, text=str4, font=Font).grid(row=10, column=0)
+	return 
+  
+root = tk.Tk() 
+root.geometry('600x800+100+200') 
+ 
+root.title('Calculator') 
+  
+number1 = tk.StringVar() 
+number2 = tk.StringVar() 
+number3 = tk.StringVar()
+number4 = tk.StringVar()
+
+labelNum0 = tk.Label(root, text="длину и ширину склада вводить в ячейках", font=Font).grid(row=1, column=0) 
+labelNum1 = tk.Label(root, text="ширина левой части", font=Font).grid(row=2, column=0) 
+labelNum2 = tk.Label(root, text="ширина правой части", font=Font).grid(row=3, column=0) 
+labelNum3 = tk.Label(root, text="длина склада", font=Font).grid(row=4, column=0)
+labelNum4 = tk.Label(root, text="first(0 - False, иначе True)", font=Font).grid(row=5, column=0)
+
+labelResult = tk.Label(root) 
+labelResult.grid(row=7, column=2) 
+ 
+entryNum1 = tk.Entry(root, textvariable=number1).grid(row=2, column=2) 
+entryNum2 = tk.Entry(root, textvariable=number2).grid(row=3, column=2) 
+entryNum3 = tk.Entry(root, textvariable=number3).grid(row=4, column=2) 
+entryNum4 = tk.Entry(root, textvariable=number4).grid(row=5, column=2) 
+
+ 
+buttonCal = tk.Button(root, text="Calculate", command=lambda *args:call_result(root,  number1, number2, number3, number4), font=Font).grid(row=6, column=0) #command=call_result
+ 
+root.mainloop()
+
+
+
+
+
+#place(x=1200, y=600, anchor='sw') 

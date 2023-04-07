@@ -1,0 +1,7 @@
+#   python test.txt
+#n=100000000000000000000
+#print(int(n/10)+3)
+
+s1=str(10000)
+s2="20000"
+print(s2>s1)
