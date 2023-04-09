@@ -4,6 +4,19 @@ import copy
 
 A=[[32.0, 28.0, 4.0, 26.0, 4.0], [17.0, 19.0, 4.0, 17.0, 4.0], [4.0, 4.0, 5.0, 4.0, 4.0], [17.0, 14.0, 4.0, 14.0, 4.0], [21.0, 16.0, 4.0, 13.0, 4.0]]
 
+class mesh():
+	def __init__(self, x1, y1):
+		self.string=x1  #номер строки
+		self.column=y1  #номер столбца
+
+def min_null(arr): #игнорит нули
+	min=10000000000
+	n = len(arr)
+	for i in range(0, n):
+		if(arr[i]!=0)and(arr[i]<min):
+			min=arr[i]
+	return min
+
 
 n=len(A[1])
 # print(n)
@@ -62,6 +75,8 @@ zero_in_A=True
 A_temp=copy.deepcopy(A) #рекурсивный метод
 num_zero_string=[] #массив номеров вычеркнутых строк
 num_zero_column=[] #массив номеров вычеркнутых столбцов
+
+
 while(zero_in_A):
 	null_count=[] #сначала смотрим строки
 	for i in range (0, n):
@@ -76,15 +91,16 @@ while(zero_in_A):
 			if(A_temp[i][j]==0):
 				count=count+1
 		null_count.append(count)
-	"""for i in range(0, 2*n):
-		print(null_count[i])"""
+	for i in range(0, 2*n):
+		print("null_count[i] = ", null_count[i])
+	print("")
 	max_zero=max(null_count)
 	num_max=-1
 	for i in range(0, 2*n):
 		if(null_count[i]==max_zero):
 			num_max=i
 			break
-	print("num_max = ", num_max)
+	#print("num_max = ", num_max)
 	if(num_max<n): #код для строки
 		num_zero_string.append(num_max)
 		for j in range(0, n):
@@ -102,7 +118,6 @@ while(zero_in_A):
 				break
 		if (zero_in_A==True):
 			break
-
 
 	"""for i in range(0, n):
 		for j in range(0, n):
@@ -136,6 +151,7 @@ for i in range(0, len(num_zero_string)):
 		A[num_zero_string[i]][num_zero_column[j]]=A[num_zero_string[i]][num_zero_column[j]]+min_temp
 
 
+print("start 3")
 for i in range(0, n):
 	for j in range(0, n):
 		print(A[i][j], "   ", end="")
@@ -144,7 +160,9 @@ for i in range(0, n):
 
 
 #выделяем нули
+null_arr=[]
 A_temp2=copy.deepcopy(A) 
+#A_temp2=[[0, 0, 1, 1, 1], [1, 1, 0, 1, 1], [0, 1, 1, 1, 1], [0, 1, 1, 1, 1], [1, 1, 1, 1, 0]]
 while(1):
 	null_count=[] #сначала смотрим строки (находим число нулей)
 	for i in range (0, n):
@@ -159,14 +177,22 @@ while(1):
 			if(A_temp2[i][j]==0):
 				count=count+1
 		null_count.append(count)
-	min1=min(null_count)
+
+	null_in_matrix=False
+	for i in range(0, 2*n):
+		if(null_count[i]!=0):
+			null_in_matrix=True
+	if(null_in_matrix==False):
+		break
+
+	min1=min_null(null_count) #(min)
 	num_min1=0
+	num_min2=0
 	for i in range(0, 2*n):
 		if(null_count[i]==min1):
 			num_min1=i
 			break
-	if(len(null_count==0)):
-		break
+	
 	
 	for i in range(0, 2*n): # убрать потом
 		print(null_count[i])
@@ -175,10 +201,10 @@ while(1):
 
 	#null_count.clear()
 	num_null=[]
-	if(num_min1<n): #(выбрано 0 в строке), НЕ ПРОВЕРЕНО  (min1-в строке, min2 - в столбце)
+	if(num_min1<n): #(выбрано 0 в строке), НЕ ПРОВЕРЕНО  (num_min1-в строке, num_min2 - в столбце)
 		null_count2=[]
 		for j in range(0, n):
-			if(A_temp2[num_min1][j]):
+			if(A_temp2[num_min1][j]==0):
 				num_null.append(j)
 
 		for i in range(0, len(num_null)):
@@ -188,7 +214,7 @@ while(1):
 		print("")
 		for i in range(0, len(null_count2)):
 			print("null_count2 = ", null_count2[i])
-		min2=min(null_count2)#находим минимальное число нулей среди столбцов
+		min2=min_null(null_count2)#находим минимальное число нулей среди столбцов (min)
 		for i in range(0, len(null_count2)):#находим номер элемента массива, содержащий номер столбца с минимальным числом нулей
 			if(null_count2[i]==min2):
 				num_min2=i
@@ -197,12 +223,14 @@ while(1):
 		num_min1=num_min1
 		print("num_min1 = ", num_min1)
 		print("num_min2 = ", num_min2)
-		
 
-	for i in range(0, len(num_null)): # убрать потом
-		print(num_null[i])
+		for i in range (0, n):
+			A_temp2[num_min1][i]=-1
+		for i in range (0, n):
+			A_temp2[i][num_min2]=-1
+		null_arr.append(mesh(num_min1, num_min2))
 
-	else: #ищем num_min2 (выбрано 0 в столбце)  (min1-в столбцe, min2 - в строке)
+	else: #ищем num_min2 (выбрано 0 в столбце)  (num_min1-в столбцe, num_min2 - в строке)
 		null_count2=[]
 		for i in range(0, n): #находим номера строк, в которых есть нули
 			if(A_temp2[i][num_min1-n]==0):
@@ -214,7 +242,7 @@ while(1):
 		print("")
 		for i in range(0, len(null_count2)):
 			print("null_count2 = ", null_count2[i])
-		min2=min(null_count2)#находим минимальное число нулей среди строк
+		min2=min_null(null_count2)#находим минимальное число нулей среди строк  (min)
 		for i in range(0, len(null_count2)):#находим номер элемента массива, содержащий номер строки с минимальным числом нулей
 			if(null_count2[i]==min2):
 				num_min2=i
@@ -224,27 +252,45 @@ while(1):
 		print("num_min1 = ", num_min1)
 		print("num_min2 = ", num_min2)
 
+		for i in range (0, n):
+			A_temp2[num_min2][i]=-1
+		for i in range (0, n):
+			A_temp2[i][num_min1]=-1
+
+		null_arr.append(mesh(num_min2, num_min1))
+
 
 
 
 	#осталось только сделать заполнение -1 и отладить код! и пункт 3 будет готов
 
 
-	"""if(min1<n): #код для строки
-		#num_zero_string.append()
+
+	for i in range(0, n):
 		for j in range(0, n):
-			A_temp2[min1][j]=-1
-	else:  #код для столбца
-		#num_zero_column.append(num_max-n)
-		for i in range(0, n):
-			A_temp2[i][min1-n]=-1"""
+			print(A_temp2[i][j], "   ", end="")
+			#print(A_temp[i][j], "   ", end="")
+		print("")
 	
-	break
+	#break #получаем бесконечный цикл, с первой тиерацией все ок
+
+	null_count.clear()
+	print("")
+	print("")
+	print("")
+	print("")
 
 
+for i in range(0, n):
+	for j in range(0, n):
+		print(A[i][j], "   ", end="")
+	print("")
 
 
-
+for i in range(0, len(null_arr)):
+	print("null_arr.str = ", null_arr[i].string)
+	print("null_arr.col = ", null_arr[i].column)
+	print("")
 
 
 
