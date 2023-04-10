@@ -26,260 +26,276 @@ for i in range(0, n):
 	print("")
 
 print("")
-#первый пункт, вычитание минимума из строки
-for i in range(0, n):
-	min_str=min(A[i])
-	for j in range(0, n):
-		A[i][j]=A[i][j]-min_str
-
-for j in range(0, n): #если в каких-то столбцах нет нулей, то они там появятся (по аналогии со строкой)
-	flag=False
-	for i in range(0, n):
-		if(A[i][j]==0):
-			flag=True
-	if(flag==False):
-		column=[]
-		for k in range(0, n):
-			column.append(A[k][j])
-		"""for k in range(0, n):
-			print(column[k])"""
-		min_str=min(column)
-		for i in range(0, n):
-			A[i][j]=A[i][j]-min_str
-		column.clear()
-		print("")
 
 
 
-for i in range(0, n):
-	for j in range(0, n):
-		print(A[i][j], "   ", end="")
-	print("")
-
-null_count=[]
-for i in range(0, n):
-	count=0
-	for j in range(0, n):
-		if(A[i][j]==0):
-			count=count+1
-	null_count.append(count)
 
 
 
-"""for i in range(0, n):
-	for j in range(0, n):
-		print(A[i][j], "   ", end="")
-		#print(A_temp[i][j], "   ", end="")
-	print("")"""
-zero_in_A=True
-A_temp=copy.deepcopy(A) #рекурсивный метод
-num_zero_string=[] #массив номеров вычеркнутых строк
-num_zero_column=[] #массив номеров вычеркнутых столбцов
 
 
-while(zero_in_A):
-	null_count=[] #сначала смотрим строки
-	for i in range (0, n):
-		count=0
-		for j in range(0, n):
-			if(A_temp[i][j]==0):
-				count=count+1
-		null_count.append(count)
-	for j in range (0, n): #потом смотрим столбцы в порядке возрастания
-		count=0
-		for i in range(0, n):
-			if(A_temp[i][j]==0):
-				count=count+1
-		null_count.append(count)
-	for i in range(0, 2*n):
-		print("null_count[i] = ", null_count[i])
-	print("")
-	max_zero=max(null_count)
-	num_max=-1
-	for i in range(0, 2*n):
-		if(null_count[i]==max_zero):
-			num_max=i
-			break
-	#print("num_max = ", num_max)
-	if(num_max<n): #код для строки
-		num_zero_string.append(num_max)
-		for j in range(0, n):
-			A_temp[num_max][j]=-1
-	else:  #код для столбца
-		num_zero_column.append(num_max-n)
-		for i in range(0, n):
-			A_temp[i][num_max-n]=-1
-	#Проверка матрицы A_temp на наличие нулей
-	zero_in_A=False
-	for i in range(0, n):
-		for j in range(0, n):
-			if (A_temp[i][j]==0):
-				zero_in_A=True
-				break
-		if (zero_in_A==True):
-			break
-
-	"""for i in range(0, n):
-		for j in range(0, n):
-			print(A_temp[i][j], "   ", end="")
-		print("")"""
-
-#находим минимум среди всех ненулевых элементов в A_temp
-
-
-no_zero_arr=[]
-for i in range(0, n):
-	for j in range(0, n):
-		if (A_temp[i][j]!=-1):
-			no_zero_arr.append(A_temp[i][j])
-min_temp=min(no_zero_arr)
-print(min_temp)
-for i in range(0, n): #вычитаем min_temp из невычеркнутых элементов
-	for j in range(0, n):
-		if (A_temp[i][j]!=-1):
-			A_temp[i][j]=A_temp[i][j]-min_temp
-
-#переход к исходной матрице
-for i in range(0, n): #
-	for j in range(0, n):
-		if (A_temp[i][j]!=-1):
-			A[i][j]=A_temp[i][j]
-
-# к элементам в пересечениях зачеркнутых линий прибавляем min
-for i in range(0, len(num_zero_string)):
-	for j in range(0, len(num_zero_column)):
-		A[num_zero_string[i]][num_zero_column[j]]=A[num_zero_string[i]][num_zero_column[j]]+min_temp
-
-
-print("start 3")
-for i in range(0, n):
-	for j in range(0, n):
-		print(A[i][j], "   ", end="")
-		#print(A_temp[i][j], "   ", end="")
-	print("")
-
-
-#выделяем нули
+pp=0
 null_arr=[]
-A_temp2=copy.deepcopy(A) 
-#A_temp2=[[0, 0, 1, 1, 1], [1, 1, 0, 1, 1], [0, 1, 1, 1, 1], [0, 1, 1, 1, 1], [1, 1, 1, 1, 0]]
-while(1):
-	null_count=[] #сначала смотрим строки (находим число нулей)
-	for i in range (0, n):
-		count=0
+while(len(null_arr)!=n):
+	null_arr.clear()
+	print("ИТЕРАЦИЯ ", pp)
+	pp=pp+1
+	#Начало цикла
+	#первый пункт, вычитание минимума из строки
+	for i in range(0, n):
+		min_str=min(A[i])
 		for j in range(0, n):
-			if(A_temp2[i][j]==0):
-				count=count+1
-		null_count.append(count)
-	for j in range (0, n): #потом смотрим столбцы в порядке возрастания  (находим число нулей)
-		count=0
+			A[i][j]=A[i][j]-min_str
+
+	for j in range(0, n): #если в каких-то столбцах нет нулей, то они там появятся (по аналогии со строкой)
+		flag=False
 		for i in range(0, n):
-			if(A_temp2[i][j]==0):
-				count=count+1
-		null_count.append(count)
-
-	null_in_matrix=False
-	for i in range(0, 2*n):
-		if(null_count[i]!=0):
-			null_in_matrix=True
-	if(null_in_matrix==False):
-		break
-
-	min1=min_null(null_count) #(min)
-	num_min1=0
-	num_min2=0
-	for i in range(0, 2*n):
-		if(null_count[i]==min1):
-			num_min1=i
-			break
-	
-	
-	for i in range(0, 2*n): # убрать потом
-		print(null_count[i])
-	#print("num_min1 = ", num_min1)
-	
-
-	#null_count.clear()
-	num_null=[]
-	if(num_min1<n): #(выбрано 0 в строке), НЕ ПРОВЕРЕНО  (num_min1-в строке, num_min2 - в столбце)
-		null_count2=[]
-		for j in range(0, n):
-			if(A_temp2[num_min1][j]==0):
-				num_null.append(j)
-
-		for i in range(0, len(num_null)):
-			print("num_null = ", num_null[i])
-		for i in range(0, len(num_null)): #записываем число нулей в строках
-			null_count2.append(null_count[num_null[i]])
-		print("")
-		for i in range(0, len(null_count2)):
-			print("null_count2 = ", null_count2[i])
-		min2=min_null(null_count2)#находим минимальное число нулей среди столбцов (min)
-		for i in range(0, len(null_count2)):#находим номер элемента массива, содержащий номер столбца с минимальным числом нулей
-			if(null_count2[i]==min2):
-				num_min2=i
-				break
-		num_min2=num_null[num_min2]#находим номер строки
-		num_min1=num_min1
-		print("num_min1 = ", num_min1)
-		print("num_min2 = ", num_min2)
-
-		for i in range (0, n):
-			A_temp2[num_min1][i]=-1
-		for i in range (0, n):
-			A_temp2[i][num_min2]=-1
-		null_arr.append(mesh(num_min1, num_min2))
-
-	else: #ищем num_min2 (выбрано 0 в столбце)  (num_min1-в столбцe, num_min2 - в строке)
-		null_count2=[]
-		for i in range(0, n): #находим номера строк, в которых есть нули
-			if(A_temp2[i][num_min1-n]==0):
-				num_null.append(i)
-		for i in range(0, len(num_null)):
-			print("num_null = ", num_null[i])
-		for i in range(0, len(num_null)): #записываем число нулей в строках
-			null_count2.append(null_count[num_null[i]])
-		print("")
-		for i in range(0, len(null_count2)):
-			print("null_count2 = ", null_count2[i])
-		min2=min_null(null_count2)#находим минимальное число нулей среди строк  (min)
-		for i in range(0, len(null_count2)):#находим номер элемента массива, содержащий номер строки с минимальным числом нулей
-			if(null_count2[i]==min2):
-				num_min2=i
-				break
-		num_min2=num_null[num_min2]#находим номер строки
-		num_min1=num_min1-n
-		print("num_min1 = ", num_min1)
-		print("num_min2 = ", num_min2)
-
-		for i in range (0, n):
-			A_temp2[num_min2][i]=-1
-		for i in range (0, n):
-			A_temp2[i][num_min1]=-1
-
-		null_arr.append(mesh(num_min2, num_min1))
+			if(A[i][j]==0):
+				flag=True
+		if(flag==False):
+			column=[]
+			for k in range(0, n):
+				column.append(A[k][j])
+			"""for k in range(0, n):
+			print(column[k])"""
+			min_str=min(column)
+			for i in range(0, n):
+				A[i][j]=A[i][j]-min_str
+			column.clear()
+			print("")
 
 
-
-
-	#осталось только сделать заполнение -1 и отладить код! и пункт 3 будет готов
-
-
-
+	#вывод на экран
 	for i in range(0, n):
 		for j in range(0, n):
-			print(A_temp2[i][j], "   ", end="")
+			print(A[i][j], "   ", end="")
+		print("")
+
+
+
+
+
+
+
+	#второй пункт
+	null_count=[]
+	for i in range(0, n):
+		count=0
+		for j in range(0, n):
+			if(A[i][j]==0):
+				count=count+1
+		null_count.append(count)
+
+	zero_in_A=True
+	A_temp=copy.deepcopy(A) #рекурсивный метод
+	num_zero_string=[] #массив номеров вычеркнутых строк
+	num_zero_column=[] #массив номеров вычеркнутых столбцов
+
+
+	while(zero_in_A): #вычеркиваем строки и столбцы из матрицы, убирая все нули (заполняем -1)
+		null_count=[] #сначала смотрим строки
+		for i in range (0, n): #ищем число нулей в каждой строке
+			count=0
+			for j in range(0, n):
+				if(A_temp[i][j]==0):
+					count=count+1
+			null_count.append(count)
+		for j in range (0, n): #ищем число нулей в каждом столбце
+			count=0
+			for i in range(0, n):
+				if(A_temp[i][j]==0):
+					count=count+1
+			null_count.append(count)
+	
+		max_zero=max(null_count)#находим max ЧИСЛО нулей
+		num_max=-1
+		for i in range(0, 2*n):
+			if(null_count[i]==max_zero):
+				num_max=i
+				break
+
+		if(num_max<n): #в строке с max числом нулей все элементы делаем =-1
+			num_zero_string.append(num_max)
+			for j in range(0, n):
+				A_temp[num_max][j]=-1
+		else:  #в столбце с max числом нулей все элементы делаем =-1
+			num_zero_column.append(num_max-n)
+			for i in range(0, n):
+				A_temp[i][num_max-n]=-1
+
+		#Проверка матрицы A_temp на наличие нулей
+		zero_in_A=False
+		for i in range(0, n):
+			for j in range(0, n):
+				if (A_temp[i][j]==0):
+					zero_in_A=True
+					break
+			if (zero_in_A==True):
+				break
+
+
+	#находим минимум среди всех ненулевых элементов в A_temp
+
+	no_zero_arr=[]
+	for i in range(0, n):
+		for j in range(0, n):
+			if (A_temp[i][j]!=-1):
+				no_zero_arr.append(A_temp[i][j])
+	min_temp=min(no_zero_arr)
+	print(min_temp)
+	for i in range(0, n): #вычитаем min_temp из невычеркнутых элементов
+		for j in range(0, n):
+			if (A_temp[i][j]!=-1):
+				A_temp[i][j]=A_temp[i][j]-min_temp
+
+	no_zero_arr.clear()
+	#переход к исходной матрице
+	for i in range(0, n): #
+		for j in range(0, n):
+			if (A_temp[i][j]!=-1):
+				A[i][j]=A_temp[i][j]
+
+	# к элементам в пересечениях зачеркнутых линий прибавляем min
+	for i in range(0, len(num_zero_string)):
+		for j in range(0, len(num_zero_column)):
+			A[num_zero_string[i]][num_zero_column[j]]=A[num_zero_string[i]][num_zero_column[j]]+min_temp
+
+
+	print("start 3")
+	for i in range(0, n):
+		for j in range(0, n):
+			print(A[i][j], "   ", end="")
 			#print(A_temp[i][j], "   ", end="")
 		print("")
+
+
+	#выделяем нули
 	
-	#break #получаем бесконечный цикл, с первой тиерацией все ок
+	A_temp2=copy.deepcopy(A) 
+	#A_temp2=[[0, 0, 1, 1, 1], [1, 1, 0, 1, 1], [0, 1, 1, 1, 1], [0, 1, 1, 1, 1], [1, 1, 1, 1, 0]]
+	while(1):
+		null_count=[] #сначала смотрим строки (находим число нулей)
+		for i in range (0, n):
+			count=0
+			for j in range(0, n):
+				if(A_temp2[i][j]==0):
+					count=count+1
+			null_count.append(count)
+		for j in range (0, n): #потом смотрим столбцы в порядке возрастания  (находим число нулей)
+			count=0
+			for i in range(0, n):
+				if(A_temp2[i][j]==0):
+					count=count+1
+			null_count.append(count)
 
-	null_count.clear()
-	print("")
-	print("")
-	print("")
-	print("")
+		null_in_matrix=False
+		for i in range(0, 2*n):
+			if(null_count[i]!=0):
+				null_in_matrix=True
+		if(null_in_matrix==False):
+			break
+	
+		min1=min_null(null_count) #(min)
+		num_min1=0
+		num_min2=0
+		for i in range(0, 2*n):
+			if(null_count[i]==min1):
+				num_min1=i
+				break
+	
+	
+		for i in range(0, 2*n): # убрать потом
+			print(null_count[i])
+		#print("num_min1 = ", num_min1)
+	
 
+		#null_count.clear()
+		num_null=[]
+		if(num_min1<n): #(выбрано 0 в строке), НЕ ПРОВЕРЕНО  (num_min1-в строке, num_min2 - в столбце)
+			null_count2=[]
+			for j in range(0, n):
+				if(A_temp2[num_min1][j]==0):
+					num_null.append(j)
+
+			for i in range(0, len(num_null)):
+				print("num_null = ", num_null[i])
+			for i in range(0, len(num_null)): #записываем число нулей в строках
+				null_count2.append(null_count[num_null[i]])
+			print("")
+			for i in range(0, len(null_count2)):
+				print("null_count2 = ", null_count2[i])
+			min2=min_null(null_count2)#находим минимальное число нулей среди столбцов (min)
+			for i in range(0, len(null_count2)):#находим номер элемента массива, содержащий номер столбца с минимальным числом нулей
+				if(null_count2[i]==min2):
+					num_min2=i
+					break
+			num_min2=num_null[num_min2]#находим номер строки
+			num_min1=num_min1
+			print("num_min1 = ", num_min1)
+			print("num_min2 = ", num_min2)
+
+			for i in range (0, n):
+				A_temp2[num_min1][i]=-1
+			for i in range (0, n):
+				A_temp2[i][num_min2]=-1
+			null_arr.append(mesh(num_min1, num_min2))
+
+		else: #ищем num_min2 (выбрано 0 в столбце)  (num_min1-в столбцe, num_min2 - в строке)
+			null_count2=[]
+			for i in range(0, n): #находим номера строк, в которых есть нули
+				if(A_temp2[i][num_min1-n]==0):
+					num_null.append(i)
+			for i in range(0, len(num_null)):
+				print("num_null = ", num_null[i])
+			for i in range(0, len(num_null)): #записываем число нулей в строках
+				null_count2.append(null_count[num_null[i]])
+			print("")
+			for i in range(0, len(null_count2)):
+				print("null_count2 = ", null_count2[i])
+			min2=min_null(null_count2)#находим минимальное число нулей среди строк  (min)
+			for i in range(0, len(null_count2)):#находим номер элемента массива, содержащий номер строки с минимальным числом нулей
+				if(null_count2[i]==min2):
+					num_min2=i
+					break
+			num_min2=num_null[num_min2]#находим номер строки
+			num_min1=num_min1-n
+			print("num_min1 = ", num_min1)
+			print("num_min2 = ", num_min2)
+
+			for i in range (0, n):
+				A_temp2[num_min2][i]=-1
+			for i in range (0, n):
+				A_temp2[i][num_min1]=-1
+
+			null_arr.append(mesh(num_min2, num_min1))
+
+
+
+
+		#осталось только сделать заполнение -1 и отладить код! и пункт 3 будет готов
+
+
+
+		for i in range(0, n):
+			for j in range(0, n):
+				print(A_temp2[i][j], "   ", end="")
+				#print(A_temp[i][j], "   ", end="")
+			print("")
+	
+		#break #получаем бесконечный цикл, с первой тиерацией все ок
+
+		null_count.clear()
+		
+
+		print("")
+		print("")
+		print("")
+		print("")
+	A_temp2.clear()
+	A_temp.clear()
+	num_zero_string.clear()
+	num_zero_column.clear()
+	#КОНЕЦ ЦИКЛА
 
 for i in range(0, n):
 	for j in range(0, n):
@@ -294,12 +310,4 @@ for i in range(0, len(null_arr)):
 
 
 
-
-"""print("num_zero_string")
-for i in range(0, len(num_zero_string)):
-	print(num_zero_string[i])
-
-print("num_zero_column")
-for i in range(0, len(num_zero_column)):
-	print(num_zero_column[i])"""
 
