@@ -8,26 +8,37 @@ from tkinter import *
 #A1=[[2.0, 5.0, 3.0, 10.0, 4.0], [6.0, 4.0, 8.0, 1.0, 1.0], [4.0, 6.0, 5.0, 3.0, 5.0], [3.0, 2.0, 6.0, 4.0, 3.0], [3.0, 1.0, 1.0, 4.0, 4.0]] #res = 9
 A1=[[3.0, 7.0, 4.0, 11.0, 8.0], [7.0, 6.0, 9.0, 2.0, 5.0], [4.0, 8.0, 6.0, 6.0, 9.0], [2.0, 7.0, 6.0, 4.0, 5.0], [4.0, 3.0, 2.0, 5.0, 8.0]] #res=18
 
-global Matrix #=[]
-global i_glob #=0
-global j_glob #=0
+global Matrix
+global Font
+Font='Arial 12'
+global font_width
+font_width=12//1.3  #ширина одной буквы шрифта
+global font_height
+font_height = 12
+
+global N
+global a1 #нижняя граница
+global a2 #верхняя граница
+global b1
+global b2
 
 class mesh():
 	def __init__(self, x1, y1):
 		self.string=x1  #номер строки
 		self.column=y1  #номер столбца
 
-def generate_matrix(n):
+def generate_matrix(a1, a2, n):
 	A=[]
 	for i in range(0, n):
 		str=[]
 		for j in range (0, n):
-			str.append(randint(1, 20))
+			str.append(randint(a1, a2))
 		A.append(str)
 	for i in range(0, n):
 		for j in range(0, n):
 			print(A[i][j], "   ", end="")
 		print("")
+	return(A)
 
 
 def dop_zadanie_matrix(A, b1, b2):
@@ -334,14 +345,98 @@ def lean_algorithm(A): #бережливый алгоритм
 			A[num_str_min][i]=10000000000.0
 	return(sum)
 
-def set_n():
-	n=int(n_vvod.get())
-	print("n = ", n)
-	set_n_button.config(command=a.destroy)
-	#get_size.destroy()
-	#set_n_button.destroy()
-	str1="Матрица имеет размер "+str(n)+ " x " +str(n)+ "                                           "
-	n_print_label = Label(text = str1).place(x=10, y=y_vvod_n)
+
+
+
+def set_n(window, set_size_matrix_label, but, get_sz, y_vvod_n):  #первая кнопка в программе 
+	global N
+	N =int(n_vvod.get())
+	print("N = ", N)
+	get_sz.destroy()
+	but.destroy()
+	set_size_matrix_label.destroy()
+	
+	get_a1=StringVar()
+	str1 = "Введите НИЖНЮЮ границу значений сахаристости (не более 2 порядков): "
+	a1_print_label = Label(text = str1, font = Font)
+	a1_print_label.place(x=10, y=y_vvod_n)
+	get_a1 = Entry(width=5, textvariable=str1,  font = Font)
+	get_a1.place(x=(len(str1)-5)*font_width, y=y_vvod_n)
+	
+	get_a2=StringVar()
+	str1 = "Введите ВЕРХНЮЮ границу значений сахаристости (не более 2 порядков): "
+	a2_print_label = Label(text = str1, font = Font)
+	a2_print_label.place(x=10, y=y_vvod_n+3*font_height)
+	get_a2 = Entry(width=5, textvariable=str1,  font = Font)
+	get_a2.place(x=(len(str1)-6)*font_width, y=y_vvod_n+3*font_height)
+	
+	set_sahar_button = Button(window, text = "отправить", command = lambda *args: set_sahar(window, a1_print_label, a2_print_label, get_a1, get_a2, set_sahar_button, y_vvod_n), font = Font)
+	set_sahar_button.place(x=(len(str1)+5)*font_width, y=y_vvod_n)
+
+
+def set_sahar(window, a1_print_label, a2_print_label, get_a1, get_a2, set_sahar_button, y_vvod_n):  #обработчик второй кнопки в программе 
+	global a1
+	global a2
+	global b1
+	global b2
+	global Matrix
+	a1=int(get_a1.get())
+	a2=int(get_a2.get())
+	print("a1 = ", a1)
+	print("a2 = ", a2)
+	set_sahar_button.destroy()
+	get_a1.destroy()
+	a1_print_label.destroy()
+	get_a2.destroy()
+	a2_print_label.destroy()
+
+	get_b1=StringVar()
+	str1 = "Введите НИЖНЮЮ границу значений коэффициэнта деградации (дробную часть вводите через точку): "
+	b1_print_label = Label(text = str1, font = Font)
+	b1_print_label.place(x=10, y=y_vvod_n)
+	get_b1 = Entry(width=5, textvariable=str1,  font = Font)
+	get_b1.place(x=(len(str1)-5)*font_width, y=y_vvod_n)
+	
+	get_b2=StringVar()
+	str1 = "Введите ВЕРХНЮЮ границу значений коэффициэнта деградации (дробную часть вводите через точку): "
+	b2_print_label = Label(text = str1, font = Font)
+	b2_print_label.place(x=10, y=y_vvod_n+3*font_height)
+	get_b2 = Entry(width=5, textvariable=str1,  font = Font)
+	get_b2.place(x=(len(str1)-6)*font_width, y=y_vvod_n+3*font_height)
+	set_b12_button = Button(window, text = "получить результат", command = lambda *args: set_b12(window, b1_print_label, b2_print_label, get_b1, get_b2, set_b12_button, y_vvod_n), font = Font)
+	set_b12_button.place(x=(len(str1)+5)*font_width, y=y_vvod_n)
+
+	Matrix=generate_matrix(a1, a2, N)
+	a_max_len=len(str(a2))
+	print(a_max_len)
+	x0=40
+	y0=10
+	x1=x0
+	y1=y0
+	k=0 #счетчик элементов массива Matrix_label
+	Matrix_label=[]
+	for i in range(0, N):
+		for j in range(0, N):
+			Matrix_label.append(Label(text = str(Matrix[i][j]), font = Font))
+			Matrix_label[k].place(x=x1, y=y1)
+			x1=x1+(a_max_len+2)*font_width #возможно, +2 сделать
+			k=k+1
+		x1=x0
+		y1=y1+3*font_height
+
+	
+def set_b12(window, b1_print_label, b2_print_label, get_b1, get_b2, set_b12_button, y_vvod_n):  #обработчик третьей кнопки в программе 
+	b1=int(get_b1.get())
+	b2=int(get_b2.get())
+	print("b1 = ", b1)
+	print("b2 = ", b2)
+	set_b12_button.destroy()
+	get_b1.destroy()
+	b1_print_label.destroy()
+	get_b2.destroy()
+	b2_print_label.destroy()		
+	
+
 
 
 window = Tk() 
@@ -352,15 +447,16 @@ w_sklad = int(window.winfo_screenwidth())   #считываем размер о�
 canvas = Canvas(height=h_sklad, width=w_sklad, bg="white", highlightthickness=0) 
 canvas.place(x=0, y=0)
 
-y_vvod_n=100
-set_size_matrix_label = Label(text = "Введите размер квадратной матрицы ").place(x=10, y=y_vvod_n)
-n_vvod=StringVar()
-#global get_size 
-get_size = Entry(width=5, textvariable=n_vvod).place(x=250, y=y_vvod_n)  #поле ввода размера матрицы   
-#get_size.grid_forget()
+
+y_vvod_n=h_sklad-h_sklad//7 #7 - подобрана экспериментально, это значит, что 1/7 часть экрана под ввод данных
+set_size_matrix_label = Label(text = "Введите размерность квадратной матрицы (не более 20): ",  font = Font)
+set_size_matrix_label.place(x=10, y=y_vvod_n)
+n_vvod=StringVar() 
+get_size = Entry(width=5, textvariable=n_vvod,  font = Font)
+get_size.place(x=53*font_width, y=y_vvod_n)  #поле ввода размера матрицы   
 #Отсчет от верхнего левого края экрана  !!
-set_n_button = Button(window, text = "отправить", command = set_n).place(x=320, y=y_vvod_n)  #кнопка отправки размера матрицы
-#n_vvod=trace_add("write", read_matrix) #добавить кнопку ввода просто, а не enter
+set_n_button = Button(window, text = "отправить", command = lambda *args: set_n(window, set_size_matrix_label, set_n_button, get_size, y_vvod_n), font = Font)
+set_n_button.place(x=61*font_width, y=y_vvod_n)  #кнопка отправки размера матрицы
 window.mainloop() 
 
 #A1=generate_matrix(50)
