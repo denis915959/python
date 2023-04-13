@@ -1,47 +1,14 @@
 # python vengersky.txt
 import copy
-import numpy as np
-from random import randint
-from tkinter import * 
 
-#A1=[[32.0, 28.0, 4.0, 26.0, 4.0], [17.0, 19.0, 4.0, 17.0, 4.0], [4.0, 4.0, 5.0, 4.0, 4.0], [17.0, 14.0, 4.0, 14.0, 4.0], [21.0, 16.0, 4.0, 13.0, 4.0]] #res=39
+A1=[[32.0, 28.0, 4.0, 26.0, 4.0], [17.0, 19.0, 4.0, 17.0, 4.0], [4.0, 4.0, 5.0, 4.0, 4.0], [17.0, 14.0, 4.0, 14.0, 4.0], [21.0, 16.0, 4.0, 13.0, 4.0]] #res=39
 #A1=[[2.0, 5.0, 3.0, 10.0, 4.0], [6.0, 4.0, 8.0, 1.0, 1.0], [4.0, 6.0, 5.0, 3.0, 5.0], [3.0, 2.0, 6.0, 4.0, 3.0], [3.0, 1.0, 1.0, 4.0, 4.0]] #res = 9
-A1=[[3.0, 7.0, 4.0, 11.0, 8.0], [7.0, 6.0, 9.0, 2.0, 5.0], [4.0, 8.0, 6.0, 6.0, 9.0], [2.0, 7.0, 6.0, 4.0, 5.0], [4.0, 3.0, 2.0, 5.0, 8.0]] #res=18
-
-global Matrix #=[]
-global i_glob #=0
-global j_glob #=0
+#A1=[[3.0, 7.0, 4.0, 11.0, 8.0], [7.0, 6.0, 9.0, 2.0, 5.0], [4.0, 8.0, 6.0, 6.0, 9.0], [2.0, 7.0, 6.0, 4.0, 5.0], [4.0, 3.0, 2.0, 5.0, 8.0]] #res=18
 
 class mesh():
 	def __init__(self, x1, y1):
 		self.string=x1  #номер строки
 		self.column=y1  #номер столбца
-
-def generate_matrix(n):
-	A=[]
-	for i in range(0, n):
-		str=[]
-		for j in range (0, n):
-			str.append(randint(1, 20))
-		A.append(str)
-	for i in range(0, n):
-		for j in range(0, n):
-			print(A[i][j], "   ", end="")
-		print("")
-
-
-def dop_zadanie_matrix(A, b1, b2):
-	n=len(A[0])
-	p1=1 #так как нумерация с нуля
-	p2=n//2
-	for i in range (p1, p2):
-		for j in range (0, n):
-			A[j][i]=A[j][i]*b1
-	for i in range (p2, n):
-		for j in range (0, n):
-			A[j][i]=A[j][i]*b2
-	return (A)
-
 
 def min_null(arr): #игнорит нули
 	min=10000000000
@@ -295,78 +262,11 @@ def vengersky_algoritm(A):
 	return(res)
 
 
-def greedy_algoritm(A): #жадный алгоритм
-	n=len(A[0])
-	sum=0
-	for j in range(0, n):
-		max=-1
-		for i in range(0, n):
-			if (A[i][j]>max):
-				max=A[i][j]
-		sum=sum+max
-		#находим номер строки, в которой содержится max
-		num_str_max=0
-		for i in range(0, n):
-			if (A[i][j]==max):
-				num_str_max=i
-				break
-		for i in range(0, n):
-			A[num_str_max][i]=-1
-	return(sum)
 
 
-def lean_algorithm(A): #бережливый алгоритм
-	n=len(A)
-	sum=0
-	for j in range(0, n):
-		min=10000000000.0
-		for i in range(0, n):
-			if (A[i][j]<min):
-				min=A[i][j]
-		sum=sum+min
-		#находим номер строки, в которой содержится min
-		num_str_min=0
-		for i in range(0, n):
-			if (A[i][j]==min):
-				num_str_min=i
-				break
-		for i in range(0, n):
-			A[num_str_min][i]=10000000000.0
-	return(sum)
-
-def set_n():
-	n=int(n_vvod.get())
-	print("n = ", n)
-	set_n_button.config(command=a.destroy)
-	#get_size.destroy()
-	#set_n_button.destroy()
-	str1="Матрица имеет размер "+str(n)+ " x " +str(n)+ "                                           "
-	n_print_label = Label(text = str1).place(x=10, y=y_vvod_n)
 
 
-window = Tk() 
-window.state('zoomed')#полноэкранный режим
-window.resizable (False, False)
-h_sklad = int(window.winfo_screenheight())  #считываем размер окна
-w_sklad = int(window.winfo_screenwidth())   #считываем размер окна 
-canvas = Canvas(height=h_sklad, width=w_sklad, bg="white", highlightthickness=0) 
-canvas.place(x=0, y=0)
 
-y_vvod_n=100
-set_size_matrix_label = Label(text = "Введите размер квадратной матрицы ").place(x=10, y=y_vvod_n)
-n_vvod=StringVar()
-#global get_size 
-get_size = Entry(width=5, textvariable=n_vvod).place(x=250, y=y_vvod_n)  #поле ввода размера матрицы   
-#get_size.grid_forget()
-#Отсчет от верхнего левого края экрана  !!
-set_n_button = Button(window, text = "отправить", command = set_n).place(x=320, y=y_vvod_n)  #кнопка отправки размера матрицы
-#n_vvod=trace_add("write", read_matrix) #добавить кнопку ввода просто, а не enter
-window.mainloop() 
-
-#A1=generate_matrix(50)
-"""M=dop_zadanie_matrix(A1, 0.8, 0.6)
-n = len(M[0])"""
-
-#print("res = ", lean_algorithm(A1))
+print("res = ", vengersky_algoritm(A1))
 
 

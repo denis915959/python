@@ -11,7 +11,7 @@ import struct
 # arduino=serial.Serial('COM30', 9600)    #arduino
 choice_counter=0  #счетчик нажатий на кнопку
 mesh=[] #глобальный массив выбранных ячеек
-Font='Arial 16'
+Font='Arial 16' 
 sklad_2D=[]  #массив ячеек склада
 uno_used_pin = [8, 9, 10, 11, 12, 13]#массив виден внутри функции
 mega_used_pin = [48, 49, 50, 51, 52, 53]
