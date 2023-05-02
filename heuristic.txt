@@ -412,16 +412,6 @@ def check_node_on_reachable(reachable, node): #True - входит, False - не
 
 def make_path(Nodes, goal_node): #тут виснет при стартовой вершине не 0
 	path=[]
-	for i in range(0, len(Nodes)):   #печать вершин графа
-		print("Number = ", Nodes[i].number)
-		print("flag = ", Nodes[i].railroad)
-		print("prev = ", Nodes[i].previous_node)
-		sz=len(Nodes[i].branch_array)
-		for j in range(0, sz):
-			print("Branch = ", Nodes[i].branch_array[j].adjacted_node)
-			print("Branch.cost = ", Nodes[i].branch_array[j].cost)
-
-		print(" ")
 	node=Nodes[goal_node.number]
 	print("A star")
 	while (node.previous_node!=-1):
@@ -515,7 +505,7 @@ def A_star(Nodes, start_node, goal_node, cost_between_blocks, cost_between_rows,
 			k=2	
 
 
-def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, mode): #, orientation    этаж конечной вершины , action=0 на последнем участке, counter =числу пройденных перекрестков, далее робот упирается в приемный терминал, но так как перекрестки пройдены, то получаем success
+def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, mode, to_end): #, orientation    этаж конечной вершины , action=0 на последнем участке, counter =числу пройденных перекрестков, далее робот упирается в приемный терминал, но так как перекрестки пройдены, то получаем success
 	sz=len(path)
 	#global number_to_zero_node
 	print("path in function")
@@ -537,17 +527,20 @@ def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, m
 
 	if(path[0].number==path[1].number):
 		action=-1
+		
 		if(start_mesh==goal_mesh):
 			if(floor==1):
 				action=9
 			if(floor==2):
 				action=10
+			
 		else:
+			orientation=(orientation+2)%4
 			if(floor==1):
 				action=11
 			if(floor==2):
 				action=12
-		robot_path.append(robot_path_node(action, 1))
+		robot_path.append(robot_path_node(action, 0))
 
 	else:
 		for i in range(0, (sz-1)):
@@ -625,7 +618,7 @@ def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, m
 					orientation=4
 	
 		action=-1
-		if(mode==1):
+		if (mode==1):
 			if ((udalennost==0)and(orientation==2)):
 				if(floor==1):
 					action=1
@@ -652,7 +645,7 @@ def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, m
 				orientation=3
 			robot_path.append(robot_path_node(action, 1)) 
 
-		if(mode==2):
+		if (mode==2):
 			if ((udalennost==0)and(orientation==2)):
 				if(floor==1):
 					action=3
@@ -678,6 +671,18 @@ def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, m
 					action=4
 				orientation=1
 			robot_path.append(robot_path_node(action, 1)) 
+	if(to_end==True): 
+		elem=robot_path[len(robot_path)-1]
+		if(mode==2):
+			if(elem.action==4): #ксли уже 5 или 6, то просто пройдет мимо
+				robot_path[len(robot_path)-1].action=6
+			if(elem.action==2):
+				robot_path[len(robot_path)-1].action=5
+		if(mode==1):  #где-то до этого неверно определяет 4 и 2 на последнем этапе (перед 0-м перекрестком). поэтому вот такой костыльы
+			if(elem.action==4): #ксли уже 5 или 6, то просто пройдет мимо
+				robot_path[len(robot_path)-1].action=5
+			if(elem.action==2):
+				robot_path[len(robot_path)-1].action=6
 	
 	print("robot_path 1")
 	for i in range(0, len(robot_path)):
@@ -736,7 +741,7 @@ def get_path_nodes(path): #строит маршрут, состоящий из 
 	return(path_nodes)
 
 
-mode = 2 #2 - новый склад
+mode = 1 #2 - новый склад
 N_sizes=[3, 2, 4]
 #global number_to_zero_node
 if(mode == 1):
@@ -795,7 +800,7 @@ reachable.append(Nodes[21])"""
 
 #1, путь до первой ячейки
 mesh1=-1 #введите номер перекрестка, на котором стоит робот перед стартом. если он стоит между перекрестками, то вводим тот перекресток, перед которым лежит препятствие(если его нельзя объехать), поэтому на объезд препятствий оставляем эту проблему
-mesh2=22
+mesh2=20
 
 
 #еще одна проблема: знаем номер элемента маршрута, на котором все сломалось, но не знаем, на каком именно перекретке! решить эту проблему на Горьковском море возвращением еще и j, на котором все сломалось. зная это, можно вычислить перекресток, на котором произошла поломка. также на распберри хранить массив перекрестков (без повторений подряд!!!, т.е рядом не может быть 5, 5), через которые пройдет робот. и зная этот массив и j, найдем номер перекрестка, на котором все сломалось. СОЗДАТЬ СЕГОДНЯ функцию, которая построит такой маршрут 
@@ -810,13 +815,13 @@ if (mesh2==-1):
 	node2=0
 print("N_Size = ", N_size)
 path1 = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
-robot_action1=make_robot_action(path1, sum(N_sizes), N_size, floor, mesh1, mesh2, mode)   #работает вот эта часть!
+robot_action1=make_robot_action(path1, sum(N_sizes), N_size, floor, mesh1, mesh2, mode, False)   #работает вот эта часть!
 for i in range(0, len(path1)):
 	Nodes[path1[i].number].previous_node=-1
 
 #2, путь до второй ячейки или домой (в данном случае до второй ячейки)
-mesh1=22
-mesh2=20 #20
+mesh1=20
+mesh2=20
 
 
 node1=int(get_crossroad(int(mesh1), N_sizes, N_size, mode))
@@ -830,7 +835,7 @@ if (mesh2==-1):
 	node2=0
 
 path2 = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) 
-robot_action2=make_robot_action(path2, sum(N_sizes), N_size, floor, mesh1, mesh2, mode)   #работает вот эта часть!
+robot_action2=make_robot_action(path2, sum(N_sizes), N_size, floor, mesh1, mesh2, mode, False)   #работает вот эта часть!
 
 #3, путь домой
 mesh1=20
@@ -846,7 +851,7 @@ if (mesh2==-1):
 	node2=0
 
 path3 = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
-robot_action3=make_robot_action(path3, sum(N_sizes), N_size, floor, mesh1, mesh2, mode)   #работает вот эта часть!
+robot_action3=make_robot_action(path3, sum(N_sizes), N_size, floor, mesh1, mesh2, mode, True)   #работает вот эта часть!
 
 
 
