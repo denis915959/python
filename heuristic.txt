@@ -1,4 +1,5 @@
 # python heuristic.txt
+import copy
 
 class Mesh:
 	def __init__(self, m_number):
@@ -23,7 +24,8 @@ class robot_path_node:
 		self.counter=counter1
 
 
-
+global orientation
+orientation=1
 #Ограничение:размер блока не менее 2 ячеек
 #ограничений на число блоков нет
 def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, mode):  #генерация графа, работает 
@@ -75,6 +77,8 @@ def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_betwe
 		branchs=[Branch(count+N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
 		Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
 	
+		Nodes[number_to_zero_node].branch_array.append(Branch(0, cost_between_rows)) #добавляем ребро к стартовой ячейке
+	
 		for i in range(1, int(M/2)):
 			count=count+1
 			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]
@@ -156,33 +160,10 @@ def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_betwe
 		Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
 		return(Nodes)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	if (mode==2):
 		N_size=sum(N_sizes)+len(N_sizes)-1
 		#самый первый ряд!!
-		#count=count+1
-		#branchs=[Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]   #это работает
-		#Nodes.append(Node(count, branchs, True))       #самая левая вершина
-		count=count+1
+		count=count+1 #ручной режим (т.е не в цикле)
 		branchs=[Branch(count+1, cost_between_mesh)]
 		Nodes.append(Node(count, branchs, False))
 	
@@ -213,113 +194,77 @@ def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_betwe
 		branchs=[Branch(count-1, cost_between_mesh)]
 		Nodes.append(Node(count, branchs, False))
 		
-		Nodes[number_to_zero_node].branch_array.append(Branch(0, cost_between_rows))
+		Nodes[number_to_zero_node].branch_array.append(Branch(0, cost_between_rows)) #добавляем ребро к стартовой ячейке
 
 		#далее for до предпоследней итерпции включительно, последняя опять в ручном режиме	
-		
-			
-
-		"""count=count+1  #ручной режим
-		branchs=[Branch(count+1, cost_between_mesh), Branch(count-1, cost_between_blocks)]  
-		Nodes.append(Node(count, branchs, False))       #самая левая вершина
-	
-		for j in range(1, (N_sizes[sz-1]-1)):  #крайний правый блок
+		for i in range(1, (int(M/2)-1)):
 			count=count+1
-			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+			branchs=[Branch(count+1, cost_between_mesh)]
 			Nodes.append(Node(count, branchs, False))
-
-		count=count+1  #ручной режим
-		branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
-		Nodes.append(Node(count, branchs, False))
-
-		count=count+1
-		branchs=[Branch(count+N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
-		Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
 	
-		for i in range(1, int(M/2)):
-			count=count+1
-			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]
-			Nodes.append(Node(count, branchs, True))       #самая левая вершина
-			for k in range(0, (sz-1)):
-	
+			for j in range(1, N_sizes[0]-1):  #(0, N_sizes[k])
+				count=count+1
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+				Nodes.append(Node(count, branchs, False))
+
+			for k in range(1, (sz)):
+				count=count+1 #ручной режим
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
+				Nodes.append(Node(count, branchs, False))
+
+				count=count+1 
+				branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
+				Nodes.append(Node(count, branchs, True))
+
 				count=count+1  #ручной режим
 				branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
 				Nodes.append(Node(count, branchs, False))
 
-				for j in range(1, (N_sizes[k]-1)):
+				for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
 					count=count+1
 					branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
 					Nodes.append(Node(count, branchs, False))
 
-				count=count+1  #ручной режим
-				branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
-				Nodes.append(Node(count, branchs, False))
-
-				count=count+1  
-				branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
-				Nodes.append(Node(count, branchs, True))
-		
-			count=count+1  #ручной режим
-			branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
-			Nodes.append(Node(count, branchs, False))
-
-			for j in range(1, (N_sizes[sz-1]-1)):  #крайний правый блок
-				count=count+1
-				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
-				Nodes.append(Node(count, branchs, False))
-
-			count=count+1  #ручной режим
-			branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
-			Nodes.append(Node(count, branchs, False))
-
 			count=count+1
-			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
-			Nodes.append(Node(count, branchs, True))  #крайняя правая вершина
-
-
-		count=count+1
-		branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks)]
-		Nodes.append(Node(count, branchs, True))       #самая левая вершина
-
-		for k in range(0, (sz-1)):
-			count=count+1  #ручной режим
-			branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+			branchs=[Branch(count-1, cost_between_mesh)]
 			Nodes.append(Node(count, branchs, False))
 
-			for j in range(1, (N_sizes[k]-1)):
-				count=count+1
-				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
-				Nodes.append(Node(count, branchs, False))
-
-			count=count+1 #ручной режим
-			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
-			Nodes.append(Node(count, branchs, False))
-
-			count=count+1
-			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
-			Nodes.append(Node(count, branchs, True))
-
-		count=count+1  #ручной режим
-		branchs=[Branch(count+1, cost_between_mesh), Branch(count-1, cost_between_blocks)]  
-		Nodes.append(Node(count, branchs, False))        #самая левая вершина
+		#ручной режим (т.е не в цикле)
+		count=count+1 
+		branchs=[Branch(count+1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
 	
-		for j in range(1, (N_sizes[sz-1]-1)):  #крайний правый блок
+		for j in range(1, N_sizes[0]-1):  #(0, N_sizes[k])
 			count=count+1
 			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
 			Nodes.append(Node(count, branchs, False))
 
-		count=count+1  #ручной режим
-		branchs=[Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_mesh)]    #центральный перекресток
-		Nodes.append(Node(count, branchs, False))
+		for k in range(1, (sz)):
+			count=count+1 #ручной режим
+			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
+			Nodes.append(Node(count, branchs, False))
+
+			count=count+1 
+			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
+			Nodes.append(Node(count, branchs, True))
+
+			count=count+1  #ручной режим
+			branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
+
+			for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
+				count=count+1
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+				Nodes.append(Node(count, branchs, False))
 
 		count=count+1
-		branchs=[Branch(count-N_size, cost_between_rows), Branch(count-1, cost_between_blocks)]
-		Nodes.append(Node(count, branchs, True))  #крайняя правая вершина"""
+		branchs=[Branch(count-1, cost_between_mesh)]
+		Nodes.append(Node(count, branchs, False))
 		return(Nodes)
 
 
 
-def get_crossroad(node, N_sizes, N_size_big):  #работает!!!
+def get_crossroad(node, N_sizes, N_size_big, mode):  #работает!!!
 	N_size=sum(N_sizes)
 	
 	Sum=0
@@ -327,18 +272,24 @@ def get_crossroad(node, N_sizes, N_size_big):  #работает!!!
 	block_node=0
 	node_tmp=node%N_size
 
-	for i in range(0, sz):
+	for i in range(0, sz): #это не меняем
 		Sum=Sum+N_sizes[i]
 		if(node_tmp<Sum): #<=
 			block_node=i
 			break
 	
-	cross_row=0
-	if(int((node/N_size)%2)==0):
+	cross_row=0 #нумерация с нуля
+	#вот в этой чати надо поменять
+	if(mode==2):
 		cross_row=int(node/(2*N_size))
-	if(int((node/N_size)%2)==1):
-		cross_row=int(node/(2*N_size))+1  #номер горизонтальной магистрали
-	return(cross_row*N_size_big+(node_tmp+2)+block_node)
+		return(cross_row*N_size_big+node_tmp+block_node+1)
+
+	if(mode==1):
+		if(int((node/N_size)%2)==0):
+			cross_row=int(node/(2*N_size))
+		if(int((node/N_size)%2)==1):
+			cross_row=int(node/(2*N_size))+1  #номер горизонтальной магистрали
+		return(cross_row*N_size_big+(node_tmp+2)+block_node)
 
 
 
@@ -459,11 +410,25 @@ def check_node_on_reachable(reachable, node): #True - входит, False - не
 
 
 
-def make_path(Nodes, goal_node):
+def make_path(Nodes, goal_node): #тут виснет при стартовой вершине не 0
 	path=[]
+	for i in range(0, len(Nodes)):   #печать вершин графа
+		print("Number = ", Nodes[i].number)
+		print("flag = ", Nodes[i].railroad)
+		print("prev = ", Nodes[i].previous_node)
+		sz=len(Nodes[i].branch_array)
+		for j in range(0, sz):
+			print("Branch = ", Nodes[i].branch_array[j].adjacted_node)
+			print("Branch.cost = ", Nodes[i].branch_array[j].cost)
+
+		print(" ")
 	node=Nodes[goal_node.number]
-	
+	print("A star")
 	while (node.previous_node!=-1):
+		print("num = ", node.number)
+		print("prev = ", node.previous_node)
+		print("")
+
 		path.append(node)
 		node=Nodes[node.previous_node]
 	path.append(node) #добавляем в маршрут стартовую вершину
@@ -550,12 +515,26 @@ def A_star(Nodes, start_node, goal_node, cost_between_blocks, cost_between_rows,
 			k=2	
 
 
-def make_robot_action(path, orientation, N_mesh_size, N_size, floor, start_mesh, goal_mesh): #этаж конечной вершины , action=0 на последнем участке, counter =числу пройденных перекрестков, далее робот упирается в приемный терминал, но так как перекрестки пройдены, то получаем success
+def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, mode): #, orientation    этаж конечной вершины , action=0 на последнем участке, counter =числу пройденных перекрестков, далее робот упирается в приемный терминал, но так как перекрестки пройдены, то получаем success
 	sz=len(path)
+	#global number_to_zero_node
+	print("path in function")
+	for i in range(0, sz):
+		print("number = ", path[i].number)
+		#print("counter = ", path[i].counter)
+		print(" ")
+	print(" ")
+	print(" ")
+	print(" ")
+	print(" ")
+
 	robot_path=[]
-	
+	global orientation
 	udalennost=int(goal_mesh//N_mesh_size)%2
-	
+
+	if(path[0].number==0):#костыль, если стартовая вершина 
+		robot_path.append(robot_path_node(0, 1))
+
 	if(path[0].number==path[1].number):
 		action=-1
 		if(start_mesh==goal_mesh):
@@ -646,36 +625,68 @@ def make_robot_action(path, orientation, N_mesh_size, N_size, floor, start_mesh,
 					orientation=4
 	
 		action=-1
-		if ((udalennost==0)and(orientation==2)):
-			if(floor==1):
-				action=1
-			if(floor==2):
-				action=2
-		if ((udalennost==1)and(orientation==2)):
-			if(floor==1):
-				action=3
-			if(floor==2):
-				action=4
-		if ((udalennost==0)and(orientation==4)):
-			if(floor==1):
-				action=3
-			if(floor==2):
-				action=4
-		if ((udalennost==1)and(orientation==4)):
-			if(floor==1):
-				action=1
-			if(floor==2):
-				action=2
-		robot_path.append(robot_path_node(action, 1))
+		if(mode==1):
+			if ((udalennost==0)and(orientation==2)):
+				if(floor==1):
+					action=1
+				if(floor==2):
+					action=2
+				orientation=1
+			if ((udalennost==1)and(orientation==2)):
+				if(floor==1):
+					action=3
+				if(floor==2):
+					action=4
+				orientation=3
+			if ((udalennost==0)and(orientation==4)):
+				if(floor==1):
+					action=3
+				if(floor==2):
+					action=4
+				orientation=1
+			if ((udalennost==1)and(orientation==4)):
+				if(floor==1):
+					action=1
+				if(floor==2):
+					action=2
+				orientation=3
+			robot_path.append(robot_path_node(action, 1)) 
+
+		if(mode==2):
+			if ((udalennost==0)and(orientation==2)):
+				if(floor==1):
+					action=3
+				if(floor==2):
+					action=4
+				orientation=3
+			if ((udalennost==1)and(orientation==2)):
+				if(floor==1):
+					action=1
+				if(floor==2):
+					action=2
+				orientation=1
+			if ((udalennost==0)and(orientation==4)):
+				if(floor==1):
+					action=1
+				if(floor==2):
+					action=2
+				orientation=3
+			if ((udalennost==1)and(orientation==4)):
+				if(floor==1):
+					action=3
+				if(floor==2):
+					action=4
+				orientation=1
+			robot_path.append(robot_path_node(action, 1)) 
 	
-	print("robot_path")
+	print("robot_path 1")
 	for i in range(0, len(robot_path)):
 		print("action = ", robot_path[i].action)
 		print("counter = ", robot_path[i].counter)
 		print(" ")
 	print(" ")
 
-	robot_action_tmp=[]
+	robot_action=[]
 	sz=len(robot_path)
 	i=0
 	"""while(i<sz):
@@ -708,31 +719,39 @@ def make_robot_action(path, orientation, N_mesh_size, N_size, floor, start_mesh,
 		if(robot_action[i].action==-1):
 			robot_action[i].action=0
 			
-	
+	if(path[sz-1].number==0):#костыль, если стартовая вершина 
+		robot_path.append(robot_path_node(0, 1))
 	return(robot_action)
 
 
+def get_path_nodes(path): #строит маршрут, состоящий из номеров перекрестков 
+	sz=len(path)
+	path_nodes=[]
+	tmp=path[0]
+	path_nodes.append(tmp)
+	for i in range(1, sz):
+		if(path[i]!=tmp):
+			tmp=path[i]
+			path_nodes.append(tmp)
+	return(path_nodes)
 
 
-
-
-
-"""N_sizes=[5, 5]
-N_size=sum(N_sizes)+len(N_sizes)+1
-print("N_size = ", N_size)
-M=6"""
-
+mode = 2 #2 - новый склад
 N_sizes=[3, 2, 4]
-number_to_zero_node=N_sizes[0]+1
+#global number_to_zero_node
+if(mode == 1):
+	number_to_zero_node=N_sizes[0]+2
+if(mode == 2):
+	number_to_zero_node=N_sizes[0]+1
 cost_between_blocks=1.5
 cost_between_rows=4
 cost_between_mesh=1
-mode = 2
 if(mode==1):
 	N_size=sum(N_sizes)+len(N_sizes)+1
 if(mode==2):
 	N_size=sum(N_sizes) + len(N_sizes) - 1
 M=6
+floor=2
 Nodes=generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, mode)
 reachable=[]
 
@@ -753,51 +772,104 @@ reachable.append(Nodes[21])"""
 
 
 
-for i in range(0, len(Nodes)):   #печать вершин графа
+"""for i in range(0, len(Nodes)):   #печать вершин графа
 	print("Number = ", Nodes[i].number)
 	print("flag = ", Nodes[i].railroad)
+	print("prev = ", Nodes[i].previous_node)
 	sz=len(Nodes[i].branch_array)
 	for j in range(0, sz):
 		print("Branch = ", Nodes[i].branch_array[j].adjacted_node)
 		print("Branch.cost = ", Nodes[i].branch_array[j].cost)
-	print(" ")
+
+	print(" ")"""
 
 
 
-mesh1=0
-mesh2=0
-print("Введите номер первой ячейки: ")
-mesh1=int(input())
-print("Введите номер второй ячейки: ")
-mesh2=int(input())
 
-node1=int(get_crossroad(int(mesh1), N_sizes, N_size))
-node2=int(get_crossroad(int(mesh2), N_sizes, N_size))
+
+
+
+
+
+
+
+#1, путь до первой ячейки
+mesh1=-1 #введите номер перекрестка, на котором стоит робот перед стартом. если он стоит между перекрестками, то вводим тот перекресток, перед которым лежит препятствие(если его нельзя объехать), поэтому на объезд препятствий оставляем эту проблему
+mesh2=22
+
+
+#еще одна проблема: знаем номер элемента маршрута, на котором все сломалось, но не знаем, на каком именно перекретке! решить эту проблему на Горьковском море возвращением еще и j, на котором все сломалось. зная это, можно вычислить перекресток, на котором произошла поломка. также на распберри хранить массив перекрестков (без повторений подряд!!!, т.е рядом не может быть 5, 5), через которые пройдет робот. и зная этот массив и j, найдем номер перекрестка, на котором все сломалось. СОЗДАТЬ СЕГОДНЯ функцию, которая построит такой маршрут 
+
+node1=int(get_crossroad(int(mesh1), N_sizes, N_size, mode))
+node2=int(get_crossroad(int(mesh2), N_sizes, N_size, mode))
+
+
+if (mesh1==-1):
+	node1=0
+if (mesh2==-1):
+	node2=0
+print("N_Size = ", N_size)
+path1 = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
+robot_action1=make_robot_action(path1, sum(N_sizes), N_size, floor, mesh1, mesh2, mode)   #работает вот эта часть!
+for i in range(0, len(path1)):
+	Nodes[path1[i].number].previous_node=-1
+
+#2, путь до второй ячейки или домой (в данном случае до второй ячейки)
+mesh1=22
+mesh2=20 #20
+
+
+node1=int(get_crossroad(int(mesh1), N_sizes, N_size, mode))
+node2=int(get_crossroad(int(mesh2), N_sizes, N_size, mode))
+print("Node1 = ", node1)
+print("Node2 = ", node2)
 
 if (mesh1==-1):
 	node1=0
 if (mesh2==-1):
 	node2=0
 
-#print(node1)
-#print(node2)
+path2 = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) 
+robot_action2=make_robot_action(path2, sum(N_sizes), N_size, floor, mesh1, mesh2, mode)   #работает вот эта часть!
 
-path = A_star(Nodes, Nodes[node1], Nodes[node2], cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
+#3, путь домой
+mesh1=20
+mesh2=-1
+
+
+node1=int(get_crossroad(int(mesh1), N_sizes, N_size, mode))
+node2=int(get_crossroad(int(mesh2), N_sizes, N_size, mode))
+
+if (mesh1==-1):
+	node1=0
+if (mesh2==-1):
+	node2=0
+
+path3 = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
+robot_action3=make_robot_action(path3, sum(N_sizes), N_size, floor, mesh1, mesh2, mode)   #работает вот эта часть!
+
+
+
+robot_action = robot_action1  + robot_action2 + robot_action3
+path=path1 +path2+path3 
+
+path = get_path_nodes(path)
+print("path ")
+for i in range(0, len(path)):
+	print("  ", path[i].number)
+	print(" ")
+
+
+
+
+#robot_action=[]
 
 
 print(" ")
 print(" ")
-robot_action=[]
-floor=2
-
-
 print(" ")
-print(" ")
-print(" ")
+print("robot action ")
 
-
-
-robot_action=make_robot_action(path, 4, sum(N_sizes), N_size, floor, mesh1, mesh2)   #работает вот эта часть!
 for i in range(0, len(robot_action)):
 	print("action = ", robot_action[i].action)
 	print("count = ", robot_action[i].counter)
