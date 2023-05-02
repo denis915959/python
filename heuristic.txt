@@ -415,9 +415,6 @@ def make_path(Nodes, goal_node): #тут виснет при стартовой 
 	node=Nodes[goal_node.number]
 	#print("A star")
 	while (node.previous_node!=-1):
-		"""print("num = ", node.number)
-		print("prev = ", node.previous_node)
-		print("")"""
 		path.append(node)
 		node=Nodes[node.previous_node]
 	path.append(node) #добавляем в маршрут стартовую вершину
@@ -498,7 +495,7 @@ def A_star(Nodes, start_node, goal_node, cost_between_blocks, cost_between_rows,
 
 			sz_adj_node=len(new_reachable_nodes)
 			for i in range(0, sz_adj_node): #проверить этот блок, удалить break, написать make_path, протестировать алгоритм
-				if(check_node_on_reachable(reachable, new_reachable_nodes[i])==False): #т.е не знаем, как попасть в эту вершину              """and (check_node_on_reachable(explored, new_reachable_nodes[i])==True)"""
+				if(check_node_on_reachable(reachable, new_reachable_nodes[i])==False): #т.е не знаем, как попасть в эту вершину 
 					Nodes[new_reachable_nodes[i].number].previous_node=node.number
 					reachable.append(Nodes[new_reachable_nodes[i].number])
 			k=2	
@@ -506,16 +503,6 @@ def A_star(Nodes, start_node, goal_node, cost_between_blocks, cost_between_rows,
 
 def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, mode, to_end): #, orientation    этаж конечной вершины , action=0 на последнем участке, counter =числу пройденных перекрестков, далее робот упирается в приемный терминал, но так как перекрестки пройдены, то получаем success
 	sz=len(path)
-	#global number_to_zero_node
-	"""print("path in function")
-	for i in range(0, sz):
-		print("number = ", path[i].number)
-		#print("counter = ", path[i].counter)
-		print(" ")
-	print(" ")
-	print(" ")
-	print(" ")
-	print(" ")"""
 
 	robot_path=[]
 	global orientation
@@ -683,13 +670,6 @@ def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, m
 			if((elem.action==2)or(elem.action==1)):
 				robot_path[len(robot_path)-1].action=6
 	
-	"""print("robot_path 1")
-	for i in range(0, len(robot_path)):
-		print("action = ", robot_path[i].action)
-		print("counter = ", robot_path[i].counter)
-		print(" ")
-	print(" ")"""
-
 	robot_action=[]
 	sz=len(robot_path)
 	i=0
@@ -820,8 +800,8 @@ def make_full_path(Nodes, start_node, start_mesh, mesh_arr, end_node, end_mesh, 
 
 
 mode = 2 #2 - новый склад
-#N_sizes=[3, 2, 4]
-N_sizes=[300, 200, 200]
+N_sizes=[3, 2, 4]
+#N_sizes=[300, 200, 200]
 if(mode == 1):
 	number_to_zero_node=N_sizes[0]+2
 if(mode == 2):
@@ -833,7 +813,7 @@ if(mode==1):
 	N_size=sum(N_sizes)+len(N_sizes)+1
 if(mode==2):
 	N_size=sum(N_sizes) + len(N_sizes) - 1
-M=900
+M=6
 Nodes=generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, mode)
 
 
@@ -842,9 +822,9 @@ Nodes=generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_bet
 
 #первый режим!
 floor_arr=[2, 2]
-start_node=0
+start_node=3
 start_mesh=-1 #автоматически этот расчет сделать (внутри функции или все-же нет???)
-mesh_arr=[200002, 8]
+mesh_arr=[22, 31]
 end_node=0
 end_mesh=-1
 t1=time.process_time()
