@@ -5,6 +5,7 @@ from random import randint
 from tkinter import * 
 #import tkinter as tk
 import matplotlib.pyplot as plt
+import time
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
 from prettytable import PrettyTable
@@ -81,7 +82,7 @@ def generate_B(b1, b2, n):
 
 def dop_zadanie_matrix(A, B):
 	n=len(A[0])
-	n1=n//2
+	"""n1=n//2
 	for i in range (0, n):
 		for j in range (1, n):
 			k=1
@@ -92,6 +93,12 @@ def dop_zadanie_matrix(A, B):
 				for m in range(0, (j+2)):
 					k=k*B[i][m]
 			A[i][j]=A[i][j]*k
+		for i1 in range(0, n):
+			for j1 in range(0, n):
+				A[i1][j1]=A[i1][j1]*100
+	for i1 in range(0, n):
+		for j1 in range(0, n):
+			print(A[i1][j1])"""
 	return(A)
 	
 	
@@ -121,7 +128,6 @@ def vengersky_algoritm(A):
 			min_str=min(A[i])
 			for j in range(0, n):
 				A[i][j]=A[i][j]-min_str
-
 		for j in range(0, n): #если в каких-то столбцах нет нулей, то они там появятся (по аналогии со строкой)
 			flag=False
 			for i in range(0, n):
@@ -137,6 +143,7 @@ def vengersky_algoritm(A):
 				column.clear()
 
 		#второй пункт
+
 		null_count=[]
 		for i in range(0, n):
 			count=0
@@ -149,7 +156,6 @@ def vengersky_algoritm(A):
 		A_temp=copy.deepcopy(A) #рекурсивный метод
 		num_zero_string=[] #массив номеров вычеркнутых строк
 		num_zero_column=[] #массив номеров вычеркнутых столбцов
-
 		while(zero_in_A): #вычеркиваем строки и столбцы из матрицы, убирая все нули (заполняем -1)
 			null_count=[] #сначала смотрим строки
 			for i in range (0, n): #ищем число нулей в каждой строке
@@ -249,7 +255,11 @@ def vengersky_algoritm(A):
 			for j in range(0, n):
 				if (A_temp[i][j]!=-1):
 					no_zero_arr.append(A_temp[i][j])
-		min_temp=min(no_zero_arr)
+		if(len(no_zero_arr)!=0):
+			min_temp=min(no_zero_arr)
+		else:
+			min_temp=0   ##########
+		
 		for i in range(0, n): #вычитаем min_temp из невычеркнутых элементов
 			for j in range(0, n):
 				if (A_temp[i][j]!=-1):

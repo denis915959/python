@@ -1,6 +1,7 @@
 # python lab2_1.txt
 
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN, Birch #,  MeanShift
+#import HDBSCAN
 from sklearn import metrics
 from torchvision import datasets, transforms
 from sklearn.cluster import AffinityPropagation
@@ -16,126 +17,96 @@ transforms.ToTensor(),
 transforms.Normalize((0.1307,), (0.3081,))  #уменьшает влияние масштаба
 ])
 
-"""mnist_data = datasets.MNIST('data', train=True, download=True, transform=transform)
+train_set = MNIST(root='./data', train=True, download=True, transform=transform) #датасет, на котором "тренируем" нейронку
+test_set = MNIST(root='./data', train=False, download=True, transform=transform) #на этом датасете проверям, насколько хорошо обучили нейронку (через расчет ARI)
 
-#создать DataLoader для получения пакетов данных
-data_loader = torch.utils.data.DataLoader(mnist_data, batch_size=64, shuffle=True) #разбивает перед каждым пуском программы данные на пакеты размером 64 и перемешивает их
-#size = torch.arange(10000)
-#data_loader = data_utils.Subset(mnist_data, size)
-
-#Получить все изображения в виде тензора
-#all_images = torch.cat([x[0].view(-1, 28*28) for x in data_loader], dim=0)
-
-sample_indices = np.random.choice(len(data_loader), size=1000, replace=False)
-all_images = data_loader[sample_indices]"""
-
-train_set = MNIST(root='./data', train=True, download=True, transform=transform)
-test_set = MNIST(root='./data', train=False, download=True, transform=transform)
-
-train_data = train_set.data.reshape((-1, 28 * 28))
+train_data = train_set.data.reshape((-1, 28 * 28)) #делаем картинки одного размера
 test_data = test_set.data.reshape((-1, 28 * 28))
 
-train_data = train_data.float() / 255.0
+train_data = train_data.float() / 255.0   #алгоритм так быстрее работает
 test_data = test_data.float() / 255.0
 
 
 
 
 
-#использовать алгоритм KMeans для кластеризации данных
-kmeans = KMeans(n_clusters=10).fit(train_data)#all_images)
 
-#Получение прогнозируемых меток и кластерных центров
-pred_labels = kmeans.predict(test_data)#all_images)
-cluster_centers = kmeans.cluster_centers_
 
-#Рассчитайте скорректированный индекс RAND между прогнозируемыми метками и истинными метками
-#true_labels = torch.cat([x[1] for x in test_data], dim=0).numpy() #data_loader], dim=0).numpy()
+
+"""sample_indices = np.random.choice(len(test_data), size=1000, replace=False)
+sample_data = test_data[sample_indices]
+sample_labels = torch.tensor(kmeans.predict(sample_data))"""
+
+
+
+
+
+
+""" #работает
+#использовать алгоритм KMeans для кластеризации данных из train_data
+kmeans = KMeans(n_clusters=10).fit(train_data)
+
+#Получение прогнозируемых меток
+kmeans_predicate_labels = kmeans.predict(test_data) 
+
+#Рассчитываем скорректированный индекс RAND между прогнозируемыми метками и истинными метками
 true_labels = test_set.targets
-ari = metrics.adjusted_rand_score(true_labels, pred_labels)
+kmeans_ari = metrics.adjusted_rand_score(true_labels, kmeans_predicate_labels)
 
 #Распечатайте скорректированный индекс RAND и центры кластеров
-print("Adjusted Rand Index:", ari)
-print("Cluster Centers:", cluster_centers)
-
-
-
-
+print("kmeans Adjusted Rand Index:", kmeans_ari)
 """
+
+
+
+"""  #не работает этот блок
 #использовать алгоритм sklearn.cluster.AffinityPropagation для кластеризации данных
 #af = AffinityPropagation(preference=-50) #, affinity='euclidean')
 #af.fit(all_images)  # fit - Обучаем модель на данных
-af = AffinityPropagation(preference=-50, damping=0.5)
+af = AffinityPropagation(preference=-50, damping=0.5).fit(train_data)
 
 # прогнозируемых меток и кластерных центров
-#af_predicated_labels = af.predict(all_images)
-af_predicated_labels = af.fit_predict(all_images)
+af_predicated_labels = af.predict(test_data) 
 af_cluster_centers = af.cluster_centers_
 
-#Рассчитайте скорректированный индекс RAND между прогнозируемыми метками и истинными метками
-true_labels = torch.cat([x[1] for x in data_loader], dim=0).numpy()
+#Рассчитываем скорректированный индекс RAND между прогнозируемыми метками и истинными метками
+true_labels = test_set.targets
 af_ari = metrics.adjusted_rand_score(true_labels, af_predicated_labels)
 
 #Распечатайте скорректированный индекс RAND и центры кластеров
-print("AF  Adjusted Rand Index:", ari)
+print("AF  Adjusted Rand Index:", af_ari)
 print("Cluster Centers:", af_cluster_centers)
 """
 
 
+#работает
+dbscan = DBSCAN(eps=2.0, min_samples=2) #через чат подобрать оптимальные параметры утром
+dbscan.fit(train_data)
+dbscan_predicated_labels = dbscan.fit_predict(test_data) 
+#dbscan_cluster_centers = dbscan.cluster_centers_
+true_labels = test_set.targets
+dbscan_ari = metrics.adjusted_rand_score(true_labels, dbscan_predicated_labels)
+print("DBSCAN  Adjusted Rand Index:",dbscan_ari)
+
+
+#не работает
+"""af = AffinityPropagation().fit(train_data)#preference=-50, damping=0.5).fit(train_data)
+af_predicated_labels = af.predict(test_data) 
+true_labels = test_set.targets
+af_ari = metrics.adjusted_rand_score(true_labels, af_predicated_labels)
+print("AF  Adjusted Rand Index:",af_ari)"""
+
+
+#работает
+"""birch = Birch(n_clusters=None).fit(train_data)#preference=-50, damping=0.5).fit(train_data)   #через чат подобрать оптимальные параметры утром
+birch_predicated_labels = birch.predict(test_data) 
+true_labels = test_set.targets
+birch_ari = metrics.adjusted_rand_score(true_labels, birch_predicated_labels)
+print("Birch  Adjusted Rand Index:",birch_ari)"""
+
+
+#после чата сделать вывод и попробовать на экран таки вывести
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-"""import torch
-import torchvision  #, transforms
-from torchvision import transforms
-from sklearn.cluster import KMeans
-from sklearn.metrics import adjusted_rand_score
-import torch.nn as nn
-
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])   #этого не было
-
-#Загружаем датасет
-train_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=transform ) #torchvision.transforms.ToTensor(), download=True)
-
-#Берем подмножество для ускорения процесса
-data, _ = torch.utils.data.random_split(train_dataset, [10000, 50000])
-
-data_small = data.dataset.data.float().mean()
-
-#Преобразуем данные, чтобы каждое изображение представляло собой вектор
-#data1 = data_small.data.reshape(-1, 28 * 28).numpy() #нейронка
-
-arr=[]
-print(len(arr))
-data1 = data_small.reshape(-1, 28 * 28)
-#data_small.data.reshape((-1, 28 * 28))
-
-
-
-#Задаем количество кластеров
-k = 10
-
-#K-means кластеризация
-kmeans = KMeans(n_clusters=k, random_state=0).fit(data_small)
-pred_labels = kmeans.labels_
-pred_centers = kmeans.cluster_centers_
-
-#Рассчитываем adjusted rand index
-true_labels = train_dataset.targets.numpy()[:10000]
-ari = adjusted_rand_score(true_labels, pred_labels)
-
-#Выполняем вывод результатов
-print(f"Adjusted Rand Index: {ari}")
-print(f"True Centers: {torch.unique(true_labels)}")
-print(f"Predicted Centers: {pred_centers.shape}")"""
