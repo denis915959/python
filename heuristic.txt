@@ -827,10 +827,10 @@ Nodes=generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_bet
 
 
 #первый режим!
-floor_arr=[2, 2]
-start_node=0
+floor_arr=[2]
+start_node=4
 start_mesh=-1 #автоматически этот расчет сделать (внутри функции или все-же нет???)
-mesh_arr=[22, 31]
+mesh_arr=[22]
 end_node=0
 end_mesh=-1
 t1=time.process_time()
@@ -850,7 +850,7 @@ for i in range(action_size+1, len(list)):
 #print("orientation = ", orientation)
 #второй режим!
 """node1=27
-node2=15
+node2=0
 mesh1=-1
 mesh2=-1
 path = A_star(copy.deepcopy(Nodes), copy.copy(Nodes[node1]), copy.copy(Nodes[node2]), cost_between_blocks, cost_between_rows, cost_between_mesh, N_sizes, N_size) #было это выбрано
@@ -861,7 +861,7 @@ for i in range(0, nodes_sz):
 robot_action=make_robot_action(path, sum(N_sizes), N_size, 2, mesh1, mesh2, mode, False)   #работает вот эта часть!  
 """
 
-path = get_path_nodes(path)
+path = get_path_nodes(path)  #не обязательно пользоваться последней вершиной. важно лишь, чтобы она была (если препятствие между 4 и 0, то 0-я вершина прогодится. ее не убирать!!!)
 print("path ")
 for i in range(0, len(path)):
 	print("  ", path[i].number)

@@ -1,0 +1,96 @@
+# python lab2.txt
+
+
+import torch
+from torchvision import datasets, transforms
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from torchvision.datasets import MNIST
+import numpy as np
+
+# Загрузка датасета MNIST
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+train_data = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+
+# Получение данных и меток
+"""data = train_data.data.numpy()
+labels = train_data.targets.numpy()
+
+# Уменьшение размерности данных
+data = data.reshape(data.shape[0], -1)"""
+labels = train_data.targets.numpy()
+
+
+train_set = MNIST(root='./data', train=True, download=True, transform=transform)
+test_set = MNIST(root='./data', train=False, download=True, transform=transform)
+
+train_data = train_set.data.reshape((-1, 28 * 28))  #именно такой размер
+test_data = test_set.data.reshape((-1, 28 * 28))
+
+# K-Means кластеризация
+"""kmeans = KMeans(n_clusters=10) #вернуть потом
+kmeans.fit(train_data)
+
+# Получение предсказанных меток
+pred_labels = kmeans.predict(train_data)
+
+# Получение центров кластеров
+cluster_centers = kmeans.cluster_centers_"""
+
+# Сравнение меток и центров кластеров
+"""for i in range(10):
+    print("Кластер " + str(i) + ":")
+    print("Предсказанные метки: ", np.unique(labels[pred_labels == i]))
+    print("Реальные метки: ", np.unique(labels[train_data[np.where(pred_labels == i)[0]]]))
+    print("Центр кластера: ", cluster_centers[i])
+    print("")"""
+
+
+test_labels = test_set.targets
+aglom_cluster = AgglomerativeClustering(n_clusters=10)
+aglom_cluster.fit(train_data)
+aglom_cluster_predicted_labels = torch.tensor(aglom_cluster.fit_predict(test_data))
+aglom_cluster_ari = adjusted_rand_score(test_labels, aglom_cluster_predicted_labels)
+
+print("Agglomerative Clustering ARI: ", aglom_cluster_ari)
+
+
+
+
+
+
+
+
+"""from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.metrics import adjusted_rand_score
+import numpy as np
+import torch
+from torchvision.datasets import MNIST
+from torchvision import transforms
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.preprocessing import scale
+
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+data= MNIST(root='./data', train=True, download=True, transform=transform)
+
+# Преобразование данных
+#data = scale(data)
+
+# Определение количества кластеров
+n_clusters = 10
+
+# Применение алгоритма k-means
+kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+kmeans.fit(data)
+
+# Определение центров кластеров
+cluster_centers = kmeans.cluster_centers_
+
+# Отображение центров кластеров
+fig, ax = plt.subplots(1, n_clusters, figsize=(12, 12))
+for i in range(n_clusters):
+    ax[i].imshow(cluster_centers[i].reshape((28,28)), cmap='gray')
+    ax[i].axis('off')
+
+plt.show()"""
