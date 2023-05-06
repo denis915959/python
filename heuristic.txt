@@ -26,7 +26,7 @@ class robot_path_node:
 
 
 global orientation
-orientation=1
+orientation=3
 #Ограничение:размер блока не менее 2 ячеек
 #ограничений на число блоков нет
 def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, mode):  #генерация графа, работает 
@@ -162,43 +162,58 @@ def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_betwe
 		return(Nodes)
 
 	if (mode==2):
-		N_size=sum(N_sizes)+len(N_sizes)-1
-		#самый первый ряд!!
-		count=count+1 #ручной режим (т.е не в цикле)
-		branchs=[Branch(count+1, cost_between_mesh)]
-		Nodes.append(Node(count, branchs, False))
-	
-		for j in range(1, N_sizes[0]-1):  #(0, N_sizes[k])
+		N_size=sum(N_sizes)+len(N_sizes)-1	
+		if(N_sizes[0]>1):
+			#самый первый ряд!!
+			count=count+1 #ручной режим (т.е не в цикле)
+			branchs=[Branch(count+1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
+			for j in range(1, N_sizes[0]-1):  #(0, N_sizes[k])
+				count=count+1
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+				Nodes.append(Node(count, branchs, False))
+				print("k1")
+		else:
 			count=count+1
-			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+			branchs=[Branch(count+1, cost_between_blocks)]
 			Nodes.append(Node(count, branchs, False))
 
 		for k in range(1, (sz)):
-			count=count+1 #ручной режим
-			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
-			Nodes.append(Node(count, branchs, False))
+			if(N_sizes[0]>1):
+				print("k2")
+				count=count+1 #ручной режим
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
+				Nodes.append(Node(count, branchs, False))
 
 			count=count+1 
 			branchs=[Branch(count+N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
 			Nodes.append(Node(count, branchs, True))
-
-			count=count+1  #ручной режим
-			branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
-			Nodes.append(Node(count, branchs, False))
-
-			for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
+			
+			
+			if(N_sizes[0]>1):
+				count=count+1  #ручной режим
+				branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+				Nodes.append(Node(count, branchs, False))	
+				for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
+					print("k2_1")
+					count=count+1
+					branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+					Nodes.append(Node(count, branchs, False))
+			else:
 				count=count+1
-				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+				branchs=[Branch(count-1, cost_between_blocks)]
 				Nodes.append(Node(count, branchs, False))
 
-		count=count+1
-		branchs=[Branch(count-1, cost_between_mesh)]
-		Nodes.append(Node(count, branchs, False))
+		if(N_sizes[0]>1):
+			count=count+1
+			branchs=[Branch(count-1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
 		
 		Nodes[number_to_zero_node].branch_array.append(Branch(0, cost_between_rows)) #добавляем ребро к стартовой ячейке
-
 		#далее for до предпоследней итерпции включительно, последняя опять в ручном режиме	
-		for i in range(1, (int(M/2)-1)):
+		#ручной режим настроен для мелкого склада и для крупного тоже работает!!!!!!!!!!!!!!!!!!!!!!!
+		for i in range (1, (int(M/2)-1)):
+			print("k3")
 			count=count+1
 			branchs=[Branch(count+1, cost_between_mesh)]
 			Nodes.append(Node(count, branchs, False))
@@ -209,6 +224,7 @@ def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_betwe
 				Nodes.append(Node(count, branchs, False))
 
 			for k in range(1, (sz)):
+				print("k4")
 				count=count+1 #ручной режим
 				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
 				Nodes.append(Node(count, branchs, False))
@@ -225,42 +241,47 @@ def generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_betwe
 					count=count+1
 					branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
 					Nodes.append(Node(count, branchs, False))
+					print("k5")
 
 			count=count+1
 			branchs=[Branch(count-1, cost_between_mesh)]
 			Nodes.append(Node(count, branchs, False))
 
-		#ручной режим (т.е не в цикле)
-		count=count+1 
-		branchs=[Branch(count+1, cost_between_mesh)]
-		Nodes.append(Node(count, branchs, False))
-	
-		for j in range(1, N_sizes[0]-1):  #(0, N_sizes[k])
-			count=count+1
-			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
-			Nodes.append(Node(count, branchs, False))
-
-		for k in range(1, (sz)):
-			count=count+1 #ручной режим
-			branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
-			Nodes.append(Node(count, branchs, False))
-
+		if(M>2):
+			#ручной режим (т.е не в цикле)
 			count=count+1 
-			branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
-			Nodes.append(Node(count, branchs, True))
-
-			count=count+1  #ручной режим
-			branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+			branchs=[Branch(count+1, cost_between_mesh)]
 			Nodes.append(Node(count, branchs, False))
-
-			for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
+	
+			for j in range(1, N_sizes[0]-1):  #(0, N_sizes[k])
 				count=count+1
 				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
 				Nodes.append(Node(count, branchs, False))
+				print("k6")
 
-		count=count+1
-		branchs=[Branch(count-1, cost_between_mesh)]
-		Nodes.append(Node(count, branchs, False))
+			for k in range(1, (sz)):
+				count=count+1 #ручной режим
+				branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_blocks)]
+				Nodes.append(Node(count, branchs, False))
+
+				count=count+1 
+				branchs=[Branch(count-N_size, cost_between_rows), Branch(count+1, cost_between_blocks), Branch(count-1, cost_between_blocks)]    #центральный перекресток
+				Nodes.append(Node(count, branchs, True))
+	
+				count=count+1  #ручной режим
+				branchs=[Branch(count-1, cost_between_blocks), Branch(count+1, cost_between_mesh)]
+				Nodes.append(Node(count, branchs, False))
+				print("k7")
+	
+				for j in range(1, N_sizes[k]-1):  #(0, N_sizes[k])
+					count=count+1
+					branchs=[Branch(count-1, cost_between_mesh), Branch(count+1, cost_between_mesh)]
+					Nodes.append(Node(count, branchs, False))
+					print("k8")
+		
+			count=count+1
+			branchs=[Branch(count-1, cost_between_mesh)]
+			Nodes.append(Node(count, branchs, False))
 		return(Nodes)
 
 
@@ -363,6 +384,7 @@ def choose_node(reachable, goal_node, cost_between_blocks, cost_between_rows, co
 			S1=h1+h2
 
 			Sum=1
+			print("block_node1 = ", block_node1)
 			for j in range(0, (block_node1+1)):
 				Sum=Sum+N_sizes[j]+1
 			h1=abs(node1-Sum)
@@ -503,7 +525,7 @@ def A_star(Nodes, start_node, goal_node, cost_between_blocks, cost_between_rows,
 
 def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, mode, to_end): #, orientation    этаж конечной вершины , action=0 на последнем участке, counter =числу пройденных перекрестков, далее робот упирается в приемный терминал, но так как перекрестки пройдены, то получаем success
 	sz=len(path)
-
+	#если направление стартовое не совпадает с тем, которое нужно, то сделать доворот !!!! т.е 3 проверки добавить. после этого скопировать старый код построения склада и посмотреть корректность работы
 	robot_path=[]
 	global orientation
 	udalennost=int(goal_mesh//N_mesh_size)%2
@@ -723,6 +745,7 @@ def make_full_path(Nodes, start_node, start_mesh, mesh_arr, end_node, end_mesh, 
 	node1=start_node #если робот стоит между перекрестками, то вводим тот перекресток, перед которым лежит препятствие(если его нельзя объехать), поэтому на объезд препятствий оставляем эту проблему
 	mesh1=start_mesh
 	mesh2=mesh_arr[0]
+	
 	node2=int(get_crossroad(int(mesh2), N_sizes, N_size, mode))
 
 	if (mesh2==-1):
@@ -808,6 +831,7 @@ def make_full_path(Nodes, start_node, start_mesh, mesh_arr, end_node, end_mesh, 
 mode = 2 #2 - новый склад
 N_sizes=[3, 2, 4]
 #N_sizes=[300, 200, 200]
+#N_sizes=[10, 10, 10, 10] #если больше, то ошибка:   499, in A_star, reachable.remove(node), ValueError: list.remove(x): x not in list
 if(mode == 1):
 	number_to_zero_node=N_sizes[0]+2
 if(mode == 2):
@@ -819,18 +843,36 @@ if(mode==1):
 	N_size=sum(N_sizes)+len(N_sizes)+1
 if(mode==2):
 	N_size=sum(N_sizes) + len(N_sizes) - 1
+#M=6
 M=6
 Nodes=generate_graf(N_sizes, M, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, mode)
 
 
+"""Nodes[5].number=-1
+Nodes[6].number=-1
+Nodes[7].number=-1
+Nodes[8].number=-1"""
+
+for i in range(0, len(Nodes)):   #печать вершин графа
+	print("Number = ", Nodes[i].number)
+	print("flag = ", Nodes[i].railroad)
+	print("prev = ", Nodes[i].previous_node)
+	sz=len(Nodes[i].branch_array)
+	for j in range(0, sz):
+		print("Branch = ", Nodes[i].branch_array[j].adjacted_node)
+		print("Branch.cost = ", Nodes[i].branch_array[j].cost)
+
+	print(" ")
+
+#в приложении сделать так, что в режиме 1 всегда будет один и тот же склад
 
 
 
 #первый режим!
-floor_arr=[2]
-start_node=4
+floor_arr=[2, 2]
+start_node=0
 start_mesh=-1 #автоматически этот расчет сделать (внутри функции или все-же нет???)
-mesh_arr=[22]
+mesh_arr=[12, 30]
 end_node=0
 end_mesh=-1
 t1=time.process_time()

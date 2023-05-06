@@ -1,4 +1,4 @@
-# python vengersky.txt
+# python laboratornaya_rabota.txt
 import copy
 import numpy as np
 from random import randint
@@ -82,7 +82,7 @@ def generate_B(b1, b2, n):
 
 def dop_zadanie_matrix(A, B):
 	n=len(A[0])
-	"""n1=n//2
+	n1=n//2
 	for i in range (0, n):
 		for j in range (1, n):
 			k=1
@@ -95,8 +95,11 @@ def dop_zadanie_matrix(A, B):
 			A[i][j]=A[i][j]*k
 		for i1 in range(0, n):
 			for j1 in range(0, n):
-				A[i1][j1]=A[i1][j1]*100
+				A[i1][j1]=A[i1][j1]
 	for i1 in range(0, n):
+		for j1 in range(0, n):
+			A[i1][j1]=float(A[i1][j1])
+	"""for i1 in range(0, n):
 		for j1 in range(0, n):
 			print(A[i1][j1])"""
 	return(A)
@@ -257,13 +260,10 @@ def vengersky_algoritm(A):
 					no_zero_arr.append(A_temp[i][j])
 		if(len(no_zero_arr)!=0):
 			min_temp=min(no_zero_arr)
-		else:
-			min_temp=0   ##########
-		
-		for i in range(0, n): #вычитаем min_temp из невычеркнутых элементов
-			for j in range(0, n):
-				if (A_temp[i][j]!=-1):
-					A_temp[i][j]=A_temp[i][j]-min_temp
+			for i in range(0, n): #вычитаем min_temp из невычеркнутых элементов
+				for j in range(0, n):
+					if (A_temp[i][j]!=-1):
+						A_temp[i][j]=A_temp[i][j]-min_temp
 
 		no_zero_arr.clear()
 		#переход к исходной матрице
@@ -414,7 +414,7 @@ def vengersky_algoritm_min(A):
 	index1=sorted(index, key=sort_key)
 	S=[]
 	for i in range(1, (n+1)):
-		S_tmp=0.0
+		S_tmp=0
 		for j in range(0, i):
 			S_tmp=S_tmp+A[index1[j].string][index1[j].column]
 		S.append(S_tmp)
@@ -749,11 +749,11 @@ def reset(window, reset_button, m_label, res_label): #удаление всех 
 	for i in range(0, len(Matrix_label)):
 		Matrix_label[i].destroy()
 	y_vvod_n=h_sklad-h_sklad//7 #7 - подобрана экспериментально, это значит, что 1/7 часть экрана под ввод данных
-	set_size_matrix_label = Label(text = "Введите размерность квадратной матрицы (не более 9): ",  font = Font)
+	set_size_matrix_label = Label(text = "Введите размерность квадратной матрицы: ",  font = Font)
 	set_size_matrix_label.place(x=10, y=y_vvod_n)
 	n_vvod=StringVar()
 	get_size = Entry(width=5, textvariable=n_vvod,  font = Font)
-	get_size.place(x=53*font_width, y=y_vvod_n)  #поле ввода размера матрицы   
+	get_size.place(x=40*font_width, y=y_vvod_n)  #поле ввода размера матрицы   
 	#Отсчет от верхнего левого края экрана  !!
 	set_n_button = Button(window, text = "отправить", background="yellow", command = lambda *args: set_n(window, set_size_matrix_label, set_n_button, get_size, n_vvod, y_vvod_n), font = Font)
 	set_n_button.place(x=61*font_width, y=y_vvod_n)  #кнопка отправки размера матрицы
@@ -773,11 +773,11 @@ canvas.place(x=0, y=0)
 
 
 y_vvod_n=h_sklad-h_sklad//7 #7 - подобрана экспериментально, это значит, что 1/7 часть экрана под ввод данных
-set_size_matrix_label = Label(text = "Введите размерность квадратной матрицы (не более 9): ",  font = Font)
+set_size_matrix_label = Label(text = "Введите размерность квадратной матрицы: ",  font = Font)
 set_size_matrix_label.place(x=10, y=y_vvod_n)
 n_vvod=StringVar() 
 get_size = Entry(width=5, textvariable=n_vvod,  font = Font)
-get_size.place(x=53*font_width, y=y_vvod_n)  #поле ввода размера матрицы   
+get_size.place(x=40*font_width, y=y_vvod_n)  #поле ввода размера матрицы   
 #Отсчет от верхнего левого края экрана  !!
 set_n_button = Button(window, background="yellow", text = "отправить", command = lambda *args: set_n(window, set_size_matrix_label, set_n_button, get_size, n_vvod, y_vvod_n), font = Font)
 set_n_button.place(x=61*font_width, y=y_vvod_n)  #кнопка отправки размера матрицы
