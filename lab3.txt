@@ -1,0 +1,89 @@
+# python lab3.txt
+
+import numpy as np
+from scipy.stats import norm #для построения нормального распределения
+import matplotlib.pyplot as plt
+import torch
+
+
+#блок создания датасета с шумом 
+x = np.arange(-6, 6, 0.1)
+y0=[]
+size=120
+k=0.5
+b=2
+for i in range(0, size):
+	tmp=b + k*x[i]
+	y0.append(tmp)
+
+
+# Вычисляем соответствующие значения плотности вероятности нормального распределения
+e = norm.pdf(x, 0, 1)
+y=[]
+minus=False
+m=0.5 #без этого коэффициэнта слишком сильное "расширение" графика в середине
+for i in range(0, size):
+	#print(e[i])
+	if(minus==False):
+		tmp=y0[i]+m*e[i]
+		minus=True
+	else:
+		tmp=y0[i]-m*e[i]
+		minus=False
+	y.append(tmp)
+
+
+#блок восстановления параметров линии
+
+#заново создаем x и y точно такие же для pytorch
+x = torch.linspace(-3, 3, 120).view(-1, 1)
+y = k*x + b + torch.randn(120, 1)*0.1
+
+x_tensor = torch.tensor(x) #.view(120, 1) #преобразуем одномерный массив в тензор, понятный torch
+x_tensor = x_tensor.view(-1, 1) #(120, 1)
+y_tensor = torch.tensor(y).view(120, 1)
+
+#инициализируем параметры модели
+k1 = torch.randn(1, 1, requires_grad=True) #это тензор размера 1х1
+b1 = torch.randn(1, requires_grad=True)
+
+#с типом все ок. откуда double???
+print(type(b1)) 
+
+#задаем функцию потерь
+loss_fn = torch.nn.MSELoss()
+
+optimizer = torch.optim.SGD([k1, b1], lr=0.001) #lr - размер шага оптимизатора (влияет на скорость обучения)
+
+for i in range(1000): #число итераций надо настраивать, большое может приводить к переобучению, маленькое число - к малой точности
+	# сбрасываем градиенты
+	optimizer.zero_grad()
+	y_pred = x_tensor.mm(k1) #в этой строке ошибка 
+	+ b1
+
+	# вычисляем функцию потерь
+	loss = loss_fn(y_pred, y_tensor)
+
+	# вычисляем градиенты
+	loss.backward()
+
+	# обновляем параметры модели
+	optimizer.step()
+
+	# выводим прогресс обучения
+	if (i+1) % 100 == 0:
+		print('Epoch [{}/{}], Loss: {:.4f}'.format(i+1, 1000, loss.item()))
+
+print('k1:', k1.item())
+print('b1:', b1.item())
+
+"""# Создаем график
+plt.scatter(x, y, marker=".")
+
+# Добавляем заголовок и подписи осей
+plt.title('Нормальное распределение', fontsize=16)
+plt.xlabel('Значения X', fontsize=14)
+plt.ylabel('Плотность вероятности', fontsize=14)
+
+# Отображаем график
+plt.show()"""
