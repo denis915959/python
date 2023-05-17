@@ -1,4 +1,5 @@
 # python laboratornaya_rabota.txt
+
 import copy
 import numpy as np
 from random import randint
@@ -9,6 +10,7 @@ import time
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
 from prettytable import PrettyTable
+from scipy.optimize import linear_sum_assignment
 
 #A1=[[32.0, 28.0, 4.0, 26.0, 4.0], [17.0, 19.0, 4.0, 17.0, 4.0], [4.0, 4.0, 5.0, 4.0, 4.0], [17.0, 14.0, 4.0, 14.0, 4.0], [21.0, 16.0, 4.0, 13.0, 4.0]] #res=39
 #A1=[[2.0, 5.0, 3.0, 10.0, 4.0], [6.0, 4.0, 8.0, 1.0, 1.0], [4.0, 6.0, 5.0, 3.0, 5.0], [3.0, 2.0, 6.0, 4.0, 3.0], [3.0, 1.0, 1.0, 4.0, 4.0]] #res = 9
@@ -82,7 +84,18 @@ def generate_B(b1, b2, n):
 
 def dop_zadanie_matrix(A, B):
 	n=len(A[0])
-	n1=n//2
+
+	for i in range(0, n):
+		div=1.0
+		step=0.1
+		for j in range(0, n):
+			A[i][j]=A[i][j]/div
+			div=div+step
+			
+
+	
+
+	"""n1=n//2
 	for i in range (0, n):
 		for j in range (1, n):
 			k=1
@@ -95,10 +108,14 @@ def dop_zadanie_matrix(A, B):
 			A[i][j]=A[i][j]*k
 		for i1 in range(0, n):
 			for j1 in range(0, n):
-				A[i1][j1]=A[i1][j1]
+				A[i1][j1]=A[i1][j1]"""
 	for i1 in range(0, n):
 		for j1 in range(0, n):
-			A[i1][j1]=float(A[i1][j1])
+			A[i1][j1]=int(A[i1][j1])
+	
+	
+
+	
 	"""for i1 in range(0, n):
 		for j1 in range(0, n):
 			print(A[i1][j1])"""
@@ -360,6 +377,7 @@ def vengersky_algoritm(A):
 def vengersky_algoritm_max(A):
 	max=0
 	n=len(A)
+
 	A1=copy.deepcopy(A)
 	for i in range(0, n):
 		for j in range(0, n):
@@ -371,12 +389,9 @@ def vengersky_algoritm_max(A):
 	for i in range(0, n):
 		for j in range(0, n):
 			A1[i][j]=A1[i][j] + max
-	"""for i in range(0, n):
-		for j in range(0, n):
-			print(A1[i][j], "   ", end="")
-		print("")"""
 	index=vengersky_algoritm(copy.deepcopy(A1))
 	index1=sorted(index, key=sort_key)
+	
 	S=[]
 	for i in range(1, (n+1)):
 		S_tmp=0.0
@@ -384,6 +399,15 @@ def vengersky_algoritm_max(A):
 			S_tmp=S_tmp+A[index1[j].string][index1[j].column]
 		S.append(S_tmp)
 	return(S)
+
+	"""row_ind, col_ind = linear_sum_assignment(A)
+	S=[]
+	for i in range(1, (n+1)):
+		S_tmp=0.0
+		for j in range(0, i):
+			S_tmp=S_tmp+A[row_ind[j]][col_ind[j]]
+		S.append(S_tmp)
+	return(S)"""
 
 def vengersky_algoritm_get_index(A):
 	max=0
@@ -399,10 +423,7 @@ def vengersky_algoritm_get_index(A):
 	for i in range(0, n):
 		for j in range(0, n):
 			A1[i][j]=A1[i][j] + max
-	"""for i in range(0, n):
-		for j in range(0, n):
-			print(A1[i][j], "   ", end="")
-		print("")"""
+	
 	index=vengersky_algoritm(copy.deepcopy(A1))
 	index1=sorted(index, key=sort_key)
 	return(index1)
@@ -410,6 +431,7 @@ def vengersky_algoritm_get_index(A):
 
 def vengersky_algoritm_min(A):
 	n=len(A)
+
 	index=vengersky_algoritm(copy.deepcopy(A))
 	index1=sorted(index, key=sort_key)
 	S=[]
@@ -418,6 +440,16 @@ def vengersky_algoritm_min(A):
 		for j in range(0, i):
 			S_tmp=S_tmp+A[index1[j].string][index1[j].column]
 		S.append(S_tmp)
+	
+
+
+	"""row_ind, col_ind = linear_sum_assignment(A)
+	S=[]
+	for i in range(1, (n+1)):
+		S_tmp=0.0
+		for j in range(0, i):
+			S_tmp=S_tmp+A[row_ind[j]][col_ind[j]]
+		S.append(S_tmp)"""
 	return(S)
 
 
