@@ -16,8 +16,8 @@ if __name__ == '__main__':
         [transforms.ToTensor(),
          transforms.Normalize((0.5,), (0.5,))])
 
-    test_set = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
-    train_set = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+    test_set = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=torchvision.transforms.ToTensor())
+    train_set = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=torchvision.transforms.ToTensor())
     test_loader = DataLoader(test_set, batch_size=8, shuffle=True, num_workers=2) #5 не получилось
     train_loader = DataLoader(train_set, batch_size=8, shuffle=True, num_workers=2) 
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(autoencoder.parameters(), lr=0.001, momentum=0.9)
 
     # Train the network
-    for epoch in range(2):
+    for epoch in range(10):
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             inputs, labels = data
@@ -67,63 +67,7 @@ if __name__ == '__main__':
 
     print('Finished Training')
 
-    with torch.no_grad():  #работает!!!!
-        dataiter = iter(test_loader)
-        images, labels = dataiter.__next__()
-
-        outputs = autoencoder(images)
-
-        _, predicted = torch.max(outputs, 1)
-
-        # Отображаем примеры входных изображений и соответствующих выходов модели.
-        fig, ax = plt.subplots(nrows=2, ncols=4)
-        for j, ax in enumerate(ax.flatten()):
-            ax.imshow(images[j][0], cmap='gray')
-            ax.set_title(f'Predicted: {classes[predicted[j]]}')
-        plt.show()
-
-        total_loss = 0
-        total = 0
-
-        for data in test_loader:
-            images, labels = data
-
-            output = autoencoder(images)
-            loss = criteria(output, labels)
-            total_loss += loss.item()
-            total += labels.size(0)
-
-        print(f'Test Loss: {total_loss / total:.3f}')
-
-
-
-
-
-
-
-
-
-
-
-    """with torch.no_grad(): #не работает
-        for data in test_loader:
-            img, _ = data
-            img = img.to(torch.device('cpu'))
-            output = autoencoder(img)
-            loss = criteria(output, img)
-            fig, axes = plt.subplots(nrows=2, ncols=10, sharex=True, sharey=True, figsize=(25,4))
-            for images, row in zip([img, output], axes):
-                for img, ax in zip(images, row):
-                    ax.imshow(img[0], cmap='gray')
-                    ax.get_xaxis().set_visible(False)
-                    ax.get_yaxis().set_visible(False)
-            fig.suptitle('Original Images and Reconstructed Images')
-            plt.show()
-            print('Test Loss: {:.4f}'.format(loss.item()))
-            break
-"""
-
-    """# Выводим тестовые примеры и соответствующие выходы модели.
+    # Выводим тестовые примеры и соответствующие выходы модели.
     with torch.no_grad():
         for data in test_loader:
             img, _ = data
@@ -139,10 +83,22 @@ if __name__ == '__main__':
             fig.suptitle('Original Images and Reconstructed Images')
             plt.show()
             #print('Test Loss: {:.4f}'.format(loss.item()))
-            break"""
+            break
 
 
-    """with torch.no_grad():
+
+
+
+
+
+
+
+
+
+
+
+"""
+    with torch.no_grad():
         dataiter = iter(test_loader)
         images, labels = dataiter.__next__()
         outputs = autoencoder(images)
@@ -175,8 +131,8 @@ if __name__ == '__main__':
             total_loss += loss.item()
             total += labels.size(0)
 
-        print(f'Test Loss: {total_loss / total:.3f}')"""
-
+        print(f'Test Loss: {total_loss / total:.3f}')
+"""
 
 
 
@@ -257,6 +213,22 @@ if __name__ == '__main__':
 """
 
 
+"""with torch.no_grad():
+    for data in test_loader:
+        img, _ = data
+        img = img.to(torch.device('cpu'))
+        output = model(img)
+        loss = criterion(output, img)
+        fig, axes = plt.subplots(nrows=2, ncols=10, sharex=True, sharey=True, figsize=(25,4))
+        for images, row in zip([img, output], axes):
+            for img, ax in zip(images, row):
+                ax.imshow(img[0], cmap='gray')
+                ax.get_xaxis().set_visible(False)
+                ax.get_yaxis().set_visible(False)
+        fig.suptitle('Original Images and Reconstructed Images')
+        plt.show()
+        print('Test Loss: {:.4f}'.format(loss.item()))
+        break"""
 
 
 
