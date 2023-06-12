@@ -1,0 +1,170 @@
+# python mqtt_wind.txt
+# рабочая версия!
+
+import random
+import time
+
+from paho.mqtt import client as mqtt_client
+
+class robot_path_node:
+	def __init__(self, action1, counter1):
+		self.action=action1
+		self.counter=counter1
+
+robot_action=[] #вместо этого блока программа из heyristic идет
+robot_action.append(robot_path_node(6, 1))
+robot_action.append(robot_path_node(4, 1))
+robot_action.append(robot_path_node(12, 0))
+robot_action.append(robot_path_node(5, 0))
+robot_action.append(robot_path_node(5, 1))
+robot_action.append(robot_path_node(0, 0))
+#send_counter=0
+size_message=len(robot_action)*2+2   #размер массива отправляется
+recv_flag=True
+
+test_flag=0 #этот блок убрать, это для проверки сбоев!
+
+broker = 'broker.emqx.io'
+port = 1883
+topic = "python/mqtt"
+username = 'emqx'
+password = 'public'
+
+# generate client ID with pub prefix randomly
+client_id = f'python-mqtt-{random.randint(0, 1000)}'
+
+def connect_mqtt():
+	def on_connect(client, userdata, flags, rc):
+		if rc == 0:
+			print("Connected to MQTT Broker!")
+		else:
+			print("Failed to connect, return code %dn", rc)
+
+	client = mqtt_client.Client(client_id)
+	client.username_pw_set(username, password)
+	client.on_connect = on_connect
+	client.on_message = on_message
+	client.connect(broker, port)
+	return client
+
+
+def on_message(client, userdata, msg):
+	print(f"Received message: {msg.payload.decode()}")
+	global recv_flag
+	recv_flag=False
+	#client.disconnect()
+	#return(False)
+
+
+def publish(client):
+
+	global test_flag #этот блок убрать, это для проверки сбоев!
+
+	for i in range(0, size_message):
+		time.sleep(0.2)
+		if(i==0):
+			msg = -1
+		if(i==1):
+			msg = len(robot_action) + 1 # +1 убрать, это для проверки разрыва соединения!!
+
+			if(test_flag==2): #этот блок убрать, это для проверки сбоев!
+				msg = len(robot_action) #
+		if ((i%2==0)and(i>1)):
+			msg = robot_action[(i-2)//2].action
+		if ((i%2==1)and(i>1)):
+			msg = robot_action[(i-2)//2].counter
+		result = client.publish(topic, msg)
+        	# result: [0, 1]
+		status = result[0]
+		if status == 0:
+			print(f"Sent '{msg}' to topic '{topic}'")
+			#client.subscribe(topic)
+			#client.loop_forever()
+			"""client.loop(timeout=1.0)
+			if (len(client.messages) > 0):
+				response = client.messages.pop(0)
+				if response.topic == response_topic and response.payload.decode() == "0":
+					print("Received response: 0")"""
+		else:
+			print(f"Failed to send message to topic {topic}")
+		
+
+	test_flag = test_flag + 1
+
+
+def run():
+	client = connect_mqtt()
+	client.loop_start()
+	publish(client)
+	client.subscribe(topic)
+	#как узнать, что соединение разорвано?
+	#client.loop_forever()
+	global  recv_flag
+	t1=time.process_time()
+	while(recv_flag): #теперь добавим таймер!
+		#print(1)
+		client.on_message = on_message 
+		t2=time.process_time()
+		t=t2-t1
+		if(t>=3.0):
+			print("not successfully send !!!!!, ", t)
+			#client.unsubscribe(topic) #??
+			client.loop_stop()
+			client = connect_mqtt()
+			client.loop_start()
+			publish(client)
+			client.subscribe(topic) #
+			t1 = t2
+
+			#client.loop_start()
+			#break
+
+	#client.disconnect()
+	#client.loop_forever()
+
+
+if __name__ == '__main__':
+	run()
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""# sub.py
+import time
+from umqtt.simple import MQTTClient
+
+SERVER="broker.emqx.io"
+ClientID = f'raspberry-sub-{time.time_ns()}'
+user = "emqx"
+password = "public"
+topic = "raspberry/mqtt"
+msg = b'{"msg":"hello"}'
+
+def sub(topic, msg):
+    print('received message %s on topic %s' % (msg, topic))
+
+def main(server=SERVER):
+    client = MQTTClient(ClientID, server, 1883, user, password)
+    client.set_callback(sub)
+    client.connect()
+    print('Connected to MQTT Broker "%s"' % (server))
+    client.subscribe(topic)
+    while True:
+        if True:
+            client.wait_msg()
+        else:
+            client.check_msg()
+            time.sleep(1)
+
+if __name__ == " __main__":
+    main()
+"""
