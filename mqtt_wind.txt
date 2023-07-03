@@ -1,5 +1,5 @@
-# python mqtt_wind.txt
-# рабочая версия для винды!
+﻿# python mqtt_wind.txt
+# рабочая финальная версия для винды!
 
 import random
 import time
@@ -14,12 +14,15 @@ class robot_path_node:
 
 robot_action=[] #вместо этого блока программа из heyristic идет
 #robot_action зполняется после вызова а-стар, после чего как ГЛОБАЛЬНАЯ переменная дальше посылается при вызове run(). При этом передавать как переменную этот массив никуда не надо
+
+path=[0, 2, 1, 2, 0] #заменить на создание path с помощью функции из heyristic!
+
 robot_action.append(robot_path_node(6, 1))
 robot_action.append(robot_path_node(4, 1))
 robot_action.append(robot_path_node(12, 0))
-robot_action.append(robot_path_node(5, 0))
+robot_action.append(robot_path_node(6, 0))
 robot_action.append(robot_path_node(5, 1))
-robot_action.append(robot_path_node(0, 0))
+robot_action.append(robot_path_node(0, 1))
 
 result_from_robot= "" #на новой итерации этот массив надо очищать! как и robot_action
 size_message=len(robot_action)*2+2   #размер массива отправляется
@@ -107,7 +110,7 @@ def mqtt_communication(robot_act):
 		client.on_message = on_message 
 		t2=time.process_time()
 		t=t2-t1
-		if(t>=3.0):
+		if(t>=10.0): #чем хуже качество интернет-соединения, тем выше этот таймер. для 2 палок на распберри такого таймера за глаза хватает
 			print("not successfully send !!!!!")
 			client.loop_stop()
 			client = connect_mqtt()
@@ -149,6 +152,11 @@ def mqtt_communication(robot_act):
 	result_from_robot=""
 	client.loop_stop()
 	
+	#до этого в array_answer записывались номера элементов массива path. запишем сами значения, соответствующие этим номерам в array_answer
+	if(array_answer[1]!=-1):
+		array_answer[1]=path[array_answer[1]]
+	if(array_answer[2]!=-1):
+		array_answer[2]=path[array_answer[2]]
 	return(array_answer)
 
 
@@ -160,9 +168,9 @@ def mqtt_communication(robot_act):
 
 tmp=1
 if(tmp==1):
-	for i in range(0, 2): #нужно только для проверки повторного вызова, сегодня (12 июня) повторный вызов работает!
+	for i in range(0, 1): #нужно только для проверки повторного вызова, сегодня (12 июня) повторный вызов работает!
 		res = mqtt_communication(copy.deepcopy(robot_action))
-		print(res)
+		print("res = ", res)
 		time.sleep(4) #чтобы успеть перезапустить программу на распберри
 
 

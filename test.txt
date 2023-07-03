@@ -1,27 +1,16 @@
-# python test.txt
+﻿# python test.txt
 
-result_from_robot="1 1 1 "
-print(len(result_from_robot))
-array_answer=[] #распарсер принятой строки с результатами поедки робота!
-i=0
-while(i<len(result_from_robot)):
-	"""if(result_from_robot[0]=="1"):
-		array_answer.append(result_from_robot[i])
-		array_answer.append(-1)
-		array_answer.append(-1)
-		break"""
-	#else:
-	tmp=0
-	minus=False
-	while((result_from_robot[i]!=" ")and(i<len(result_from_robot))):
-		if(result_from_robot[i]=="-"):
-			minus=True
-		else:
-			tmp=tmp*10 + int(result_from_robot[i])
-		i=i+1
-	if(minus==True):
-		tmp = -tmp
-	minus=False
-	array_answer.append(tmp)
-	i=i+1
-print(array_answer)
+path=[1, 2, 3, 3, 3, 2, 1]
+
+def get_path_nodes(path): #строит маршрут, состоящий из номеров перекрестков 
+	sz=len(path)
+	path_nodes=[]
+	tmp=path[0]
+	path_nodes.append(tmp)
+	for i in range(1, sz):
+		if(path[i]!=tmp):
+			tmp=path[i]
+			path_nodes.append(tmp)
+	return(path_nodes)
+
+print(get_path_nodes(path))

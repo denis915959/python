@@ -1,5 +1,4 @@
-# python mqtt_wind.txt
-# рабочая версия!
+﻿# python mqtt_wind_рабочая_версия.txt
 
 import random
 import time

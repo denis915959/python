@@ -1,4 +1,4 @@
-# python heuristic.txt
+﻿# python heuristic.txt
 import copy
 import time
 
@@ -859,7 +859,7 @@ def make_robot_action(path, N_mesh_size, N_size, floor, start_mesh, goal_mesh, m
 	return(robot_action)
 
 
-def get_path_nodes(path): #строит маршрут, состоящий из номеров перекрестков 
+def get_path_nodes(path): #строит маршрут, состоящий из номеров неповторяющихся подряд перекрестков 
 	sz=len(path)
 	path_nodes=[]
 	tmp=path[0]
@@ -870,7 +870,7 @@ def get_path_nodes(path): #строит маршрут, состоящий из 
 			path_nodes.append(tmp)
 	return(path_nodes)
 
-def make_full_path(Nodes, start_node, start_mesh, mesh_arr, end_node, end_mesh, floor_arr, N_sizes, N_size, mode): #массив ячеек, номер стартового перекрестка, массив номеров ячеек с ящиками (1 или 2 элемента), номер конечного перекрестка, массив номеров этажей (1 или 2 элемента)
+def make_full_path(Nodes, start_node, start_mesh, mesh_arr, end_node, end_mesh, floor_arr, N_sizes, N_size, mode): #массив ячеек, номер стартового перекрестка, массив номеров ячеек с ящиками (1 или 2 элемента), номер конечного перекрестка, массив номеров этажей (1 или 2 элемента). Возвращает 
 	#1, путь до первой ячейки
 	node1=start_node #если робот стоит между перекрестками, то вводим тот перекресток, перед которым лежит препятствие(если его нельзя объехать), поэтому на объезд препятствий оставляем эту проблему
 	mesh1=start_mesh
@@ -944,7 +944,7 @@ def make_full_path(Nodes, start_node, start_mesh, mesh_arr, end_node, end_mesh, 
 	list=[]
 	list.append(len(action))
 	list=list+action+path
-	return(list)
+	return(list) #list - список, состоит из robot_action и path
 
 
 
