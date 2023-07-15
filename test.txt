@@ -1,16 +1,119 @@
 ﻿# python test.txt
 
-path=[1, 2, 3, 3, 3, 2, 1]
+class Node:
+	def __init__(self, num, branch_arr, flag1):
+		self.number=num
+		self.branch_array=branch_arr
+		self.railroad=flag1 #True - Перекресток, нет - рядом с ячейками находится
+		self.traveled_path=0
+		self.previous_node=-1
 
-def get_path_nodes(path): #строит маршрут, состоящий из номеров перекрестков 
-	sz=len(path)
-	path_nodes=[]
-	tmp=path[0]
-	path_nodes.append(tmp)
-	for i in range(1, sz):
-		if(path[i]!=tmp):
-			tmp=path[i]
-			path_nodes.append(tmp)
-	return(path_nodes)
+cost_between_blocks=1.5
+cost_between_rows=4
+cost_between_mesh=1
 
-print(get_path_nodes(path))
+N_sizes=[3, 1, 2]
+N_size = sum(N_sizes)+len(N_sizes)-1 # mode = 2
+block_node1=-2
+block_node2=-2
+node1=5
+node2=15
+
+reachable = [Node(node1, 0, False)]
+goal_node = Node(node2, 0, False)
+
+node1_abs = reachable[0]   #первоначальное значение
+node2_abs = goal_node      #первоначальное значение
+		
+node1=(node1_abs.number-1)%N_size+1
+node2=(node2_abs.number-1)%N_size+1
+
+if ((node1_abs.number%N_size)>(node2_abs.number%N_size)):  #node1 левее node2 всегда!!!
+	tmp=node1_abs
+	node1_abs=node2_abs
+	node2_abs=tmp
+if (node1>node2):  #node1 левее node2 всегда!!!
+	tmp=node1
+	node1=node2
+	node2=tmp
+
+sz=len(N_sizes)
+Sum=0 
+for i in range(0, sz): #не N_size!!
+	if(node1==Sum):
+		flag1=True
+		block_node1=i
+		break
+	Sum=Sum+N_sizes[i]+1
+	if(node1<Sum): #<=
+		block_node1=i
+		break
+if (node1==N_size):
+	block_node1=sz
+	flag1=True
+Sum=0
+		
+for i in range(0, sz):
+	if(node2==Sum):
+		flag2=True
+		block_node2=i
+		break
+	Sum=Sum+N_sizes[i] + 1
+	if(node2<Sum):
+		block_node2=i
+		break
+if(node2==1):  #для n2 это не актуально, так как node2>=node1
+	block_node2=-1  #т.е =-1
+	flag2=True
+if (node2==N_size):
+	block_node2=sz
+	flag2=True
+
+print("block_node1 = ", block_node1)
+print("block_node2 = ", block_node2)
+
+
+
+
+
+heuristic=0
+if((block_node1==block_node2)and(node1_abs.railroad!=True)and(node2_abs.railroad!=True)): #т.е перекрестки в одном блоке находятся, ни один из них не не главной магистрпали!
+# добавить тест, когда оба на магистрали, потом один или другой на магистрали. итого 3 теста
+# добавить тест, где в крайнем левом блоке оба перекрестка слева. для крайнего правого блока такой же тест
+
+# мне кажется, просто сюда надо лобавить проверку на крайний левый и крайний правый блок
+# когда приеду, сделать расчет эврстики в случаях, кроме описанных выше
+	Sum=1 # 0?
+	for j in range(0, block_node1):
+		Sum=Sum+N_sizes[j]+1
+	h1=node1-Sum #расчет номера перекрестки в блоке, содержащем этот перекресток
+	h2=node2-Sum  
+	S1=h1+h2
+
+	Sum=1 # 0?
+	#print("block_node1 = ", block_node1)
+	for j in range(0, (block_node1+1)): #здесь выход за диапазон!
+		Sum=Sum+N_sizes[j]+1
+	h1=abs(node1-Sum)
+	h2=abs(node2-Sum)
+	S2=h1+h2
+	if(S1>S2):
+		Min=S2
+	else:
+		Min=S1	
+	heuristic=(Min-2)*cost_between_mesh+2*cost_between_blocks
+else:
+	for j in range(node1, node2):
+		if ((Nodes[j].railroad==True)or(Nodes[j+1].railroad==True)):  #-1
+			heuristic = heuristic + cost_between_blocks
+		if ((Nodes[j].railroad==False) and (Nodes[j+1].railroad==False)):  #-1
+			heuristic = heuristic + cost_between_mesh
+	
+row_node1=int((node1_abs.number-1)/N_size)
+row_node2=int((node2_abs.number-1)/N_size)
+row_difference=abs(row_node2-row_node1) 
+heuristic=heuristic+row_difference*cost_between_rows  #вернуть!	
+#print("heuristic = ", heuristic)
+#H.append(heuristic+reachable[k].traveled_path)
+
+print(heuristic)
