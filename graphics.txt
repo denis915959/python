@@ -1,0 +1,371 @@
+# python graphics.txt
+
+import codecs #для считывания русских символов
+import sqlite3
+
+"""class deleted_branch:
+	def __init__(self, n1, n2):
+		self.node1=n1
+		self.node2=n2"""
+
+class Mesh:
+	def __init__(self, m_mesh, m_artikul):
+		self.mesh=m_mesh
+		self.articul=m_artikul
+
+
+#все удаляющие функции возвращают true или false
+class Config:
+	def __init__(self):
+		self.conn = sqlite3.connect('sklad.db') # Создание подключения к базе данных SQLite
+		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS config(number INT, parametr TEXT)")
+		self.cursor.execute("SELECT COUNT(*) FROM config")
+		res = self.cursor.fetchone()
+		self.config_counter=res[0] #считывается из базы данных!
+
+	def get_config_counter(self):
+		return(self.config_counter)
+	
+	def insert_parametr(self, parametr): # вставка параметров склада в таблицу
+		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
+		self.conn.commit() #self попробовать убрать!
+		self.config_counter = self.config_counter + 1
+
+	def delete_parametr(self, number): # удаление параметров склада
+		self.cursor.execute("DELETE FROM config WHERE number = '{}'".format(number))
+		self.conn.commit()
+		if(self.config_counter>0):
+			self.config_counter = self.config_counter - 1
+		return(bool(self.cursor.rowcount))
+
+	def clean_table(self): # очистка таблицы
+		self.cursor.execute("DELETE FROM {}".format("config")) 
+		self.conn.commit()
+		self.config_counter = 0
+
+	def get_parametr(self, number): # возвращает параметр склада по номеру 
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number='{}'".format(number)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def delete_branch(self, num1, num2): # удаляет ребро
+		if(num1>num2):
+			tmp=num1
+			num1=num2
+			num2=tmp
+		msg=str(num1) + ", " + str(num2)
+		self.cursor.execute("DELETE FROM config WHERE parametr = '{}'".format(msg))
+		self.conn.commit()
+		if(self.config_counter>0):
+			self.config_counter = self.config_counter - 1
+		return(bool(self.cursor.rowcount))
+
+	def insert_branch(self, num1, num2): # вставка ребра таблицу
+		if(num1>num2):
+			tmp=num1
+			num1=num2
+			num2=tmp
+		parametr=str(num1) + ", " + str(num2)
+		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
+		self.conn.commit() #self попробовать убрать!
+		self.config_counter = self.config_counter + 1
+
+	def close(self):
+		self.conn.close()
+
+class Artikul:
+	def __init__(self):
+		self.conn = sqlite3.connect('sklad.db') # Создание подключения к базе данных SQLite
+		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS articuls(number INT, mesh INT, articul TEXT)")
+		self.cursor.execute("SELECT COUNT(*) FROM articuls")
+		res = self.cursor.fetchone()
+		self.articul_counter=res[0] #считывается из базы данных!
+
+	def get_articul_counter(self):
+		return(self.articul_counter)
+
+	def delete_articul(self, articul): # удалаяет элемент таблицы по артикулу
+		articul_str=str(articul)
+		self.cursor.execute("DELETE FROM articuls WHERE articul = '{}'".format(articul_str))
+		self.conn.commit()
+		if(self.articul_counter>0):
+			self.articul_counter = self.articul_counter - 1
+		return(bool(self.cursor.rowcount))	
+
+	def delete_mesh(self, mesh_num): # удалаяет элемент таблицы по номеру ячейки
+		self.cursor.execute("DELETE FROM articuls WHERE mesh = '{}'".format(mesh_num))
+		self.conn.commit()
+		if(self.articul_counter>0):
+			self.articul_counter = self.articul_counter - 1
+		return(bool(self.cursor.rowcount))
+
+	def insert_articul(self, mesh, articul1): # вставка данных в таблицу
+		articul=str(articul1)
+		self.cursor.execute("INSERT INTO articuls (number, mesh, articul) VALUES (?, ?, ?)", (self.articul_counter, mesh, articul))
+		self.conn.commit()
+		self.articul_counter = self.articul_counter + 1
+
+	def clean_table(self): # очистка таблицы
+		self.cursor.execute("DELETE FROM {}".format("articuls")) 
+		self.conn.commit()
+		self.articul_counter = 0
+
+	def get_articul(self, mesh_num): # возвращает артикул по номеру ячейки   # ВНЕСТИ В ТЕТРАДЬ:  WHERE mesh='{}' - только так! Т.е столбец mesh указываем как столбец, иначе же mesh будет пониматься питоном как значение!
+		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE mesh='{}'".format(mesh_num)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def get_mesh(self, articul): # возвращает номер ячейки по артикулу
+		articul_str=str(articul)
+		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE articul='{}'".format(articul_str)).fetchall()
+		sz=len(tmp)
+		i=2
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def get_mesh_by_number(self, number): # возвращает объект класса mesh по номеру
+		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE number={}".format(number)).fetchall()
+		sz=len(tmp)
+		i=2
+		tmp=str(tmp)
+		mesh=""
+		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+			mesh=mesh+tmp[i]
+			i=i+1
+		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE number={}".format(number)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		art=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			art=art+tmp[i]
+			i=i+1
+		return(Mesh(int(mesh), art))
+
+	def close(self):
+		self.conn.close()
+#для артикула и цифры, и буквы подходят
+
+
+
+#при удалении номера таблицы нумерация не смещается вообще! так как number - это не порядковый номер, задаваемый БД, а задаваемое мной значение!!!!!
+config=Config()
+config.clean_table()
+config.insert_branch(12, 5)
+print(config.get_config_counter())
+print(config.get_parametr(0))
+
+print(config.delete_branch(12, 5))
+print(config.get_config_counter())
+
+"""config.insert_parametr("wertgh")
+print(config.get_config_counter())
+print(config.delete_branch(0))
+print(config.delete_branch(0))
+print(config.get_config_counter())
+config.insert_parametr("hgfds")
+print(config.get_parametr(0))
+config.clean_table()
+print(config.get_config_counter())
+config.insert_parametr("h1")
+config.insert_parametr("h2")
+config.insert_parametr("h3")"""
+#config.insert_parametr("h6")
+"""print(config.get_parametr(0))
+print(config.get_parametr(1))
+print(config.get_parametr(2))"""
+
+"""print(config.delete_branch(0))
+print(config.delete_branch(1))
+print(config.delete_branch(2))
+print(config.delete_branch(3))
+print(config.get_config_counter())"""
+config.close()
+
+"""articul=Artikul() #только цифрами!
+articul.clean_table()
+articul.insert_articul(21, "nkvd1")
+articul.insert_articul(25, "nkvd2")
+print("count ", articul.get_articul_counter())
+m=articul.get_mesh_by_number(1) #нумерация в таблице с нуля!
+print(m.mesh)
+print(m.articul)
+print(articul.get_mesh("nkvd2"))
+print(articul.get_articul(25))
+print(articul.delete_mesh(25))
+print(articul.delete_articul("nkvd2"))
+print(articul.delete_articul("nkvd1"))
+print("count ", articul.get_articul_counter())
+print(articul.delete_articul("nkvd1"))
+print("count ", articul.get_articul_counter())
+articul.insert_articul(21, "nkvd1")
+print("count ", articul.get_articul_counter())"""
+
+"""print(articul.get_articul(0))
+print(articul.get_mesh("11"))
+print(articul.get_articul_counter())
+print(articul.delete_articul("12"))
+print(articul.delete_articul("12"))
+print(articul.get_articul_counter())"""
+config.close()
+
+
+# Создание таблицы с двумя колонками
+"""cursor.execute("CREATE TABLE IF NOT EXISTS config(number INT, parametr TEXT)")
+cursor.execute("CREATE TABLE IF NOT EXISTS articuls(mesh INT, articul TEXT)")
+
+
+# сколько таблиц в базе данных?
+cursor.execute("SELECT name FROM sqlite_master WHERE type='table'") 
+tables=cursor.fetchall()
+print(len(tables))"""
+
+
+"""# Добавление записей в таблицу
+cursor.execute("INSERT INTO mytable VALUES (1, 'Запись 1')")
+cursor.execute("INSERT INTO mytable VALUES (2, 'Запись 2')")"""
+
+name="config"
+"""insert_into_config(cursor, 1, "2, 1, 3")
+print(get_parametr_from_config(cursor, 1))
+delete_branch_from_config(cursor, 1)"""
+#clean_table(cursor, name)
+
+# Сохранение изменений и закрытие соединения с базой данных
+"""conn.commit()
+conn.close()"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def open_sklad_from_file():
+	mode = -1
+	M=-1
+	N_sizes=[]
+	cost_between_blocks=-1
+	cost_between_rows=-1
+	cost_between_mesh=-1
+	deleted_branchs=[]
+	meshs_arr=[]
+	
+	filetypes = (("Текстовый файл", "*.txt"), ("Изображение", "*.jpg *.gif *.png"), ("Любой", "*"))
+	file_path =  "sklad.txt"  #C:\\Users\\denis\\Desktop\\python\\# fd.askopenfilename(title="Открыть склад", initialdir="/", filetypes=filetypes)  #получаем путь до файла!
+	#file=open(file_path, "r")
+	file=codecs.open(file_path, encoding="utf-8")
+	mode = int(file.readline())
+	M = int(file.readline()) # strip удаляет пробелы, занести в тетрадк!
+	N_sizes_str=file.readline()
+	sz=len(N_sizes_str)-1 #так каксимвол конца строки в utf-8
+	N_tmp=0
+	i=0
+	while(i < sz):
+		if((N_sizes_str[i]==",") or (i==(sz-1))):
+			N_sizes.append(N_tmp)
+			N_tmp=0
+			i=i+1
+		else:
+			N_tmp=N_tmp*10+int(N_sizes_str[i])
+		i=i+1
+	cost_between_blocks=float(file.readline())
+	cost_between_rows=float(file.readline())
+	cost_between_mesh=float(file.readline())
+	file.readline() # проходим пустую строку!
+	
+	# считывание удаленных ребер
+	del_sz=int(file.readline())
+	tmp_str=file.readline()
+	for k in range(0, del_sz): # 1- так как есть символ конца строки
+		sz=len(tmp_str)-1
+		n1=0
+		n2=0
+		i=0
+		while(tmp_str[i]!=","):
+			n1=n1*10+int(tmp_str[i])
+			i=i+1
+		i=i+2
+		while(i!=(sz-1)):
+			n2=n2*10+int(tmp_str[i])
+			i=i+1
+		deleted_branchs.append(deleted_branch(n1, n2))
+		tmp_str=file.readline()
+	"""for i in range(0, len(deleted_branchs)): 
+		print(deleted_branchs[i].node1, " ", deleted_branchs[i].node2)"""
+
+	#считывание массива заполненных ячеек
+	tmp_str=file.readline()
+	while(tmp_str!="end"): # end - конец полезных данных в файле!
+		sz=len(tmp_str)-1
+		n=0
+		art=""
+		i=0
+		while(tmp_str[i]!=","):
+			n=n*10+int(tmp_str[i])
+			i=i+1
+		i=i+2
+		while(i!=(sz-1)):
+			art=art + tmp_str[i] #посимвольное копирование строки
+			i=i+1
+		meshs_arr.append(Mesh(n, art))
+		tmp_str=file.readline()
+	file.close()
+
+	"""for i in range(0, len(meshs_arr)): 
+		print(meshs_arr[i].number, " ", meshs_arr[i].artikul)"""
+#open_sklad_from_file()
+
+"""def delete_branch():
+	filetypes = (("Текстовый файл", "*.txt"), ("Изображение", "*.jpg *.gif *.png"), ("Любой", "*"))
+	file_path =  "sklad.txt"  #C:\\Users\\denis\\Desktop\\python\\# fd.askopenfilename(title="Открыть склад", initialdir="/", filetypes=filetypes)  #получаем путь до файла!
+	#file=open(file_path, "r")
+	file=codecs.open(file_path, encoding="utf-8")
+	file.insert(1, str(number) + '\n')"""
