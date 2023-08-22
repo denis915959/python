@@ -1,0 +1,568 @@
+# python qt5.txt
+
+import sys
+import codecs #для считывания русских символов
+import sqlite3
+from PyQt5.QtWidgets import QApplication, QDesktopWidget, QFileDialog, QVBoxLayout, QMainWindow, QPushButton, QLineEdit, QWidget, QLabel, QGroupBox, QGridLayout, QMenuBar, QAction, QInputDialog
+from PyQt5.QtGui import QFont
+
+
+class Mesh:
+	def __init__(self, m_mesh, m_artikul):
+		self.mesh=m_mesh
+		self.articul=m_artikul
+
+
+#все удаляющие функции возвращают true или false
+class Config:
+	def __init__(self, name_base):
+		self.conn = sqlite3.connect(str(name_base)) # Создание подключения к базе данных SQLite
+		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS config(number INT, parametr TEXT)")
+		self.cursor.execute("SELECT COUNT(*) FROM config")
+		res = self.cursor.fetchone()
+		self.config_counter=res[0] #считывается из базы данных!
+
+	def get_config_counter(self):
+		return(self.config_counter)
+	
+	def insert_parametr(self, parametr): # вставка параметров склада в таблицу
+		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
+		self.conn.commit() #self попробовать убрать!
+		self.config_counter = self.config_counter + 1
+
+	def delete_parametr(self, number): # удаление параметров склада
+		self.cursor.execute("DELETE FROM config WHERE number = '{}'".format(number))
+		self.conn.commit()
+		if(self.config_counter>0):
+			self.config_counter = self.config_counter - 1
+		return(bool(self.cursor.rowcount))
+
+	def clean_table(self): # очистка таблицы
+		self.cursor.execute("DELETE FROM {}".format("config")) 
+		self.conn.commit()
+		self.config_counter = 0
+
+	def get_parametr(self, number): # возвращает параметр склада по номеру 
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number='{}'".format(number)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def delete_branch(self, num1, num2): # удаляет ребро
+		if(num1>num2):
+			tmp=num1
+			num1=num2
+			num2=tmp
+		msg=str(num1) + ", " + str(num2)
+		self.cursor.execute("DELETE FROM config WHERE parametr = '{}'".format(msg))
+		self.conn.commit()
+		if(self.config_counter>0):
+			self.config_counter = self.config_counter - 1
+		return(bool(self.cursor.rowcount))
+
+	def insert_branch(self, num1, num2): # вставка ребра таблицу
+		if(num1>num2):
+			tmp=num1
+			num1=num2
+			num2=tmp
+		parametr=str(num1) + ", " + str(num2)
+		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
+		self.conn.commit() #self попробовать убрать!
+		self.config_counter = self.config_counter + 1
+
+	def close(self):
+		self.conn.close()
+
+
+class Artikul:
+	def __init__(self, name_base):
+		self.conn = sqlite3.connect(str(name_base)) # Создание подключения к базе данных SQLite
+		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS articuls(number INT, mesh INT, articul TEXT)")
+		self.cursor.execute("SELECT COUNT(*) FROM articuls")
+		res = self.cursor.fetchone()
+		self.articul_counter=res[0] #считывается из базы данных!
+
+	def get_articul_counter(self):
+		return(self.articul_counter)
+
+	def delete_articul(self, articul): # удалаяет элемент таблицы по артикулу
+		articul_str=str(articul)
+		self.cursor.execute("DELETE FROM articuls WHERE articul = '{}'".format(articul_str))
+		self.conn.commit()
+		if(self.articul_counter>0):
+			self.articul_counter = self.articul_counter - 1
+		return(bool(self.cursor.rowcount))	
+
+	def delete_mesh(self, mesh_num): # удалаяет элемент таблицы по номеру ячейки
+		self.cursor.execute("DELETE FROM articuls WHERE mesh = '{}'".format(mesh_num))
+		self.conn.commit()
+		if(self.articul_counter>0):
+			self.articul_counter = self.articul_counter - 1
+		return(bool(self.cursor.rowcount))
+
+	def insert_articul(self, mesh, articul1): # вставка данных в таблицу
+		articul=str(articul1)
+		self.cursor.execute("INSERT INTO articuls (number, mesh, articul) VALUES (?, ?, ?)", (self.articul_counter, mesh, articul))
+		self.conn.commit()
+		self.articul_counter = self.articul_counter + 1
+
+	def clean_table(self): # очистка таблицы
+		self.cursor.execute("DELETE FROM {}".format("articuls")) 
+		self.conn.commit()
+		self.articul_counter = 0
+
+	def get_articul(self, mesh_num): # возвращает артикул по номеру ячейки   # ВНЕСТИ В ТЕТРАДЬ:  WHERE mesh='{}' - только так! Т.е столбец mesh указываем как столбец, иначе же mesh будет пониматься питоном как значение!
+		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE mesh='{}'".format(mesh_num)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def get_mesh(self, articul): # возвращает номер ячейки по артикулу
+		articul_str=str(articul)
+		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE articul='{}'".format(articul_str)).fetchall()
+		sz=len(tmp)
+		i=2
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def get_mesh_by_number(self, number): # возвращает объект класса mesh по номеру
+		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE number={}".format(number)).fetchall()
+		sz=len(tmp)
+		i=2
+		tmp=str(tmp)
+		mesh=""
+		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+			mesh=mesh+tmp[i]
+			i=i+1
+		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE number={}".format(number)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		art=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			art=art+tmp[i]
+			i=i+1
+		return(Mesh(int(mesh), art))
+
+	def close(self):
+		self.conn.close()
+
+"""app = QApplication(sys.argv)
+window = QMainWindow()
+screen_width = -1
+screen_height = -1"""
+
+
+"""def handler_new_sklad(button_list):
+	for i in range(0, len(button_list)):
+		button_list[i].deleteLater()
+
+def handler_old_sklad(button_list):
+	for i in range(0, len(button_list)):
+		button_list[i].deleteLater()
+	file_dialog = QFileDialog()
+	file_dialog.setNameFilter("DB files (*.db)")  # указываем фильтр для расширения .db
+	file_dialog.setWindowTitle("Выберите базу данных с данными склада")  # устанавливаем заголовок диалогового окна, перед exec должен вызываться!
+	file_dialog.exec()
+	file_path = file_dialog.selectedFiles()[0]  # получаем список выбранных файлов, но так как файл 1, то [0]
+
+	bd_name=""
+	if file_path: # получаем имя базы данных
+		# print("Выбран файл:", file_path)  # Если файл выбран, выводим его путь в консоль
+		sz=len(file_path)
+		i=sz-1
+		while((i>=0)and(file_path[i]!="/")):
+			i=i-1
+		i=i+1
+		for j in range(i, sz):
+			bd_name=bd_name+str(file_path[j])
+		# print(bd_name)
+
+	global config   #подключение к базе данных
+	global artikul
+	config=Config("sklad.db")
+	artikul=Artikul("sklad.db")
+	
+	global window
+	qle_art1 = QLineEdit("ВВедите ", window)
+	qle_art1.move(60, 100)
+	qle_art1.setGeometry(200, 200, 400, 400)
+	#window.show()"""
+	
+
+class sklad_window(QMainWindow): # наследник класса QMainWindow
+	def __init__(self):
+		super().__init__()
+
+		self.setWindowTitle("Пример кнопок")
+		self.screen = QDesktopWidget().screenGeometry()
+		self.screen_width = self.screen.width() # 1920    # поле класса
+		self.screen_height = self.screen.height() # 1080  # поле класса
+		self.resize(self.screen_width, self.screen_height)
+		self.qt5_objects_list=[]
+		self.setStyleSheet("background-color: lightblue;")
+
+		self.menu_bar = QMenuBar()
+		self.file_menu = self.menu_bar.addMenu("Меню")
+		#self.file_menu.setFont(font) #
+		self.exit_action = QAction("Удалить ребро")
+		#self.exit_action.setFont(font)
+		self.exit_action.triggered.connect(self.delete_branch)
+		self.file_menu.addAction(self.exit_action)
+		self.setMenuBar(self.menu_bar)
+		self.first_window()
+
+
+	def delete_branch(self):
+		text, ok = QInputDialog.getText(self, "Удаление ребра", "введите номера перекрестков, задающих ребро (через запятую):") #Введенный текст сохраняется в переменной text, а значение ok устанавливается в True, если пользователь нажал кнопку "ОК", и в False, если пользователь нажал кнопку "Отмена".
+		if ok:
+			print(text)
+		
+
+	def clear_window(self):
+		sz=len(self.qt5_objects_list)
+		for i in range(0, sz):
+			self.qt5_objects_list[i].deleteLater()
+		self.qt5_objects_list.clear()
+
+	def first_window(self):
+		button_new_sklad = QPushButton("Создать новый склад", self)
+		button_old_sklad = QPushButton("Продолжить работу с ранее созданным складом", self)
+		self.qt5_objects_list.append(button_new_sklad)
+		self.qt5_objects_list.append(button_old_sklad)
+	
+		font_button12 = QFont()
+		font_button12.setPointSize(14)  # Устанавливаем желаемый размер шрифта
+
+		button_new_sklad.setFont(font_button12)  # Устанавливаем шрифт для надписи кнопки
+		button_new_sklad.clicked.connect(lambda* args: self.handler_new_sklad())
+		button_new_sklad.setGeometry(int(self.screen_width*0.1), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3)) # x, y, размеры: x, y
+		button_new_sklad.setStyleSheet("background-color: yellow")
+
+		button_old_sklad.setFont(font_button12)
+		button_old_sklad.clicked.connect(lambda* args: self.handler_old_sklad())
+		button_old_sklad.setGeometry(int(self.screen_width*0.55), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3))
+		button_old_sklad.setStyleSheet("background-color: yellow")
+
+
+	def handler_new_sklad(self):
+		self.clear_window()
+		font= QFont()
+		font.setPointSize(17) 
+		group_box_create_sklad = QGroupBox("Ввод параметров нового склада", self)
+		group_box_create_sklad.setFont(font)
+		group_box_create_sklad.setGeometry(300, 100, 1300, 800) #на width, height везде заменить! 
+		group_box_create_sklad.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		
+		font.setPointSize(14) 
+		text_mode=QLabel("Введите номер типа склада:", group_box_create_sklad)
+		text_mode.setFont(font)
+		text_mode.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_mode)
+		qle_mode = QLineEdit(group_box_create_sklad)
+		qle_mode.setFont(font)
+		qle_mode.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_mode)
+
+		text_M=QLabel("Введите длину склада (в ячейках):", group_box_create_sklad)
+		text_M.setFont(font)
+		text_M.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_M)
+		qle_M = QLineEdit(group_box_create_sklad)
+		qle_M.setFont(font)
+		qle_M.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_M)
+
+		text_N_1=QLabel("Введите ширину блоков стеллажей (через запятую):", group_box_create_sklad)
+		text_N_1.setFont(font)
+		text_N_1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_N_1)
+		text_N_2=QLabel("Ширина измеряется в ячейках. Отсчет слева направо.", group_box_create_sklad)
+		text_N_2.setFont(font)
+		text_N_2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_N_2)
+		text_N_3=QLabel("Пример верного ввода: 5, 7, 4:", group_box_create_sklad)
+		text_N_3.setFont(font)
+		text_N_3.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_N_3)
+		qle_N = QLineEdit(group_box_create_sklad)
+		qle_N.setFont(font)
+		qle_N.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_N)
+
+		text_blocks=QLabel("Введите расстояние между блоками стеллажей:", group_box_create_sklad)
+		text_blocks.setFont(font)
+		text_blocks.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_blocks)
+		qle_blocks = QLineEdit(group_box_create_sklad)
+		qle_blocks.setFont(font)
+		qle_blocks.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_blocks)
+
+		text_rows=QLabel("Введите расстояние между блоками ячеек:", group_box_create_sklad)
+		text_rows.setFont(font)
+		text_rows.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_rows)
+		qle_rows = QLineEdit(group_box_create_sklad)
+		qle_rows.setFont(font)
+		qle_rows.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_rows)
+
+		text_mesh=QLabel("Введите расстояние между ячейками:", group_box_create_sklad)
+		text_mesh.setFont(font)
+		text_mesh.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_mesh)
+		qle_mesh = QLineEdit(group_box_create_sklad)
+		qle_mesh.setFont(font)
+		qle_mesh.setStyleSheet("background-color: white")
+		qle_mesh.setFixedSize(600, 38)  # ?
+		self.qt5_objects_list.append(qle_mesh)
+
+		button_create_sklad = QPushButton("Создать склад!", self)
+		button_create_sklad.setFont(font)
+		button_create_sklad.clicked.connect(lambda* args: self.handler_set_art(qle_set_art1, qle_set_art2))
+		button_create_sklad.setFixedSize(1280, 120)#задает размер кнопки, даже если использован QVBoxLayout
+		button_create_sklad.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_create_sklad)
+		self.qt5_objects_list.append(group_box_create_sklad)
+
+
+		grid = QGridLayout(group_box_create_sklad)
+		grid.addWidget(text_mode, 1, 0)
+		grid.addWidget(qle_mode, 1, 1)
+		grid.addWidget(text_M, 2, 0)
+		grid.addWidget(qle_M, 2, 1)
+
+		grid.addWidget(text_N_1, 3, 0)
+		grid.addWidget(text_N_2, 4, 0)
+		grid.addWidget(text_N_3, 5, 0)
+		grid.addWidget(qle_N, 3, 1)
+
+		grid.addWidget(text_blocks, 6, 0)
+		grid.addWidget(qle_blocks, 6, 1)
+		grid.addWidget(text_rows, 7, 0)
+		grid.addWidget(qle_rows, 7, 1)
+		grid.addWidget(text_mesh, 8, 0)
+		grid.addWidget(qle_mesh, 8, 1)
+		grid.addWidget(button_create_sklad, 9, 0)
+
+
+		group_box_create_sklad.show()
+		
+
+
+	def handler_old_sklad(self):  # не показывает из-за того, что self.show только внутри метода работает!
+		self.clear_window()
+		file_dialog = QFileDialog()
+		file_dialog.setNameFilter("DB files (*.db)")  # указываем фильтр для расширения .db
+		file_dialog.setWindowTitle("Выберите базу данных с данными склада")  # устанавливаем заголовок диалогового окна, перед exec должен вызываться!
+		file_dialog.exec()
+		file_path = file_dialog.selectedFiles()[0]  # получаем список выбранных файлов, но так как файл 1, то [0]
+
+		bd_name=""
+		if file_path: # получаем имя базы данных
+			sz=len(file_path)
+			i=sz-1
+			while((i>=0)and(file_path[i]!="/")):
+				i=i-1
+			i=i+1
+			for j in range(i, sz):
+				bd_name=bd_name+str(file_path[j])
+
+		self.config=Config("sklad.db")
+		self.artikul=Artikul("sklad.db")
+	
+		font= QFont()
+		font.setPointSize(17)  
+
+		group_box_set = QGroupBox("Добавить товар на склад", self)
+		group_box_set.setFont(font)
+		group_box_set.setGeometry(100, 200, 800, 700) #на width, height везде заменить!   #100, 200, 800, 700
+		group_box_set.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)
+		text_set_art1=QLabel("Введите артикул товара, который хотите добавить первым:", group_box_set)
+		text_set_art1.setFont(font)
+		text_set_art1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_set_art1)
+		qle_set_art1 = QLineEdit(group_box_set)
+		qle_set_art1.setFont(font)
+		qle_set_art1.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_set_art1)
+		text_set_art2_1=QLabel("Введите артикул товара, который хотите добавить вторым:", group_box_set) 
+		text_set_art2_1.setFont(font)
+		text_set_art2_1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_set_art2_1)
+		text_set_art2_2=QLabel("(если вы не хотите добавлять на склад больше одного товара,", group_box_set) 
+		text_set_art2_2.setFont(font)
+		text_set_art2_2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_set_art2_2)
+		text_set_art2_3=QLabel(" не заполняйте это поле)", group_box_set) 
+		text_set_art2_3.setFont(font)
+		text_set_art2_3.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_set_art2_3)
+		qle_set_art2 = QLineEdit(group_box_set)            #обязательно group_box указывать!!!!
+		qle_set_art2.setFont(font) 
+		qle_set_art2.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_set_art2)
+		button_set_tovar = QPushButton("Доставить товар на склад", self)
+		button_set_tovar.setFont(font)
+		button_set_tovar.clicked.connect(lambda* args: self.handler_set_art(qle_set_art1, qle_set_art2))
+		button_set_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
+		button_set_tovar.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_set_tovar)
+		self.qt5_objects_list.append(group_box_set)
+		layout = QVBoxLayout(group_box_set)
+		layout.addSpacing(30)
+		layout.addWidget(text_set_art1)
+		layout.addSpacing(15)
+		layout.addWidget(qle_set_art1)
+		layout.addSpacing(160)
+		layout.addWidget(text_set_art2_1) #3
+		layout.addWidget(text_set_art2_2)
+		layout.addWidget(text_set_art2_3)
+		layout.addSpacing(15)
+		layout.addWidget(qle_set_art2)
+		layout.addSpacing(40)
+		layout.addWidget(button_set_tovar)
+		layout.addSpacing(20)
+		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
+
+		font.setPointSize(17)  
+		group_box_get = QGroupBox("Взять товар со склада", self)
+		group_box_get.setFont(font)
+		group_box_get.setGeometry(1020, 200, 800, 700) #на width, height везде заменить! 
+		group_box_get.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)  
+		text_get_art1=QLabel("Введите артикул товара, который хотите взять со склада первым:", group_box_get)
+		text_get_art1.setFont(font)
+		text_get_art1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art1)
+		qle_get_art1 = QLineEdit(group_box_set)
+		qle_get_art1.setFont(font)
+		qle_get_art1.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_get_art1)
+		text_get_art2_1=QLabel("Введите артикул товара, который хотите взять со склада вторым:", group_box_get) 
+		text_get_art2_1.setFont(font)
+		text_get_art2_1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_1)
+		text_get_art2_2=QLabel("(если вы не хотите брать со склада больше одного товара,", group_box_get) 
+		text_get_art2_2.setFont(font)
+		text_get_art2_2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_2)
+		text_get_art2_3=QLabel(" не заполняйте это поле)", group_box_get) 
+		text_get_art2_3.setFont(font)
+		text_get_art2_3.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_3)
+		qle_get_art2 = QLineEdit(group_box_get)            #обязательно group_box указывать!!!!
+		qle_get_art2.setFont(font) 
+		qle_get_art2.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_get_art2)
+		button_get_tovar = QPushButton("Взять товар со склада", self)
+		button_get_tovar.setFont(font)
+		button_get_tovar.clicked.connect(lambda* args: self.handler_get_art(qle_get_art1, qle_get_art2))
+		button_get_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
+		button_get_tovar.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_get_tovar)
+		self.qt5_objects_list.append(group_box_get)
+		layout = QVBoxLayout(group_box_get)
+		layout.addSpacing(30)
+		layout.addWidget(text_get_art1)
+		layout.addSpacing(15)
+		layout.addWidget(qle_get_art1)
+		layout.addSpacing(160)
+		layout.addWidget(text_get_art2_1) #3
+		layout.addWidget(text_get_art2_2)
+		layout.addWidget(text_get_art2_3)
+		layout.addSpacing(15)
+		layout.addWidget(qle_get_art2)
+		layout.addSpacing(40)
+		layout.addWidget(button_get_tovar)
+		layout.addSpacing(20)
+		group_box_get.show()
+		
+
+
+	def handler_set_art(self, qle_set_art1, qle_set_art2):
+		print(qle_set_art1.text())
+		print(qle_set_art2.text()) #печатает пустую строку размера 0, если поле не заполнено!
+		qle_set_art1.clear()
+		qle_set_art2.clear()
+
+	def handler_get_art(self, qle_get_art1, qle_get_art2):
+		print(qle_get_art1.text())
+		print(qle_get_art2.text()) #печатает пустую строку размера 0, если поле не заполнено!
+		qle_get_art1.clear()
+		qle_get_art2.clear()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""def window1():
+	global app
+	global window
+	global screen_width
+	global screen_height
+	window.setWindowTitle("Пример кнопок")
+	screen = QDesktopWidget().screenGeometry()
+	screen_width = screen.width() # 1920    # поле класса
+	screen_height = screen.height() # 1080  # поле класса
+	window.resize(screen_width, screen_height)
+	# как удалить кнопку?
+
+	button_new_sklad = QPushButton("Создать новый склад", window)
+	button_old_sklad = QPushButton("Продолжить работу с ранее созданным складом", window)
+	button_list=[]
+	button_list.append(button_new_sklad)
+	button_list.append(button_old_sklad)
+	
+	font_button12 = QFont()
+	font_button12.setPointSize(14)  # Устанавливаем желаемый размер шрифта
+
+	button_new_sklad.setFont(font_button12)  # Устанавливаем шрифт для надписи кнопки
+	button_new_sklad.clicked.connect(lambda* args: handler_new_sklad(button_list))
+	button_new_sklad.setGeometry(int(screen_width*0.1), int(screen_height*0.3), int(screen_width*0.3), int(screen_height*0.3)) # x, y, размеры: x, y
+
+	button_old_sklad.setFont(font_button12)
+	button_old_sklad.clicked.connect(lambda* args: handler_old_sklad(button_list))
+	button_old_sklad.setGeometry(int(screen_width*0.55), int(screen_height*0.3), int(screen_width*0.3), int(screen_height*0.3))
+
+	window.show()
+	sys.exit(app.exec())"""
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = sklad_window()
+    window.show()
+
+    sys.exit(app.exec())
+
+#window1()

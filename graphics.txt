@@ -200,7 +200,7 @@ print(config.delete_branch(3))
 print(config.get_config_counter())"""
 config.close()
 
-"""articul=Artikul() #только цифрами!
+articul=Artikul() #только цифрами!
 articul.clean_table()
 articul.insert_articul(21, "nkvd1")
 articul.insert_articul(25, "nkvd2")
@@ -217,15 +217,15 @@ print("count ", articul.get_articul_counter())
 print(articul.delete_articul("nkvd1"))
 print("count ", articul.get_articul_counter())
 articul.insert_articul(21, "nkvd1")
-print("count ", articul.get_articul_counter())"""
+print("count ", articul.get_articul_counter())
 
 """print(articul.get_articul(0))
 print(articul.get_mesh("11"))
 print(articul.get_articul_counter())
 print(articul.delete_articul("12"))
 print(articul.delete_articul("12"))
-print(articul.get_articul_counter())"""
-config.close()
+print(articul.get_articul_counter())
+config.close()"""
 
 
 # Создание таблицы с двумя колонками

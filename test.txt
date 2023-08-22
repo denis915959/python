@@ -1,36 +1,32 @@
 ﻿# python test.txt
 
-def get_crossroad(node, N_sizes, N_size_big, mode):  # расчет номера перекрестка по номеру ячейки
-	N_size=sum(N_sizes)
-	
-	Sum=0
-	sz=len(N_sizes)
-	block_node=0
-	node_tmp=node%N_size
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, QAction, QInputDialog
+import sys
 
-	for i in range(0, sz): #это не меняем
-		Sum=Sum+N_sizes[i]
-		if(node_tmp<Sum): #<=
-			block_node=i
-			break
-	
-	cross_row=0 #нумерация с нуля
-	if(mode==2):
-		cross_row=int(node/(2*N_size))
-		return(cross_row*N_size_big+node_tmp+block_node+1)
+class MyWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-	if(mode==1):
-		cross_row=int(node/(2*N_size))
-		return(cross_row*N_size_big+node_tmp+block_node+2)
+        self.menu_bar = QMenuBar()
+        self.file_menu = self.menu_bar.addMenu("File")
+        self.exit_action = QAction("Exit")
+        self.exit_action.triggered.connect(self.close)
+        self.file_menu.addAction(self.exit_action)
 
+        self.input_menu = self.menu_bar.addMenu("Input")
+        self.input_action = QAction("Input Text")
+        self.input_action.triggered.connect(self.input_text)
+        self.input_menu.addAction(self.input_action)
 
-N_sizes=[3, 2, 3, 2, 2]
-mode=1
-if(mode==1):
-	N_size=sum(N_sizes)+len(N_sizes)+1
-if(mode==2):
-	N_size=sum(N_sizes) + len(N_sizes) - 1
+        self.setMenuBar(self.menu_bar)
 
+    def input_text(self):
+        text, ok = QInputDialog.getText(self, "Input Dialog", "Enter text:")
+        if ok:
+            print(text)
 
-node=69
-print(get_crossroad(node, N_sizes, N_size, mode))
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = MyWindow()
+    window.show()
+    sys.exit(app.exec_())
