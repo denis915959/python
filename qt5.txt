@@ -35,7 +35,6 @@ class Config:
 		self.cursor.execute("DELETE FROM config WHERE number = '{}'".format(number))
 		self.conn.commit()
 		success=bool(self.cursor.rowcount)
-		print("success = ", success)
 		if((self.config_counter>0)and(success==True)):
 			self.config_counter = self.config_counter - 1
 		return(success)
@@ -87,15 +86,15 @@ class Artikul:
 	def __init__(self, name_base):
 		self.conn = sqlite3.connect(str(name_base)) # Создание подключения к базе данных SQLite
 		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
-		self.cursor.execute("CREATE TABLE IF NOT EXISTS articuls(number INT, mesh INT, articul TEXT)")
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS articuls(number INT, articul TEXT, mesh INT, floor INT)")
 		self.cursor.execute("SELECT COUNT(*) FROM articuls")
 		res = self.cursor.fetchone()
 		self.articul_counter=res[0] #считывается из базы данных!
 
-	def get_articul_counter(self):
+	def get_artikul_counter(self): #скорее всего, при неудачном get уменьшится!
 		return(self.articul_counter)
 
-	def delete_articul(self, articul): # удалаяет элемент таблицы по артикулу
+	def delete_artikul(self, articul): # удалаяет элемент таблицы по артикулу
 		articul_str=str(articul)
 		self.cursor.execute("DELETE FROM articuls WHERE articul = '{}'".format(articul_str))
 		self.conn.commit()
@@ -110,9 +109,9 @@ class Artikul:
 			self.articul_counter = self.articul_counter - 1
 		return(bool(self.cursor.rowcount))
 
-	def insert_articul(self, mesh, articul1): # вставка данных в таблицу
+	def insert_artikul(self, articul1, mesh, floor): # вставка данных в таблицу
 		articul=str(articul1)
-		self.cursor.execute("INSERT INTO articuls (number, mesh, articul) VALUES (?, ?, ?)", (self.articul_counter, mesh, articul))
+		self.cursor.execute("INSERT INTO articuls (number, articul, mesh, floor) VALUES (?, ?, ?, ?)", (self.articul_counter, articul, mesh, floor))
 		self.conn.commit()
 		self.articul_counter = self.articul_counter + 1
 
@@ -121,7 +120,8 @@ class Artikul:
 		self.conn.commit()
 		self.articul_counter = 0
 
-	def get_articul(self, mesh_num): # возвращает артикул по номеру ячейки   # ВНЕСТИ В ТЕТРАДЬ:  WHERE mesh='{}' - только так! Т.е столбец mesh указываем как столбец, иначе же mesh будет пониматься питоном как значение!
+	#сюда еще надо этаж добавить! но в данный момент это неактуально
+	"""def get_artikul(self, mesh_num): # возвращает артикул по номеру ячейки   # ВНЕСТИ В ТЕТРАДЬ:  WHERE mesh='{}' - только так! Т.е столбец mesh указываем как столбец, иначе же mesh будет пониматься питоном как значение!
 		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE mesh='{}'".format(mesh_num)).fetchall()
 		sz=len(tmp)
 		i=3
@@ -130,11 +130,23 @@ class Artikul:
 		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
 			res=res+tmp[i]
 			i=i+1
-		return(res)
+		return(res)"""
 
 	def get_mesh(self, articul): # возвращает номер ячейки по артикулу
 		articul_str=str(articul)
 		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE articul='{}'".format(articul_str)).fetchall()
+		sz=len(tmp)
+		i=2
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def get_floor(self, articul): # возвращает номер яруса по артикулу
+		articul_str=str(articul)
+		tmp = self.cursor.execute("SELECT floor FROM articuls WHERE articul='{}'".format(articul_str)).fetchall()
 		sz=len(tmp)
 		i=2
 		tmp=str(tmp)
@@ -162,6 +174,13 @@ class Artikul:
 			art=art+tmp[i]
 			i=i+1
 		return(Mesh(int(mesh), art))
+	
+	def check_artikul(self, artikul):
+		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE articul='{}'".format(str(artikul))).fetchall()
+		if (len(tmp)==0):
+			return(False)
+		else:
+			return(True)
 
 	def close(self):
 		self.conn.close()
@@ -215,11 +234,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		if ok:
 			branch=rasparser(text)
 			self.config.insert_branch_into_table(branch[0], branch[1])
-		#print(self.config.get_parametr(self.config.get_config_counter()-1))
 
 
 	def insert_branch(self):
-		print(self.config.get_config_counter())
 		text, ok = QInputDialog.getText(self, "Восстановление ребра", "введите номера перекрестков, задающих ребро (через запятую):")
 		if ok:
 			branch=rasparser(text)
@@ -232,7 +249,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Такого ребра не существует")
 				message_box.show() #show обязателен для виджетов или групп виджетов!!!!!
-		print(self.config.get_config_counter())
 		
 
 	def first_window(self):
@@ -406,6 +422,34 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		qle_set_art1.setFont(font)
 		qle_set_art1.setStyleSheet("background-color: white")
 		self.qt5_objects_list.append(qle_set_art1)
+		text_mesh1=QLabel("  Введите номер ячейки:", group_box_set)
+		text_mesh1.setFont(font)
+		text_mesh1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_mesh1)
+		qle_mesh1 = QLineEdit(group_box_set)
+		qle_mesh1.setFont(font)
+		qle_mesh1.setStyleSheet("background-color: white")
+		qle_mesh1.setFixedSize(300, 38)
+		self.qt5_objects_list.append(qle_mesh1)
+		text_floor1=QLabel("  Введите номер яруса:", group_box_set)
+		text_floor1.setFont(font)
+		text_floor1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_floor1)
+		qle_floor1 = QLineEdit(group_box_set)
+		qle_floor1.setFont(font)
+		qle_floor1.setStyleSheet("background-color: white")
+		qle_floor1.setFixedSize(300, 38)  
+		self.qt5_objects_list.append(qle_floor1)
+		subgroup_box1 = QGroupBox("")
+		subgroup_box1.setStyleSheet("QGroupBox { border: 1px white; }") # красит рамку в цвет фона!!!!
+		sub_grid = QGridLayout()
+		sub_grid.addWidget(text_mesh1, 0, 0)
+		sub_grid.addWidget(qle_mesh1, 1, 0)
+		sub_grid.addWidget(text_floor1, 0, 1)
+		sub_grid.addWidget(qle_floor1, 1, 1)
+		subgroup_box1.setLayout(sub_grid)
+		subgroup_box1.setFixedSize(650, 90) 
+		self.qt5_objects_list.append(subgroup_box1)
 		text_set_art2_1=QLabel("Введите артикул товара, который хотите добавить вторым:", group_box_set) 
 		text_set_art2_1.setFont(font)
 		text_set_art2_1.setStyleSheet("background-color: lightgreen")
@@ -422,28 +466,56 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		qle_set_art2.setFont(font) 
 		qle_set_art2.setStyleSheet("background-color: white")
 		self.qt5_objects_list.append(qle_set_art2)
+		text_mesh2=QLabel("  Введите номер ячейки:", group_box_set)
+		text_mesh2.setFont(font)
+		text_mesh2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_mesh2)
+		qle_mesh2 = QLineEdit(group_box_set)
+		qle_mesh2.setFont(font)
+		qle_mesh2.setStyleSheet("background-color: white")
+		qle_mesh2.setFixedSize(300, 38)
+		self.qt5_objects_list.append(qle_mesh2)
+		text_floor2=QLabel("  Введите номер яруса:", group_box_set)
+		text_floor2.setFont(font)
+		text_floor2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_floor2)
+		qle_floor2 = QLineEdit(group_box_set)
+		qle_floor2.setFont(font)
+		qle_floor2.setStyleSheet("background-color: white")
+		qle_floor2.setFixedSize(300, 38)  
+		self.qt5_objects_list.append(qle_floor2)
+		subgroup_box2 = QGroupBox("")
+		subgroup_box2.setStyleSheet("QGroupBox { border: 1px white; }") # красит рамку в цвет фона!!!!
+		sub_grid = QGridLayout()
+		sub_grid.addWidget(text_mesh2, 0, 0)
+		sub_grid.addWidget(qle_mesh2, 1, 0)
+		sub_grid.addWidget(text_floor2, 0, 1)
+		sub_grid.addWidget(qle_floor2, 1, 1)
+		subgroup_box2.setLayout(sub_grid)
+		subgroup_box2.setFixedSize(650, 90) 
+		self.qt5_objects_list.append(subgroup_box2)
 		button_set_tovar = QPushButton("Доставить товар на склад", self)
 		button_set_tovar.setFont(font)
-		button_set_tovar.clicked.connect(lambda* args: self.handler_set_art(qle_set_art1, qle_set_art2))
+		button_set_tovar.clicked.connect(lambda* args: self.handler_set_art(qle_set_art1, qle_mesh1, qle_floor1, qle_set_art2, qle_mesh2, qle_floor2))
 		button_set_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
 		button_set_tovar.setStyleSheet("background-color: yellow")
 		self.qt5_objects_list.append(button_set_tovar)
 		self.qt5_objects_list.append(group_box_set)
 		layout = QVBoxLayout(group_box_set)
-		layout.addSpacing(30)
 		layout.addWidget(text_set_art1)
-		layout.addSpacing(15)
 		layout.addWidget(qle_set_art1)
-		layout.addSpacing(160)
+		layout.addWidget(subgroup_box1)
+		layout.addSpacing(45) #80
 		layout.addWidget(text_set_art2_1) #3
 		layout.addWidget(text_set_art2_2)
 		layout.addWidget(text_set_art2_3)
-		layout.addSpacing(15)
 		layout.addWidget(qle_set_art2)
-		layout.addSpacing(40)
+		layout.addWidget(subgroup_box2)
+		layout.addSpacing(10)
 		layout.addWidget(button_set_tovar)
 		layout.addSpacing(20)
 		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
+
 		font.setPointSize(17)  
 		group_box_get = QGroupBox("Взять товар со склада", self)
 		group_box_get.setFont(font)
@@ -482,6 +554,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.qt5_objects_list.append(button_get_tovar)
 		self.qt5_objects_list.append(group_box_get)
 		layout = QVBoxLayout(group_box_get)
+		layout.addSpacing(10)
 		layout.addSpacing(30)
 		layout.addWidget(text_get_art1)
 		layout.addSpacing(15)
@@ -504,18 +577,104 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.set_get_artikul()
 		
 
-	def handler_set_art(self, qle_set_art1, qle_set_art2):
-		print(qle_set_art1.text())
-		print(qle_set_art2.text()) #печатает пустую строку размера 0, если поле не заполнено!
-		qle_set_art1.clear()
-		qle_set_art2.clear()
-
-
 	def handler_get_art(self, qle_get_art1, qle_get_art2):
-		print(qle_get_art1.text())
-		print(qle_get_art2.text()) #печатает пустую строку размера 0, если поле не заполнено!
+		print("sz = ", self.artikul.get_artikul_counter())
+
+		articul1 = qle_get_art1.text()
+		check1=self.artikul.check_artikul(articul1)	
+		articul2 = qle_get_art2.text()
+		check2=self.artikul.check_artikul(articul2)
+		if((check2==True)and(check1==False)):
+			font= QFont()
+			font.setPointSize(12) 
+			message_box = QMessageBox(self) #если поле ввода не нужно!
+			message_box.setFont(font)
+			message_box.setWindowTitle("Ошибка")
+			message_box.setText("Товар с первым введенным артикулом не найден! Попробуйте заново")
+			message_box.show() #show обязателен для виджетов или групп виджетов!!!!!
+		if((check1==True)and(check2==False)):
+			font= QFont()
+			font.setPointSize(12) 
+			message_box = QMessageBox(self) #если поле ввода не нужно!
+			message_box.setFont(font)
+			message_box.setWindowTitle("Ошибка")
+			message_box.setText("Товар со вторым введенным артикулом не найден! Попробуйте заново")
+			message_box.show()
+		if((check2==False)and(check1==False)):
+			font= QFont()
+			font.setPointSize(12) 
+			message_box = QMessageBox(self) #если поле ввода не нужно!
+			message_box.setFont(font)
+			message_box.setWindowTitle("Ошибка")
+			message_box.setText("Оба товара с такими артикулами не найдены! Попробуйте заново")
+			message_box.show()
+		self.mesh_arr=[]
+		self.floor_arr=[]
+		if((len(articul1)!=0)and(check1==True)and(check2==True)):
+			self.mesh_arr.append(self.artikul.get_mesh(articul1))
+			self.floor_arr.append(self.artikul.get_floor(articul1))
+			self.artikul.delete_artikul(articul1)
+		if((len(articul2)!=0)and(check1==True)and(check2==True)):
+			self.mesh_arr.append(self.artikul.get_mesh(articul2))
+			self.floor_arr.append(self.artikul.get_floor(articul2))
+			self.artikul.delete_artikul(articul2)
+
+		print("sz = ", self.artikul.get_artikul_counter())
+
+		print("mesh = ", self.mesh_arr)
+		print("floor = ", self.floor_arr)
 		qle_get_art1.clear()
 		qle_get_art2.clear()
+
+
+	def handler_set_art(self, qle_set_art1, qle_mesh1, qle_floor1, qle_set_art2, qle_mesh2, qle_floor2):
+		print("sz = ", self.artikul.get_artikul_counter())
+
+		articul1 = qle_set_art1.text()
+		check1=self.artikul.check_artikul(articul1)	
+		articul2 = qle_set_art2.text()
+		check2=self.artikul.check_artikul(articul2)
+		if((check1==True)and(check2==False)):
+			font= QFont()
+			font.setPointSize(12) 
+			message_box = QMessageBox(self) #если поле ввода не нужно!
+			message_box.setFont(font)
+			message_box.setWindowTitle("Ошибка")
+			message_box.setText("Товар с первым введенным артикулом уже существует! Попробуйте заново")
+			message_box.show() #show обязателен для виджетов или групп виджетов!!!!!
+		if((check2==True)and(check1==False)):
+			font= QFont()
+			font.setPointSize(12) 
+			message_box = QMessageBox(self) #если поле ввода не нужно!
+			message_box.setFont(font)
+			message_box.setWindowTitle("Ошибка")
+			message_box.setText("Товар со вторым введенным артикулом уже существует! Попробуйте заново")
+			message_box.show()
+		if((check2==True)and(check1==True)):
+			font= QFont()
+			font.setPointSize(12) 
+			message_box = QMessageBox(self) #если поле ввода не нужно!
+			message_box.setFont(font)
+			message_box.setWindowTitle("Ошибка")
+			message_box.setText("Оба товара с такими артикулами уже существуют! Попробуйте заново")
+			message_box.show()
+		if((len(articul1)!=0)and(check1==False)and(check2==False)):
+			mesh1 = int(qle_mesh1.text())
+			floor1 = int(qle_floor1.text())
+			self.artikul.insert_artikul(articul1, mesh1, floor1)
+		if((len(articul2)!=0)and(check2==False)and(check1==False)):
+			mesh2 = int(qle_mesh2.text())
+			floor2 = int(qle_floor2.text())
+			self.artikul.insert_artikul(articul2, mesh2, floor2)
+			
+		print("sz = ", self.artikul.get_artikul_counter())
+
+		qle_set_art1.clear()
+		qle_mesh1.clear()
+		qle_floor1.clear()
+		qle_set_art2.clear()
+		qle_mesh2.clear()
+		qle_floor2.clear()
 
 
 	def handler_create_sklad(self, qle_list):

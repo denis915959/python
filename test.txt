@@ -1,65 +1,8 @@
 ﻿# python test.txt
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QGroupBox, QLineEdit, QPushButton, QWidget
-import sys
+array = [1, 2, 3, 4, 5]
+ 
+del array[2]
+ 
+print(array)
 
-class MyWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        layout = QVBoxLayout()
-
-        group_box = QGroupBox("Group Box")
-
-        hbox1 = QHBoxLayout()
-        hbox2 = QHBoxLayout()
-
-        line_edit1 = QLineEdit()
-        line_edit2 = QLineEdit()
-        line_edit3 = QLineEdit()
-        line_edit4 = QLineEdit()
-        line_edit5 = QLineEdit()
-        line_edit6 = QLineEdit()
-        line_edit7 = QLineEdit()
-        line_edit8 = QLineEdit()
-        line_edit9 = QLineEdit()
-        line_edit10 = QLineEdit()
-
-        hbox1.addWidget(line_edit1)
-        hbox1.addWidget(line_edit2)
-
-        hbox2.addWidget(line_edit3)
-        hbox2.addWidget(line_edit4)
-
-        subgroup_box = QGroupBox("")
-        subgroup_box.setStyleSheet("QGroupBox { border: 1px white; }") # красит рамку в цвет фона!!!!
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(line_edit5)
-        vbox.addWidget(line_edit6)
-        vbox.addWidget(line_edit7)
-        subgroup_box.setLayout(vbox)
-
-        hbox1.addWidget(subgroup_box)
-
-        hbox2.addWidget(line_edit8)
-        hbox2.addWidget(line_edit9)
-        hbox2.addWidget(line_edit10)
-
-        vbox = QVBoxLayout()
-        vbox.addLayout(hbox1)
-        vbox.addLayout(hbox2)
-
-        group_box.setLayout(vbox)
-
-        layout.addWidget(group_box)
-
-        central_widget = QWidget()
-        central_widget.setLayout(layout)
-        self.setCentralWidget(central_widget)
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = MyWindow()
-    window.show()
-    sys.exit(app.exec_())
