@@ -9,3 +9,8 @@ class Mesh:
 	def __init__(self, m_mesh, m_artikul):
 		self.mesh=m_mesh
 		self.articul=m_artikul
+
+
+
+print(1)
+print(1)

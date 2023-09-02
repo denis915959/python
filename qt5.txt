@@ -584,6 +584,10 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		check1=self.artikul.check_artikul(articul1)	
 		articul2 = qle_get_art2.text()
 		check2=self.artikul.check_artikul(articul2)
+		if(len(articul1)==0):
+			check1=True
+		if(len(articul2)==0):
+			check2=True
 		if((check2==True)and(check1==False)):
 			font= QFont()
 			font.setPointSize(12) 
