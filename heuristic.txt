@@ -4,7 +4,7 @@ import time
 import sys
 
 class Mesh:
-	def __init__(self, m_numberl, m_artikul):
+	def __init__(self, m_number, m_artikul):
 		self.number=m_number
 		self.articul=m_artikul
 
@@ -989,6 +989,13 @@ class Sklad:
 			for i in range(self.list[0] + 1, len(self.list)):
 				path.append(self.list[i])
 		return(path)
+
+
+	def get_len_Nodes(self):
+		return(len(Nodes)) #помним, что нумерация с нуля!!!
+
+	def set_orientation(self, orient):
+		self.orientation = orient
 
 
 
