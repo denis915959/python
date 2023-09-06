@@ -265,9 +265,15 @@ class Sklad:
 			if((crossroad1==True)and(crossroad2==True)):
 				cost=self.cost_between_rows
 			if(((crossroad1==True)and(crossroad2==False))or((crossroad2==True)and(crossroad1==False))):
-				cost=self.cost_between_blocks
-			if((crossroad1==True)and(crossroad2==True)):
-				cost=self.cost_between_mesh
+				if((node1 == 0) or (node2 == 0)):
+					cost = self.cost_between_rows
+				else:
+					cost=self.cost_between_blocks
+			if((crossroad1==False)and(crossroad2==False)):
+				if((node1 == 0) or (node2 == 0)):
+					cost = self.cost_between_rows
+				else:
+					cost=self.cost_between_mesh
 			self.Nodes[node1].branch_array.append(Branch(node2, cost))
 			self.Nodes[node2].branch_array.append(Branch(node1, cost))
 			res=True
@@ -1007,6 +1013,17 @@ class Sklad:
 	def get_max_floor(self):
 		return(self.max_floor)
 
+	def Print(self): # для отладки полезно!
+		for i in range(0, len(self.Nodes)):   #печать вершин графа
+			print("Number = ", self.Nodes[i].number)
+			print("flag = ", self.Nodes[i].crossroad)
+			print("prev = ", self.Nodes[i].previous_node)
+			sz=len(self.Nodes[i].branch_array)
+			for j in range(0, sz):
+				print("Branch = ", self.Nodes[i].branch_array[j].adjacted_node)
+				print("Branch.cost = ", self.Nodes[i].branch_array[j].cost)
+			print(" ")
+
 
 #все удаляющие функции возвращают true или false
 class Config:
@@ -1056,7 +1073,7 @@ class Config:
 			num1=num2
 			num2=tmp
 		msg=str(num1) + ", " + str(num2)
-		self.cursor.execute("DELETE FROM config WHERE parametr = '{}'".format(msg))
+		self.cursor.execute("DELETE FROM config WHERE parametr = '{}' AND number > 8".format(msg))
 		self.conn.commit()
 		success=bool(self.cursor.rowcount)
 		if ((self.config_counter>0)and(success==True)):
@@ -1244,29 +1261,50 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		if ok:
 			branch=rasparser(text)
 			self.config.insert_branch_into_table(branch[0], branch[1])
-
-
-	def insert_branch(self):
-		text, ok = QInputDialog.getText(self, "Восстановление ребра", "введите номера перекрестков, задающих ребро (через запятую):")
-		if ok:
-			branch=rasparser(text)
-			flag=self.config.delete_branch_from_table(branch[0], branch[1])	
+			flag = self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
 			if(flag==False):
 				font= QFont()
 				font.setPointSize(12) 
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Такого ребра не существует")
+				message_box.setText("Такого ребра нет на складе, попробуйте заново!")
+				message_box.show()
+
+
+	def insert_branch(self):
+		text, ok = QInputDialog.getText(self, "Восстановление ребра", "введите номера перекрестков, задающих ребро (через запятую):")
+		if ok:
+			branch=rasparser(text)
+			flag=self.config.delete_branch_from_table(branch[0], branch[1])
+			if(flag==False):
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Такого ребра не существует, попробуйте заново!")
 				message_box.show() #show обязателен для виджетов или групп виджетов!!!!!
+			else:
+				self.sklad.insert_branch_to_Nodes(branch[0], branch[1])	
 
 
 	def change_orientation(self):
 		text, ok = QInputDialog.getText(self, "Изменить направление", "введите новое направление робота:")
 		if ok:
-			self.orientation = int(text)
-			self.config.change_orientation(text)
-			self.sklad.change_orientation(int(text))
+			if((text!="1")and(text!="2")and(text!="3")and(text!="4")):
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Такого направления для робота не существует, попробуйте заново!")
+				message_box.show()
+			else:
+				self.orientation = int(text)
+				self.config.change_orientation(text)
+				self.sklad.set_orientation(int(text))
+				print(self.orientation)
 
 
 	def first_window(self):
@@ -1281,7 +1319,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		button_new_sklad.clicked.connect(lambda* args: self.handler_new_sklad())
 		button_new_sklad.setGeometry(int(self.screen_width*0.1), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3)) # x, y, размеры: x, y
 		button_new_sklad.setStyleSheet("background-color: yellow")
-
 		button_old_sklad.setFont(font_button12)
 		button_old_sklad.clicked.connect(lambda* args: self.handler_old_sklad())
 		button_old_sklad.setGeometry(int(self.screen_width*0.55), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3))
@@ -1637,6 +1674,12 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.max_floor = int(self.config.get_parametr(7))
 		self.orientation = int(self.config.get_parametr(8))
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
+		config_counter = self.config.get_config_counter()
+		#if(config_counter>9):
+		print(config_counter)
+		for i in range(10, config_counter): # удаление ранее удаленных ребер!
+			branch = rasparser(self.config.get_parametr(i))
+			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
 		self.set_get_artikul()
 		
 
@@ -1731,7 +1774,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			message_box.setText("Оба товара с такими артикулами уже существуют! Попробуйте заново")
 			message_box.show()
 			return()
-		if((len(articul1)!=0)and(check1==False)and(check2==False)):
+		if((len(articul1)!=0)and(check1==False)and(len(articul2)==0)and(check2==False)): # только первое поле заполнено 
 			mesh1 = int(qle_mesh1.text())
 			floor1 = int(qle_floor1.text())
 			# проверки!
@@ -1783,7 +1826,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.show()
 				return()
 			self.artikul.insert_artikul(articul1, mesh1, floor1)
-		if((len(articul2)!=0)and(check2==False)and(check1==False)):
+		if((len(articul2)!=0)and(check2==False)and(len(articul1)==0)and(check1==False)): # только второе поле заполнено 
 			mesh2 = int(qle_mesh2.text())
 			floor2 = int(qle_floor2.text())
 			# проверки!
@@ -1835,7 +1878,122 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.show()
 				return()
 			self.artikul.insert_artikul(articul2, mesh2, floor2)
-			
+		
+		if((len(articul2)!=0)and(check2==False)and(len(articul1)!=0)and(check1==False)): # оба поля заполнены
+			mesh1 = int(qle_mesh1.text())
+			floor1 = int(qle_floor1.text())
+			mesh2 = int(qle_mesh2.text())
+			floor2 = int(qle_floor2.text())
+			# проверки!
+			check_mesh1 = self.artikul.check_mesh(mesh1, floor1)
+			check_mesh2 = self.artikul.check_mesh(mesh2, floor2)
+
+			if((check_mesh1 == True)and(check_mesh2 == True)): # обе ячейки уже заполнены товаром!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Введенные в оба поля ячейки уже заняты, пожалуйста, выберите другие ячейки или ярусы для обеих артикулов!")
+				message_box.show()
+				return()
+
+			if(mesh1>=count_of_mesh): #слишком большой номер ячейки
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Слишком большой номер ячейки для этого склада, такой ячейки не существует! Попробуйте заново")
+				message_box.show()
+				return()
+			if(mesh1<0): # отрицательный номер ячейки
+				#ошибка: отрицательный номер
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Отрицательный номер ячейки, такой ячейки не существует! Попробуйте заново")
+				message_box.show()
+				return() #с return поле ввода не очищается!!!!!!
+			if(floor1>self.max_floor): #слишком большой номер яруса!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Слишком большой номер яруса для этого склада, такого яруса не существует! Попробуйте заново")
+				message_box.show()
+				return()
+			if(floor1<=0): #отрицательный номер яруса!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Отрицательный номер яруса, такого яруса не существует! Попробуйте заново")
+				message_box.show()
+				return()
+			if(check_mesh1 == True): # ячейка уже заполнена товаром!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Введенная в первое поле ячейка уже занята, пожалуйста, выберите другую ячейку или ярус!")
+				message_box.show()
+				return()
+
+			if(mesh2>=count_of_mesh): #слишком большой номер ячейки
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Слишком большой номер ячейки для этого склада, такой ячейки не существует! Попробуйте заново")
+				message_box.show()
+				return()
+			if(mesh2<0): # отрицательный номер ячейки
+				#ошибка: отрицательный номер
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Отрицательный номер ячейки, такой ячейки не существует! Попробуйте заново")
+				message_box.show()
+				return() #с return поле ввода не очищается!!!!!!
+			if(floor2>self.max_floor): #слишком большой номер яруса!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Слишком большой номер яруса для этого склада, такого яруса не существует! Попробуйте заново")
+				message_box.show()
+				return()
+			if(floor2<=0): #отрицательный номер яруса!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Отрицательный номер яруса, такого яруса не существует! Попробуйте заново")
+				message_box.show()
+				return()
+			if(check_mesh2 == True): # ячейка уже заполнена товаром!
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Введенная во второе поле ячейка уже занята, пожалуйста, выберите другую ячейку или ярус!")
+				message_box.show()
+				return()
+			self.artikul.insert_artikul(articul1, mesh1, floor1)
+			self.artikul.insert_artikul(articul2, mesh2, floor2)
+
 		print("sz = ", self.artikul.get_artikul_counter())
 
 		qle_set_art1.clear()
