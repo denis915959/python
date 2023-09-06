@@ -5,6 +5,8 @@ import codecs #для считывания русских символов
 import sqlite3
 import copy
 import time
+import random
+from paho.mqtt import client as mqtt_client
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QFileDialog, QVBoxLayout, QMainWindow, QPushButton, QLineEdit, QWidget, QLabel, QGroupBox, QGridLayout, QMenuBar, QAction, QInputDialog, QMessageBox
 from PyQt5.QtGui import QFont
 
@@ -32,7 +34,7 @@ class robot_path_node:
 		self.counter=counter1
 
 class Sklad:
-	def __init__(self, mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, orientation, max_floor):
+	def __init__(self, mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, max_floor, orientation):
 		self.mode = mode
 		self.M = M
 		self.N_sizes = N_sizes
@@ -893,7 +895,7 @@ class Sklad:
 
 	#строит полный маршрут, включает в себя построение 2 или 3 отрезков маршрута с помощью A-star, возвращает одним списком массив неповторяющихся номеров перекрестков, а также массив команд для робота
 	def make_full_path(self, start_node, start_mesh, mesh_arr, end_node, end_mesh, floor_arr): #массив ячеек, номер стартового перекрестка, массив номеров ячеек с ящиками (1 или 2 элемента), номер конечного перекрестка, массив номеров этажей (1 или 2 элемента). Возвращает 
-		self.list.clear() # очистка от предыдущей поездки
+		self.list.clear() # очистка от предыдущего маршрута
 		if((start_node==end_node)and(len(mesh_arr)==0)): 
 			self.list.append(0)
 			return
@@ -1304,7 +1306,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.orientation = int(text)
 				self.config.change_orientation(text)
 				self.sklad.set_orientation(int(text))
-				print(self.orientation)
 
 
 	def first_window(self):
@@ -1675,8 +1676,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.orientation = int(self.config.get_parametr(8))
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
 		config_counter = self.config.get_config_counter()
-		#if(config_counter>9):
-		print(config_counter)
 		for i in range(10, config_counter): # удаление ранее удаленных ребер!
 			branch = rasparser(self.config.get_parametr(i))
 			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
@@ -1721,20 +1720,82 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			message_box.setText("Оба товара с такими артикулами не найдены! Попробуйте заново")
 			message_box.show()
 			return()
-		self.mesh_arr=[]
-		self.floor_arr=[]
+		mesh_arr=[]
+		floor_arr=[]
+		mesh1=-1
+		floor1=-1
+		mesh2=-1
+		floor2=-1
 		if((len(articul1)!=0)and(check1==True)and(check2==True)):
-			self.mesh_arr.append(self.artikul.get_mesh(articul1))
-			self.floor_arr.append(self.artikul.get_floor(articul1))
-			self.artikul.delete_artikul(articul1)
+			mesh1=int(self.artikul.get_mesh(articul1))
+			floor1=int(self.artikul.get_floor(articul1))
+			mesh_arr.append(mesh1)
+			floor_arr.append(floor1)
+			#self.artikul.delete_artikul(articul1) #после взятия товара это вызывается!
 		if((len(articul2)!=0)and(check1==True)and(check2==True)):
-			self.mesh_arr.append(self.artikul.get_mesh(articul2))
-			self.floor_arr.append(self.artikul.get_floor(articul2))
-			self.artikul.delete_artikul(articul2)
-
+			mesh2=int(self.artikul.get_mesh(articul2))
+			floor2=int(self.artikul.get_floor(articul2))
+			mesh_arr.append(mesh2)
+			floor_arr.append(floor2)
+			#self.artikul.delete_artikul(articul2) #после взятия товара это вызывается!
+		if(len(mesh_arr)>0): #т.е введен хотя бы один артикул
+			self.sklad.make_full_path(0, -1, mesh_arr, 3, -1, floor_arr)
+			path=self.sklad.get_path()
+			action=self.sklad.get_action()
+			action_size=self.sklad.get_action_size()
+			font= QFont()
+			font.setPointSize(12) 
+			if(action_size==0):
+				#print("size = 0!!!")
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Робот уже находится в нужной точке склада!")
+				message_box.show()
+				return()
+			if(action_size==-1): #ошибка при построении маршрута!
+				#здесь 4 if для проверки второго элемента в list!
+				error = self.sklad.get_error_number()
+				if(error[0]==0):
+					start_node=error[1]
+					end_node=error[2]
+					message = "Маршрут между перекрестками " + str(start_node) + " и " + str(end_node) + " не может быть построен из-за препятствий на складе."
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText(message)
+					message_box.show()
+					return()
+				if(error[0]==1):
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText("Маршрут до первой ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо первого выбранного")
+					message_box.show()
+					return()
+				if(error[0]==2):
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText("Маршрут от первой до второй ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо второго выбранного")
+					message_box.show()
+					return()
+				if(error[0]==3):
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText("Маршрут до конечной точки не может быть построен из-за препятствий на складе.")
+					message_box.show()
+					return()
+			"""sz = len(action) #удалить!!!!!!!!!!
+			for i in range(0, sz):
+				print("action = ", action[i].action)
+				print("counter = ", action[i].counter)
+				print("")"""
+			# сюда mqtt добавить!
 		print("sz = ", self.artikul.get_artikul_counter())
-		print("mesh = ", self.mesh_arr)
-		print("floor = ", self.floor_arr)
+		print("mesh = ", mesh_arr)
+		print("floor = ", floor_arr)
 		qle_get_art1.clear()
 		qle_get_art2.clear()
 

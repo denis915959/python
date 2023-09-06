@@ -1,0 +1,187 @@
+﻿# python mqtt_class.txt
+# рабочая финальная версия для винды! остальные версии неактуальны!
+
+import random
+import time
+import copy
+
+from paho.mqtt import client as mqtt_client
+
+class robot_path_node:
+	def __init__(self, action1, counter1):
+		self.action=action1
+		self.counter=counter1
+		
+
+class MQTT:
+	def __init__(self, robot_action, path):
+		self.robot_action = copy.deepcopy(robot_action)
+		self.path = copy.deepcopy(path)
+		self.result_from_robot= "" #на новой итерации этот массив надо очищать! как и robot_action
+		self.size_message=len(self.robot_action)*2+2   #размер массива отправляется
+		self.recv_flag=True #есть сообщение от распберри об успешном приеме? 
+		self.broker = 'broker.emqx.io'
+		self.port = 1883
+		self.topic = "python/mqtt"
+		self.username = 'emqx'
+		self.password = 'public'
+		self.client_id = f'python-mqtt-{random.randint(0, 1000)}'
+		self.array_answer=[] #массив ответов
+
+		
+
+
+
+robot_action=[] #вместо этого блока программа из heyristic идет
+#robot_action зполняется после вызова а-стар, после чего как ГЛОБАЛЬНАЯ переменная дальше посылается при вызове run(). При этом передавать как переменную этот массив никуда не надо
+
+path=[0, 2, 1, 2, 0] #заменить на создание path с помощью функции из heyristic!
+
+robot_action.append(robot_path_node(6, 1))
+robot_action.append(robot_path_node(4, 1))
+robot_action.append(robot_path_node(12, 0))
+robot_action.append(robot_path_node(6, 0))
+robot_action.append(robot_path_node(5, 1))
+robot_action.append(robot_path_node(0, 1))
+
+result_from_robot= "" #на новой итерации этот массив надо очищать! как и robot_action
+size_message=len(robot_action)*2+2   #размер массива отправляется
+recv_flag=True #есть сообщение от распберри об успешном приеме? 
+attempt_counter = 0 #счетчик попыток связаться с роботом
+
+
+
+def connect_mqtt():
+	def on_connect(client, userdata, flags, rc):
+		if rc == 0:
+			print("Connected to MQTT Broker!")
+		else:
+			print("Failed to connect, return code %dn", rc)
+
+	client = mqtt_client.Client(client_id)
+	client.username_pw_set(username, password)
+	client.on_connect = on_connect
+	client.on_message = on_message
+	client.connect(broker, port)
+	return client
+
+
+def on_message(client, userdata, msg):
+	print(f"Received message: {msg.payload.decode()}")
+	global recv_flag
+	recv_flag=False
+
+def recv_robot_result(client, userdata, msg):
+	global result_from_robot
+	result_from_robot = msg.payload.decode()
+	print(f"Received message: {result_from_robot}")
+	#result_array.append(message) #int(message))
+
+
+def publish(client, robot_act):
+	global attempt_counter
+	#global robot_action
+	for i in range(0, size_message):
+		time.sleep(0.2)
+		if(i==0):
+			msg = -1
+		if(i==1):
+			msg = len(robot_act) # +1 убрать, это для проверки разрыва соединения!!
+
+			"""if(attempt_counter==0): #этот блок убрать, это для проверки сбоев!
+				msg = len(robot_act) """
+		if ((i%2==0)and(i>1)):
+			msg = robot_act[(i-2)//2].action
+		if ((i%2==1)and(i>1)):
+			msg = robot_act[(i-2)//2].counter
+		result = client.publish(topic, msg)
+        	# result: [0, 1]
+		status = result[0]
+		if status == 0:
+			print(f"Sent '{msg}' to topic '{topic}'")
+		else:
+			print(f"Failed to send message to topic {topic}")
+	attempt_counter = attempt_counter + 1
+
+
+def mqtt_communication(robot_act):
+	global  recv_flag
+	global result_from_robot
+	global attempt_counter
+
+	client = connect_mqtt()
+	client.loop_start()
+	publish(client, robot_act)
+	client.subscribe(topic)
+	t1=time.process_time()
+	while(recv_flag): #теперь добавим таймер!
+		if (attempt_counter>=4):
+			print("Невозможно соединиться с роботом, проверьте его исправность!")
+			return
+			break; #попробовать удалить
+		client.on_message = on_message 
+		t2=time.process_time()
+		t=t2-t1
+		if(t>=10.0): #чем хуже качество интернет-соединения, тем выше этот таймер. для 2 палок на распберри такого таймера за глаза хватает
+			print("not successfully send !!!!!")
+			client.loop_stop()
+			client = connect_mqtt()
+			client.loop_start()
+			publish(client, robot_act)
+			client.subscribe(topic) 
+			t1 = t2
+
+	client.subscribe(topic)	
+	while(len(result_from_robot)<1): #все 3 сообщения приняты. осталось написать recv_robot_result
+		client.on_message = recv_robot_result 
+
+	array_answer=[] #распарсер принятой строки с результатами поедки робота!
+	i=0
+	while(i<len(result_from_robot)):
+		tmp=0
+		minus=False
+		while((result_from_robot[i]!=" ")and(i<len(result_from_robot))):
+			if(result_from_robot[i]=="-"):
+				minus=True
+			else:
+				tmp=tmp*10 + int(result_from_robot[i])
+			i=i+1
+		if(minus==True):
+			tmp = -tmp
+		minus=False
+		array_answer.append(tmp)
+		i=i+1
+
+	#возврат переменных к исходному состоянию
+	recv_flag=True
+	attempt_counter = 0
+	result_from_robot=""
+	client.loop_stop()
+	
+	#до этого в array_answer записывались номера элементов массива path. запишем сами значения, соответствующие этим номерам в array_answer
+	if(array_answer[1]!=-1):
+		array_answer[1]=path[array_answer[1]]
+	if(array_answer[2]!=-1):
+		array_answer[2]=path[array_answer[2]]
+	return(array_answer)
+
+
+not_node1 = -1
+not_node2 = -1
+
+#сделать как отдельную функцию?
+tmp=1
+if(tmp==1):
+	for i in range(0, 1): #нужно только для проверки повторного вызова, сегодня (12 июня) повторный вызов работает!
+		# сначала получить из полей ввода номера ячеек и номера этажей, затем преобразовать номер ячейки в номер перекрестка, 
+		# затем запустить A-star 3 раза, потом создать full_path, затем массив команд для робота!
+		res = mqtt_communication(copy.deepcopy(robot_action))
+		print("res = ", res)
+		if(res[0]==1): # робот успешно преодолел маршрут
+			# добавить проверку на наличие препятствия!
+			print("robot go success!")
+		if(res[0]==0): # робот не смог преодолеть препятствие
+			print("robot not go!")
+			
+
+		time.sleep(4) #чтобы успеть перезапустить программу на распберри
