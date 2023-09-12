@@ -33,6 +33,149 @@ class robot_path_node:
 		self.action=action1
 		self.counter=counter1
 
+
+class MQTT:
+	def __init__(self, robot_action, path):
+		self.robot_action = copy.deepcopy(robot_action)
+		self.path = copy.deepcopy(path)
+		self.result_from_robot= "" #на новой итерации этот массив надо очищать! как и robot_action
+		self.size_message=len(self.robot_action)*2+2   #размер массива отправляется
+		self.recv_flag=True #есть сообщение от распберри об успешном приеме? 
+		self.broker = 'broker.emqx.io'
+		self.port = 1883
+		self.topic = "python/robot"
+		self.username = 'robot' #emqx
+		self.password = 'public'
+		self.client_id = f'python-mqtt-{random.randint(0, 1000)}'
+		self.attempt_counter=0
+
+
+	def on_connect(self, client, userdata, flags, rc):
+		if rc == 0:
+			print("Connected to MQTT Broker!")
+		else:
+			print("Failed to connect, return code %dn", rc)
+
+
+	def on_message(self, client, userdata, msg):
+		message=msg.payload.decode()
+		print(f"Received message: {message}")
+		if((message[0]=="#")and(message[1]=="$")):  #       #$!!e%M1;X4;W0;T133;X0;P0;C4600;R0000;B0000010x;F000;*>}  - какое-то системное сообщение, оно игнорируется 
+			print("err")
+			return
+		else:
+			self.recv_flag=False
+		if((message[0]=="m")and(message[1]=="e")): #this is system messaage!
+			print("err")
+			return
+		else:
+			self.recv_flag=False
+	def message_confirm(self, client, userdata, msg):
+		message=msg.payload.decode()
+		print(f"Received message: {message}")
+		if((message[0]=="#")and(message[1]=="$")):  #       #$!!e%M1;X4;W0;T133;X0;P0;C4600;R0000;B0000010x;F000;*>}  - какое-то системное сообщение, оно игнорируется 
+			print("err")
+			return
+		if((message[0]=="m")and(message[1]=="e")): #this is system messaage!
+			print("err")
+			return
+		if((message[0]=="-")and(message[1]=="2")):
+			self.recv_flag=False
+
+	def connect_mqtt(self):
+		client = mqtt_client.Client(self.client_id)
+		client.username_pw_set(self.username, self.password)
+		client.on_connect = self.on_connect
+		client.on_message = self.on_message
+		client.connect(self.broker, self.port)
+		return client
+
+
+	def recv_robot_result(self, client, userdata, msg):
+		self.result_from_robot = msg.payload.decode()
+		if((self.result_from_robot[0]=="#")and(self.result_from_robot[1]=="$")):  #       #$!!e%M1;X4;W0;T133;X0;P0;C4600;R0000;B0000010x;F000;*>}  - какое-то системное сообщение, оно игнорируется 
+			print("err")
+			return
+		if((self.result_from_robot[0]=="m")and(self.result_from_robot[1]=="e")): #this is system messaage!
+			print("err")
+			return
+		self.recv_flag=False
+		print(f"Received message recv robot: {self.result_from_robot}")
+
+
+	def publish(self, client):
+		for i in range(0, self.size_message):
+			time.sleep(0.2)
+			if(i==0):
+				msg = -1
+			if(i==1):
+				msg = len(self.robot_action) # +1 убрать, это для проверки разрыва соединения!!
+			if ((i%2==0)and(i>1)):
+				msg = self.robot_action[(i-2)//2].action
+			if ((i%2==1)and(i>1)):
+				msg = self.robot_action[(i-2)//2].counter
+			result = client.publish(self.topic, msg)
+			status = result[0]
+			if status == 0:
+				print(f"Sent '{msg}' to topic '{self.topic}'")
+			else:
+				print(f"Failed to send message to topic {self.topic}")
+		self.attempt_counter = self.attempt_counter + 1
+
+
+	def mqtt_communication(self):
+		client = self.connect_mqtt()
+		client.loop_start()
+		self.publish(client)
+		client.subscribe(self.topic)
+		t1=time.process_time()
+		while(self.recv_flag): #теперь добавим таймер!
+			if (self.attempt_counter>=4):
+				print("Невозможно соединиться с роботом, проверьте его исправность!")
+				array_answer=[-1, -1, -1]
+				return(array_answer)
+				#break; #попробовать удалить
+			client.on_message = self.message_confirm
+			t2=time.process_time()
+			t=t2-t1
+			if(t>=10.0): #чем хуже качество интернет-соединения, тем выше этот таймер. для 2 палок на распберри такого таймера за глаза хватает
+				print("not successfully send !!!!!")
+				client.loop_stop()
+				client = self.connect_mqtt()
+				client.loop_start()
+				self.publish(client)
+				client.subscribe(self.topic) 
+				t1 = t2
+
+		client.subscribe(self.topic)
+		self.recv_flag=True	
+		while(self.recv_flag): #все 3 сообщения приняты. осталось написать recv_robot_result
+			client.on_message = self.recv_robot_result  #тоже метод! 
+		array_answer=[] #распарсер принятой строки с результатами поедки робота!
+		i=0
+		while(i<len(self.result_from_robot)):
+			tmp=0
+			minus=False
+			print("result_from_robot = ", self.result_from_robot)
+			while((self.result_from_robot[i]!=" ")and(i<len(self.result_from_robot))):
+				if(self.result_from_robot[i]=="-"):
+					minus=True
+				else:
+					tmp=tmp*10 + int(self.result_from_robot[i])
+				i=i+1
+			if(minus==True):
+				tmp = -tmp
+			minus=False
+			array_answer.append(tmp)
+			i=i+1
+		#возврат переменных к исходному состоянию
+		self.recv_flag=True
+		self.attempt_counter = 0
+		self.result_from_robot=""
+		client.loop_stop()
+		return(array_answer)
+
+
 class Sklad:
 	def __init__(self, mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, max_floor, orientation):
 		self.mode = mode
@@ -1680,7 +1823,32 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			branch = rasparser(self.config.get_parametr(i))
 			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
 		self.set_get_artikul()
-		
+	
+	
+	def get_mesh_number(self, array_result): # возвращает номер ячейки и номер яруса!!
+		if(array_result[1]==-1):
+			print("В get_mesh_number получено отрицательное значение ячейки с робота")
+			return
+		node=self.path[array_result[1]].number
+		res=[]
+		if(len(self.mesh_arr)==2):
+			n1=self.sklad.get_crossroad(self.mesh_arr[0])
+			n2=self.sklad.get_crossroad(self.mesh_arr[1])
+			if(node==n1):
+				res.append(self.mesh_arr[0])
+				res.append(self.floor_arr[0])
+				return(res)
+			if(node==n2):
+				res.append(self.mesh_arr[1])
+				res.append(self.floor_arr[1])
+				return(res)
+		if(len(self.mesh_arr)==1):
+			n1=self.sklad.get_crossroad(self.mesh_arr[0])
+			if(node==n1):
+				res.append(self.mesh_arr[0])
+				res.append(self.floor_arr[0])
+				return(res)
+
 
 	def handler_get_art(self, qle_get_art1, qle_get_art2):
 		print("sz = ", self.artikul.get_artikul_counter())
@@ -1720,8 +1888,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			message_box.setText("Оба товара с такими артикулами не найдены! Попробуйте заново")
 			message_box.show()
 			return()
-		mesh_arr=[]
-		floor_arr=[]
+		self.mesh_arr=[]
+		self.floor_arr=[]
 		mesh1=-1
 		floor1=-1
 		mesh2=-1
@@ -1729,18 +1897,18 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		if((len(articul1)!=0)and(check1==True)and(check2==True)):
 			mesh1=int(self.artikul.get_mesh(articul1))
 			floor1=int(self.artikul.get_floor(articul1))
-			mesh_arr.append(mesh1)
-			floor_arr.append(floor1)
+			self.mesh_arr.append(mesh1)
+			self.floor_arr.append(floor1)
 			#self.artikul.delete_artikul(articul1) #после взятия товара это вызывается!
 		if((len(articul2)!=0)and(check1==True)and(check2==True)):
 			mesh2=int(self.artikul.get_mesh(articul2))
 			floor2=int(self.artikul.get_floor(articul2))
-			mesh_arr.append(mesh2)
-			floor_arr.append(floor2)
+			self.mesh_arr.append(mesh2)
+			self.floor_arr.append(floor2)
 			#self.artikul.delete_artikul(articul2) #после взятия товара это вызывается!
-		if(len(mesh_arr)>0): #т.е введен хотя бы один артикул
-			self.sklad.make_full_path(0, -1, mesh_arr, 3, -1, floor_arr)
-			path=self.sklad.get_path()
+		if(len(self.mesh_arr)>0): #т.е введен хотя бы один артикул
+			self.sklad.make_full_path(0, -1, self.mesh_arr, 3, -1, self.floor_arr)
+			self.path=self.sklad.get_path()
 			action=self.sklad.get_action()
 			action_size=self.sklad.get_action_size()
 			font= QFont()
@@ -1792,10 +1960,49 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				print("action = ", action[i].action)
 				print("counter = ", action[i].counter)
 				print("")"""
-			# сюда mqtt добавить!
+			mqtt = MQTT(action, self.path)
+			array_answer = mqtt.mqtt_communication()
+			if(array_answer[1]!=-1): # сюда приходит не номера перекрестков, а номера элементов в path!!!!
+				node1_barrier=self.path[array_answer[1]]
+				node2_barrier=self.path[array_answer[2]] #тип node!
+			if(array_answer[0]==-1):
+				error = "Невозможно соединиться с роботом, проверьте его исправность!"
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText(error)
+				message_box.show()
+			if((array_answer[0]==0)and(array_answer[2]>=0)): #вот здесь 4 варианта!!! во всех состальных 3 if этого не требуется
+				error = "Робот не смог объехать препятствие между перекрестками " + str(node1_barrier.number) + " и " + str(node2_barrier.number)
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText(error)
+				message_box.show()
+				message_box.show()
+			if((array_answer[0]==0)and(array_answer[2]<0)):
+				barrier = self.get_mesh_number(array_answer)
+				mesh_barrier = barrier[0]
+				floor_barrier = barrier[1]
+				print("get_mesh_number = ", self.get_mesh_number(array_answer))
+				error = "Перед ячейкой " + str(mesh_barrier) + " находится препятствие, которое мешает взять товар с яруса " + str(floor_barrier)
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText(error)
+				message_box.show()
+			if((array_answer[0]==1) and (array_answer[1]==-1) and (array_answer[2]==-1)): #единственный 100% успешный случай!
+				error=""
+			if((array_answer[0]==1) and (array_answer[1]!=-1)):
+				error="Робот успешно взял весь необходимый товар, но между перекрестками " + str(node1_barrier.number) + " и " + str(node2_barrier.number) + " возникло препятствие, это ребро уже удалено со склада! "
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText(error)
+				message_box.show()
 		print("sz = ", self.artikul.get_artikul_counter())
-		print("mesh = ", mesh_arr)
-		print("floor = ", floor_arr)
+		print("mesh = ", self.mesh_arr)
+		print("floor = ", self.floor_arr)
 		qle_get_art1.clear()
 		qle_get_art2.clear()
 

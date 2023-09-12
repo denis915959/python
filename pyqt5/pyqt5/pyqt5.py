@@ -4,13 +4,10 @@ import sqlite3
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QFileDialog, QVBoxLayout, QMainWindow, QPushButton, QLineEdit, QWidget, QLabel, QGroupBox, QGridLayout, QMenuBar, QAction, QInputDialog, QMessageBox
 from PyQt5.QtGui import QFont
 
+class robot_path_node:
+	def __init__(self, action1, counter1):
+		self.action=action1
+		self.counter=counter1
 
-class Mesh:
-	def __init__(self, m_mesh, m_artikul):
-		self.mesh=m_mesh
-		self.articul=m_artikul
+def get_number_of_passed_nodes(path, path_num1, path_num2, mesh_num1, mesh_num2):
 
-
-
-print(1)
-print(1)
