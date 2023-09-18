@@ -1391,6 +1391,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.setMenuBar(self.menu_bar)
 		self.orientation = -1
 		self.max_floor = -1
+		self.robot_in_goal_node = False #флаг для цикла ошибок при поездке робота
 		self.first_window()
 
 
@@ -1415,6 +1416,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Такого ребра нет на складе, попробуйте заново!")
 				message_box.show()
+			config_counter = self.config.get_config_counter() #удалить
+			#print("config_counte delete = ", config_counter)
 
 
 	def insert_branch(self):
@@ -1428,7 +1431,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Такого ребра не существует, попробуйте заново!")
+				message_box.setText("Такого ребра не существует,  или оно уже было восстановлено. Попробуйте заново!")
 				message_box.show() #show обязателен для виджетов или групп виджетов!!!!!
 			else:
 				self.sklad.insert_branch_to_Nodes(branch[0], branch[1])	
@@ -1819,7 +1822,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.orientation = int(self.config.get_parametr(8))
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
 		config_counter = self.config.get_config_counter()
+		#print("config_counte handler = ", config_counter)
 		for i in range(10, config_counter): # удаление ранее удаленных ребер!
+			#print("del")
 			branch = rasparser(self.config.get_parametr(i))
 			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
 		self.set_get_artikul()
@@ -1848,6 +1853,60 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				res.append(self.mesh_arr[0])
 				res.append(self.floor_arr[0])
 				return(res)
+
+
+	def get_count_passed_mesh(self, robot_answer):
+		if((robot_answer[2] >= 0)and(robot_answer[0] == 0)): #Препятствие между 2 перекрестками и оно есть!
+			if(len(self.mesh_arr)==0):
+				return(0)
+			node1 = self.sklad.get_crossroad(self.mesh_arr[0])
+			mesh_count=0
+			sz=robot_answer[1]
+			i=0
+			while((i<sz)and(node1 != self.path[i].number)):
+				i=i+1
+			if(node1 == self.path[i].number): #если ячейка все таки есть, а не произошло выхода из цикла по причине дохождения до sz
+				mesh_count=1
+			if((len(self.mesh_arr)==2)): #and(i<sz)):
+				node2 = self.sklad.get_crossroad(self.mesh_arr[1])
+				while((i<sz)and(node2 != self.path[i].number)): # за границы диапазона не выйдет, так как sz<len(path)!
+					i=i+1
+				if(node2 == self.path[i].number): #если ячейка все таки есть, а не произошло выхода из цикла по причине дохождения до szs
+					mesh_count=2
+			return(mesh_count)
+		if((robot_answer[2] < 0)and(robot_answer[0] == 0)): #Препятствие перед ячейкой и оно есть!
+			mesh_count=0
+			if(len(self.mesh_arr)==2):
+				node1=self.sklad.get_crossroad(self.mesh_arr[0])
+				node2=self.sklad.get_crossroad(self.mesh_arr[1])
+				sz=robot_answer[1]
+				if(node1==node2): #ячейки напротив одного перекрестка
+					i=0
+					while((i<sz)and(node1!=self.path[i].number)):
+						i=i+1
+					if(node1==self.path[i].number):#если ячейка все таки есть, а не произошло выхода из цикла по причине дохождения до sz
+
+						if(robot_answer[2]==-1): #перед 1-й ячейкой препятствие
+							mesh_count=0
+						if(robot_answer[2]==-2): #перед 2-й ячейкой препятствие
+							mesh_count=1
+				if(node1!=node2):
+					i=0
+					while((i<sz)and(node1!=self.path[i].number)):
+						i=i+1
+					barrier=False
+					if(i==robot_answer[1]):
+						mesh_count=0
+						barrier=True
+					while((i<sz)and(node2!=self.path[i].number)):
+						i=i+1
+					if((i==robot_answer[1])and(barrier==False)):
+						mesh_count=1
+			if(len(self.mesh_arr)==1):
+				mesh_count=0	
+			return(mesh_count) #сдвинуть вниз!
+		if(robot_answer[0]==1):
+			return(len(self.mesh_arr))
 
 
 	def handler_get_art(self, qle_get_art1, qle_get_art2):
@@ -1907,102 +1966,104 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			self.floor_arr.append(floor2)
 			#self.artikul.delete_artikul(articul2) #после взятия товара это вызывается!
 		if(len(self.mesh_arr)>0): #т.е введен хотя бы один артикул
-			self.sklad.make_full_path(0, -1, self.mesh_arr, 3, -1, self.floor_arr)
-			self.path=self.sklad.get_path()
-			action=self.sklad.get_action()
-			action_size=self.sklad.get_action_size()
-			font= QFont()
-			font.setPointSize(12) 
-			if(action_size==0):
-				#print("size = 0!!!")
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Робот уже находится в нужной точке склада!")
-				message_box.show()
-				return()
-			if(action_size==-1): #ошибка при построении маршрута!
-				#здесь 4 if для проверки второго элемента в list!
-				error = self.sklad.get_error_number()
-				if(error[0]==0):
-					start_node=error[1]
-					end_node=error[2]
-					message = "Маршрут между перекрестками " + str(start_node) + " и " + str(end_node) + " не может быть построен из-за препятствий на складе."
+			self.robot_in_goal_node = False
+			while(self.robot_in_goal_node == False):
+				self.sklad.make_full_path(0, -1, self.mesh_arr, 0, -1, self.floor_arr)
+				self.path=self.sklad.get_path()
+				action=self.sklad.get_action()
+				action_size=self.sklad.get_action_size()
+				font= QFont()
+				font.setPointSize(12) 
+				if(action_size==0):
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
-					message_box.setText(message)
+					message_box.setText("Робот уже находится в нужной точке склада!")
 					message_box.show()
 					return()
-				if(error[0]==1):
+				if(action_size==-1): #ошибка при построении маршрута!
+					#здесь 4 if для проверки второго элемента в list!
+					error = self.sklad.get_error_number()
+					if(error[0]==0):
+						start_node=error[1]
+						end_node=error[2]
+						message = "Маршрут между перекрестками " + str(start_node) + " и " + str(end_node) + " не может быть построен из-за препятствий на складе."
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText(message)
+						message_box.show()
+						return()
+					if(error[0]==1):
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText("Маршрут до первой ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо первого выбранного")
+						message_box.show()
+						return()
+					if(error[0]==2):
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText("Маршрут от первой до второй ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо второго выбранного")
+						message_box.show()
+						return()
+					if(error[0]==3):
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText("Маршрут до конечной точки не может быть построен из-за препятствий на складе.")
+						message_box.show()
+						return()
+				"""sz = len(action) #удалить!!!!!!!!!!
+				for i in range(0, sz):
+					print("action = ", action[i].action)
+					print("counter = ", action[i].counter)
+					print("")"""
+				"""mqtt = MQTT(action, self.path) # восстановить после отладки!
+				array_answer = mqtt.mqtt_communication()"""
+				array_answer = [1, -1, -1]
+				if(array_answer[1]!=-1): # сюда приходит не номера перекрестков, а номера элементов в path!!!!
+					node1_barrier=self.path[array_answer[1]]
+					node2_barrier=self.path[array_answer[2]] #тип node!
+				if(array_answer[0]==-1):
+					error = "Невозможно соединиться с роботом, проверьте его исправность!"
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
-					message_box.setText("Маршрут до первой ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо первого выбранного")
+					message_box.setText(error)
 					message_box.show()
-					return()
-				if(error[0]==2):
+				if((array_answer[0]==0)and(array_answer[2]>=0)): #вот здесь 4 варианта!!! во всех состальных 3 if этого не требуется
+					error = "Робот не смог объехать препятствие между перекрестками " + str(node1_barrier.number) + " и " + str(node2_barrier.number)
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
-					message_box.setText("Маршрут от первой до второй ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо второго выбранного")
+					message_box.setText(error)
 					message_box.show()
-					return()
-				if(error[0]==3):
+					message_box.show()
+				if((array_answer[0]==0)and(array_answer[2]<0)):
+					barrier = self.get_mesh_number(array_answer)
+					mesh_barrier = barrier[0]
+					floor_barrier = barrier[1]
+					print("get_mesh_number = ", self.get_mesh_number(array_answer))
+					error = "Перед ячейкой " + str(mesh_barrier) + " находится препятствие, которое мешает взять товар с яруса " + str(floor_barrier)
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
-					message_box.setText("Маршрут до конечной точки не может быть построен из-за препятствий на складе.")
+					message_box.setText(error)
 					message_box.show()
-					return()
-			"""sz = len(action) #удалить!!!!!!!!!!
-			for i in range(0, sz):
-				print("action = ", action[i].action)
-				print("counter = ", action[i].counter)
-				print("")"""
-			mqtt = MQTT(action, self.path)
-			array_answer = mqtt.mqtt_communication()
-			if(array_answer[1]!=-1): # сюда приходит не номера перекрестков, а номера элементов в path!!!!
-				node1_barrier=self.path[array_answer[1]]
-				node2_barrier=self.path[array_answer[2]] #тип node!
-			if(array_answer[0]==-1):
-				error = "Невозможно соединиться с роботом, проверьте его исправность!"
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText(error)
-				message_box.show()
-			if((array_answer[0]==0)and(array_answer[2]>=0)): #вот здесь 4 варианта!!! во всех состальных 3 if этого не требуется
-				error = "Робот не смог объехать препятствие между перекрестками " + str(node1_barrier.number) + " и " + str(node2_barrier.number)
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText(error)
-				message_box.show()
-				message_box.show()
-			if((array_answer[0]==0)and(array_answer[2]<0)):
-				barrier = self.get_mesh_number(array_answer)
-				mesh_barrier = barrier[0]
-				floor_barrier = barrier[1]
-				print("get_mesh_number = ", self.get_mesh_number(array_answer))
-				error = "Перед ячейкой " + str(mesh_barrier) + " находится препятствие, которое мешает взять товар с яруса " + str(floor_barrier)
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText(error)
-				message_box.show()
-			if((array_answer[0]==1) and (array_answer[1]==-1) and (array_answer[2]==-1)): #единственный 100% успешный случай!
-				error=""
-			if((array_answer[0]==1) and (array_answer[1]!=-1)):
-				error="Робот успешно взял весь необходимый товар, но между перекрестками " + str(node1_barrier.number) + " и " + str(node2_barrier.number) + " возникло препятствие, это ребро уже удалено со склада! "
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText(error)
-				message_box.show()
-		print("sz = ", self.artikul.get_artikul_counter())
-		print("mesh = ", self.mesh_arr)
-		print("floor = ", self.floor_arr)
+				if((array_answer[0]==1) and (array_answer[1]!=-1)):
+					error="Робот успешно взял весь необходимый товар, но между перекрестками " + str(node1_barrier.number) + " и " + str(node2_barrier.number) + " возникло препятствие, это ребро уже удалено со склада! "
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText(error)
+					message_box.show()
+				if((array_answer[0]==1) and (array_answer[1]==-1) and (array_answer[2]==-1)): #единственный 100% успешный случай!
+					self.robot_in_goal_node = True
+		print("sz = ", self.artikul.get_artikul_counter())  # удалить потом
+		print("mesh = ", self.mesh_arr)  # удалить потом
+		print("floor = ", self.floor_arr)  # удалить потом
 		qle_get_art1.clear()
 		qle_get_art2.clear()
 
