@@ -18,6 +18,7 @@ actions_size=-1         #размер массива robot_action
 array_is_received=False #массив robot_action принят целиком?
 
 broker = 'broker.emqx.io'
+#broker = 'broker.mosquitto.org'
 port = 1883
 topic = "python/robot" #mqtt
 username = 'robot' # emqx
@@ -119,11 +120,13 @@ def mqtt_communication(): # может вызываться неограниче
     print("robot is work!")
     
     
-    result_trip=[0, 2, -1]  #номер элементов в path! 
+    result_trip=[0, 0, 1, 1, 2]  #номер элементов в path! 
 #для mqtt_trip проверить, возвращается ли номер в path или сам path !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
     # результат поездки робота
     #пробел в конце обязателен, иначе распарсер на складе не будет работать!
-    res = answer=str(result_trip[0])+" " + str(result_trip[1]) + " " + str(result_trip[2]) + " "  
+    answer=""
+    for i in range(0, len(result_trip)):
+        answer = answer + str(result_trip[i])+" "
     client.publish(topic, answer) # 1 - робот успешно взял товар, 0 - встретил препятствие, которое робот не может объехать
     time.sleep(0.4)
     if(res[0]==0):

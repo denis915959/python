@@ -1,20 +1,4 @@
 ﻿# python test.txt
 
-def get_error(self): # добавить self ко всем аргументам в теле метода!!!
-	error = ""
-	if(self.array_answer[0]==-1):
-		error = "Невозможно соединиться с роботом, проверьте его исправность!"
-	if(self.array_answer[0]==0):
-		error = "Робот не смог объехать препятствие между перекрестками " + str(self.array_answer[1]) + " и " + str(self.array_answer[2])
-	if((self.array_answer[0]==1) and (self.array_answer[1]==-1) and (self.array_answer[2]==-1)):
-		error=""
-	if((self.array_answer[0]==1) and (self.array_answer[1]!=-1) and (self.array_answer[2]!=-1)):
-		error="Робот успешно взял весь необходимый товар, но между перекрестками " + str(self.array_answer[1]) + " и " + str(self.array_answer[2]) + " возникло препятствие, это ребро уже удалено со склада! "
-	return(error)
-
-# array_answer=[0, 0, 2] +
-# array_answer=[-1, 0, 2] +
-#array_answer=[1, 0, 2] +
-array_answer=[1, -1, -1]
-error = get_error(array_answer)
-print(error)
+string = "3 "
+print(string.isdigit())
