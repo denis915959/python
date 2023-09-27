@@ -9,6 +9,9 @@ import random
 from paho.mqtt import client as mqtt_client
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QFileDialog, QVBoxLayout, QMainWindow, QPushButton, QLineEdit, QWidget, QLabel, QGroupBox, QGridLayout, QMenuBar, QAction, QInputDialog, QMessageBox
 from PyQt5.QtGui import QFont
+from collections import namedtuple
+
+edge = namedtuple('edge', ['n1', 'n2'])
 
 class Mesh:
 	def __init__(self, m_number, m_artikul):
@@ -1027,23 +1030,23 @@ class Sklad:
 				print("Branch.cost = ", self.Nodes[i].branch_array[j].cost)
 			print(" ")
 
-
 class Test:
 	def __init__(self):
 		self.sklad = Sklad(2, 2, [1, 1], 1.5, 4, 1, 2, 2, 1)
-		self.mesh_arr=[0]
-		self.floor_arr=[2, 2]
+		self.mesh_arr=[0, 3]
+		self.floor_arr=[1, 2]
 		self.sklad.make_full_path(0, -1, self.mesh_arr, 0, -1, self.floor_arr)
 		self.path = self.sklad.get_path()
 
 
-	def get_count_passed_mesh(self, robot_answer):
-		if((robot_answer[2] >= 0)and(robot_answer[0] == 0)): #Препятствие между 2 перекрестками и оно есть!
+	def get_count_passed_mesh(self, robot_answer): #возвращает количество успешно пройденных ячеек
+		len_arr_ans=len(robot_answer)
+		if((robot_answer[1].n2 >= 0)and(robot_answer[0] == 0)): #Препятствие между 2 перекрестками и оно есть!
 			if(len(self.mesh_arr)==0):
 				return(0)
 			node1 = self.sklad.get_crossroad(self.mesh_arr[0])
 			mesh_count=0
-			sz=robot_answer[1]
+			sz=robot_answer[len_arr_ans-1].n1
 			i=0
 			while((i<sz)and(node1 != self.path[i].number)):
 				i=i+1
@@ -1056,33 +1059,33 @@ class Test:
 				if(node2 == self.path[i].number): #если ячейка все таки есть, а не произошло выхода из цикла по причине дохождения до szs
 					mesh_count=2
 			return(mesh_count)
-		if((robot_answer[2] < 0)and(robot_answer[0] == 0)): #Препятствие перед ячейкой и оно есть!
+		if((robot_answer[1].n2 < 0)and(robot_answer[0] == 0)): #Препятствие перед ячейкой и оно есть!
 			mesh_count=0
 			if(len(self.mesh_arr)==2):
 				node1=self.sklad.get_crossroad(self.mesh_arr[0])
 				node2=self.sklad.get_crossroad(self.mesh_arr[1])
-				sz=robot_answer[1]
+				sz=robot_answer[1].n1
 				if(node1==node2): #ячейки напротив одного перекрестка
 					i=0
 					while((i<sz)and(node1!=self.path[i].number)):
 						i=i+1
 					if(node1==self.path[i].number):#если ячейка все таки есть, а не произошло выхода из цикла по причине дохождения до sz
 
-						if(robot_answer[2]==-1): #перед 1-й ячейкой препятствие
+						if(robot_answer[1].n2==mesh_arr[0]): #перед 1-й ячейкой препятствие
 							mesh_count=0
-						if(robot_answer[2]==-2): #перед 2-й ячейкой препятствие
+						if(robot_answer[1].n2==mesh_arr[1]): #перед 2-й ячейкой препятствие
 							mesh_count=1
 				if(node1!=node2):
 					i=0
 					while((i<sz)and(node1!=self.path[i].number)):
 						i=i+1
 					barrier=False
-					if(i==robot_answer[1]):
+					if(i==robot_answer[1].n1):
 						mesh_count=0
 						barrier=True
 					while((i<sz)and(node2!=self.path[i].number)):
 						i=i+1
-					if((i==robot_answer[1])and(barrier==False)):
+					if((i==robot_answer[1].n1)and(barrier==False)):
 						mesh_count=1
 			if(len(self.mesh_arr)==1):
 				mesh_count=0	
@@ -1091,10 +1094,35 @@ class Test:
 			return(len(self.mesh_arr))
 
 
+	"""def get_mesh_number(self, array_result): # возвращает - число успешно взятых товаров! или таки номер?????????????
+		if(array_result[1]==-1):
+			print("В get_mesh_number получено отрицательное значение ячейки с робота")
+			return
+		node=self.path[array_result[1]].number
+		res=[]
+		if(len(self.mesh_arr)==2):
+			n1=self.sklad.get_crossroad(self.mesh_arr[0])
+			n2=self.sklad.get_crossroad(self.mesh_arr[1])
+			if(node==n1):
+				res.append(self.mesh_arr[0])
+				res.append(self.floor_arr[0])
+				return(res)
+			if(node==n2):
+				res.append(self.mesh_arr[1])
+				res.append(self.floor_arr[1])
+				return(res)
+		if(len(self.mesh_arr)==1):
+			n1=self.sklad.get_crossroad(self.mesh_arr[0])
+			if(node==n1):
+				res.append(self.mesh_arr[0])
+				res.append(self.floor_arr[0])
+				return(res)""" 
+
 
 
 test = Test()
-robot_answer = [0, 2, -1]
+robot_answer = [0, edge(0, 1), edge(4, 5)]
+#print(test.get_mesh_number(robot_answer))
 print(test.get_count_passed_mesh(robot_answer))
 
 

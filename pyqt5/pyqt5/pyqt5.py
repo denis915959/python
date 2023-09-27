@@ -11,3 +11,7 @@ class robot_path_node:
 
 def get_number_of_passed_nodes(path, path_num1, path_num2, mesh_num1, mesh_num2):
 
+
+	if((array_answer[0]==0)and((self.path[array_answer[1].n1].number!=self.start_node)and
+	(len(array_answer==2))or((len(array_answer>2)and((self.path[array_answer[len(array_answer)-1].n1].number!=self.start_node)))
+						  and(count_passed_now_mesh==0)))):

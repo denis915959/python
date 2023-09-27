@@ -1,4 +1,11 @@
 ﻿# python test.txt
 
-string = "3 "
-print(string.isdigit())
+def get_max_node_number(self):
+	res=-1
+	if(self.mode == 2):
+		res=(sum(self.N_sizes) + len(self.N_sizes) - 1)*(self.M//2)
+	if(self.mode == 1):
+		res=(sum(self.N_sizes) + len(self.N_sizes) + 1)*(self.M//2)
+	return(res)
+
+print(get_max_node_number(1, 6, [3, 2, 3, 2, 2]))
