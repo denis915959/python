@@ -1,11 +1,206 @@
 ﻿# python test.txt
 
-def get_max_node_number(self):
-	res=-1
-	if(self.mode == 2):
-		res=(sum(self.N_sizes) + len(self.N_sizes) - 1)*(self.M//2)
-	if(self.mode == 1):
-		res=(sum(self.N_sizes) + len(self.N_sizes) + 1)*(self.M//2)
-	return(res)
+import sqlite3
 
-print(get_max_node_number(1, 6, [3, 2, 3, 2, 2]))
+"""class Test:
+	def __init__(self):
+		self.N_sizes = [3, 2, 4, 2]
+		self.mode = 2
+		self.N_size=sum(self.N_sizes) + len(self.N_sizes) - 1
+	def get_crossroad(self, mesh):  # расчет номера перекрестка по номеру ячейки
+		N_size_small=sum(self.N_sizes)	
+		Sum=0
+		sz=len(self.N_sizes)
+		block_mesh=0
+		mesh_tmp=mesh%N_size_small
+		for i in range(0, sz):
+			Sum=Sum+self.N_sizes[i]
+			if(mesh_tmp<Sum):
+				block_mesh=i
+				break
+		cross_row=0 #нумерация с нуля
+		if(self.mode==2):
+			cross_row=int(mesh/(2*sum(self.N_sizes)))
+			return(cross_row*self.N_size+mesh_tmp+block_mesh+1)
+		if(self.mode==1):
+			cross_row=int(mesh/(2*sum(self.N_sizes))) #нумерация с нуля!
+			print(cross_row)
+			return(cross_row*self.N_size+mesh_tmp+block_mesh+2)
+
+test = Test()
+print(test.get_crossroad(4))"""
+
+
+class Config:
+	def __init__(self, name_base):
+		self.conn = sqlite3.connect(str(name_base)) # Создание подключения к базе данных SQLite
+		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS config(number INT, parametr TEXT)")
+		self.cursor.execute("SELECT COUNT(*) FROM config")
+		res = self.cursor.fetchone()
+		self.config_counter=res[0] #считывается из базы данных!
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS mesh_barrier(number INT, mesh INT)")
+		self.cursor.execute("SELECT COUNT(*) FROM mesh_barrier")
+		res = self.cursor.fetchone()
+		self.barrier_counter=res[0] #считывается из базы данных!
+
+	def get_config_counter(self): #указывет на пустую строку, котоая будети заполнена первой!
+		return(self.config_counter)
+	
+	def insert_parametr(self, parametr): # вставка параметров склада в таблицу
+		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, str(parametr)))
+		self.conn.commit() #self попробовать убрать!
+		self.config_counter = self.config_counter + 1
+
+	def delete_parametr(self, number): # удаление параметров склада, было изменено без испытаний
+		self.cursor.execute("DELETE FROM config WHERE number = '{}'".format(number))
+		self.conn.commit()
+		success=bool(self.cursor.rowcount)
+		if((self.config_counter>0)and(success==True)):
+			self.config_counter = self.config_counter - 1
+		return(success)
+
+	def clean_config(self): # очистка таблицы
+		self.cursor.execute("DELETE FROM {}".format("config")) 
+		self.conn.commit()
+		self.config_counter = 0
+
+	def get_parametr(self, number): # возвращает параметр склада по номеру, номер определяется с нуля, config counter - это другое! 
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number='{}'".format(number)).fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def delete_branch_from_table(self, num1, num2): # удаляет ребро из таблицы!
+		if(num1>num2):
+			tmp=num1
+			num1=num2
+			num2=tmp
+		msg=str(num1) + ", " + str(num2)
+		rowid_db = self.cursor.execute("SELECT ROWID FROM config WHERE parametr = '{}' AND number > 10".format(msg)).fetchall()
+		rowid_db = str(rowid_db)
+		sz= len(rowid_db) - 3
+		rowid = ""
+		for i in range(2, sz):
+			rowid = rowid + rowid_db[i]
+		success = False
+		if(len(rowid)>0):
+			rowid = int(rowid)
+			if(rowid<self.config_counter):
+				success = True
+				for i in range(rowid, (self.config_counter)):
+					parametr_db = self.cursor.execute("SELECT parametr FROM config WHERE ROWID = '{}'".format(i+1)).fetchall()
+					parametr_db = str(parametr_db)
+					sz= len(parametr_db) - 4
+					parametr = ""
+					for j in range(3, sz):
+						parametr = parametr + parametr_db[j]
+					self.cursor.execute("UPDATE config SET parametr = '{}' WHERE ROWID = '{}'".format(parametr, i)).fetchall()
+					self.conn.commit()
+				self.cursor.execute("DELETE FROM config WHERE ROWID = '{}'".format(self.config_counter))
+				self.conn.commit()
+			if(rowid==self.config_counter):
+				self.cursor.execute("DELETE FROM config WHERE parametr = '{}'".format(msg))
+				self.conn.commit()
+				success=bool(self.cursor.rowcount)
+		if ((self.config_counter>0)and(success==True)):
+			self.config_counter = self.config_counter - 1
+		return(success)
+
+	def insert_branch_into_table(self, num1, num2): # вставка удаленного со склада ребра в таблицу
+		if(num1>num2):
+			tmp=num1
+			num1=num2
+			num2=tmp
+		parametr=str(num1) + ", " + str(num2)
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number > 10 AND parametr = '{}'".format(parametr)).fetchall()
+		print("tmp = ", tmp)
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		print("res = ", res)
+		if(res == ""):
+			self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
+			self.conn.commit()
+			self.config_counter = self.config_counter + 1
+
+	def change_orientation(self, orient):
+		num = 8
+		self.cursor.execute("UPDATE config SET parametr = ? WHERE number = ?", (str(orient), num)) # замена элемента в таблице по номеру!
+		self.conn.commit() 
+
+	def change_start_node(self, start_node):
+		num = 9
+		self.cursor.execute("UPDATE config SET parametr = ? WHERE number = ?", (str(start_node), num)) # замена элемента в таблице по номеру!
+		self.conn.commit()
+
+	def change_end_node(self, end_node):
+		num = 10
+		self.cursor.execute("UPDATE config SET parametr = ? WHERE number = ?", (str(end_node), num)) # замена элемента в таблице по номеру!
+		self.conn.commit()
+
+	def set_barrier_before_mesh(self, mesh): # добавление препятствия перед ячейкой
+		self.cursor.execute("INSERT INTO mesh_barrier (number, mesh) VALUES (?, ?)", (self.barrier_counter, int(mesh)))
+		self.conn.commit()
+		self.barrier_counter = self.barrier_counter + 1
+
+	def delete_barrier_before_mesh(self, mesh):
+		self.cursor.execute("DELETE FROM mesh_barrier WHERE mesh = '{}'".format(int(mesh)))
+		self.conn.commit()
+		success=bool(self.cursor.rowcount)
+		if ((self.barrier_counter>0)and(success==True)):
+			self.barrier_counter = self.barrier_counter - 1
+		return(success)
+
+	def get_barrier_counter(self):
+		return(self.barrier_counter)
+
+	def clean_barrier(self): # очистка таблицы
+		self.cursor.execute("DELETE FROM {}".format("mesh_barrier")) 
+		self.conn.commit()
+		self.barrier_counter = 0
+
+	def check_barrier(self, mesh):
+		tmp = self.cursor.execute("SELECT number FROM mesh_barrier WHERE mesh='{}'".format(int(mesh))).fetchall()
+		if (len(tmp)==0):
+			return(False)
+		else:
+			return(True)
+
+	def close(self):
+		self.conn.close()
+
+
+config = Config("test.db")
+for i in range(0, 11):
+	config.insert_parametr(2)
+for i in range(0, 5):
+	config.insert_branch_into_table(i, i+3)
+count=config.get_config_counter()
+for i in range(0, count):
+	print("'", config.get_parametr(i), "'")
+print("")
+print("")
+print("")
+
+
+print(config.delete_branch_from_table(0, 3))
+print(config.delete_branch_from_table(4, 7))
+count=config.get_config_counter()
+for i in range(0, count):
+	print("'", config.get_parametr(i), "'")
+
+print(config.get_config_counter())
+config.clean_config()
+
+
+

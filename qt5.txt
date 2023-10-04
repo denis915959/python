@@ -494,10 +494,11 @@ class Sklad:
 				break
 		cross_row=0 #нумерация с нуля
 		if(self.mode==2):
-			cross_row=int(mesh/(2*self.N_size))
+			cross_row=int(mesh/(2*sum(self.N_sizes)))
 			return(cross_row*self.N_size+mesh_tmp+block_mesh+1)
 		if(self.mode==1):
-			cross_row=int(mesh/(2*self.N_size))
+			cross_row=int(mesh/(2*sum(self.N_sizes))) #нумерация с нуля!
+			print(cross_row)
 			return(cross_row*self.N_size+mesh_tmp+block_mesh+2)
 
 
@@ -1211,11 +1212,8 @@ class Sklad:
 	def set_orientation(self, orient):
 		self.orientation = orient
 
-	def set_start_node(self, start_node):
-		self.start_node = start_node
-
-	def set_end_node(self, end_node):
-		self.end_node = end_node
+	"""def set_end_node(self, end_node):
+		self.end_node = end_node"""
 
 	def get_max_floor(self):
 		return(self.max_floor)
@@ -1237,7 +1235,7 @@ class Sklad:
 			for j in range(0, sz):
 				print("Branch = ", self.Nodes[i].branch_array[j].adjacted_node)
 				print("Branch.cost = ", self.Nodes[i].branch_array[j].cost)
-			print(" ")s
+			print(" ")
 
 
 #все удаляющие функции возвращают true или false
@@ -1292,9 +1290,32 @@ class Config:
 			num1=num2
 			num2=tmp
 		msg=str(num1) + ", " + str(num2)
-		self.cursor.execute("DELETE FROM config WHERE parametr = '{}' AND number > 8".format(msg))
-		self.conn.commit()
-		success=bool(self.cursor.rowcount)
+		rowid_db = self.cursor.execute("SELECT ROWID FROM config WHERE parametr = '{}' AND number > 10".format(msg)).fetchall()
+		rowid_db = str(rowid_db)
+		sz= len(rowid_db) - 3
+		rowid = ""
+		for i in range(2, sz):
+			rowid = rowid + rowid_db[i]
+		success = False
+		if(len(rowid)>0):
+			rowid = int(rowid)
+			if(rowid<self.config_counter):
+				success = True
+				for i in range(rowid, (self.config_counter)):
+					parametr_db = self.cursor.execute("SELECT parametr FROM config WHERE ROWID = '{}'".format(i+1)).fetchall()
+					parametr_db = str(parametr_db)
+					sz= len(parametr_db) - 4
+					parametr = ""
+					for j in range(3, sz):
+						parametr = parametr + parametr_db[j]
+					self.cursor.execute("UPDATE config SET parametr = '{}' WHERE ROWID = '{}'".format(parametr, i)).fetchall()
+					self.conn.commit()
+				self.cursor.execute("DELETE FROM config WHERE ROWID = '{}'".format(self.config_counter))
+				self.conn.commit()
+			if(rowid==self.config_counter):
+				self.cursor.execute("DELETE FROM config WHERE parametr = '{}'".format(msg))
+				self.conn.commit()
+				success=bool(self.cursor.rowcount)
 		if ((self.config_counter>0)and(success==True)):
 			self.config_counter = self.config_counter - 1
 		return(success)
@@ -1305,9 +1326,20 @@ class Config:
 			num1=num2
 			num2=tmp
 		parametr=str(num1) + ", " + str(num2)
-		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
-		self.conn.commit()
-		self.config_counter = self.config_counter + 1
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number > 10 AND parametr = '{}'".format(parametr)).fetchall()
+		print("tmp = ", tmp)
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		print("res = ", res)
+		if(res == ""):
+			self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
+			self.conn.commit()
+			self.config_counter = self.config_counter + 1
 
 	def change_orientation(self, orient):
 		num = 8
@@ -1598,7 +1630,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			else:
 				self.start_node = int(text)
 				self.config.change_start_node(text)
-				self.sklad.set_start_node(int(text))
 
 
 	def change_end_node(self):
@@ -1616,7 +1647,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			else:
 				self.end_node = int(text)
 				self.config.change_end_node(text)
-				self.sklad.set_end_node(int(text))
 
 
 	def set_barrier_mesh(self):
@@ -2042,16 +2072,16 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.max_floor = int(self.config.get_parametr(7))
 		self.orientation = int(self.config.get_parametr(8))
 		self.start_node = int(self.config.get_parametr(9))
-		self.end_node = int(self.config.get_parametr(10))
+		self.end_node = int(self.config.get_parametr(10)) #start_node и end_node не хранится в классе склад!
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
 		config_counter = self.config.get_config_counter() #указывает на нужную строку в баззе данных! т.е при сохранении строки счетчик указывает на пустую!
-		#i=11
-		#while(i<config_counter):
-		for i in range(11, config_counter): # удаление ранее удаленных ребер!
+		for i in range(0, (config_counter+1)):
+			print("'", self.config.get_parametr(i), "'")
+		for i in range(11, config_counter): # удаление ранее удаленных ребер!	
+			print("config_counter = ", config_counter)
 			branch = rasparser(self.config.get_parametr(i))
+			print(branch)
 			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
-			#config_counter = self.config.get_config_counter() #на случай удаления одинаковых ребер
-			#i=i+1
 		self.set_get_artikul()
 	
 	
@@ -2308,7 +2338,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			mqtt = MQTT(action, self.path) # восстановить после отладки!
 			#array_answer = mqtt.mqtt_communication()
 			#сюда преобразование формата array_answer вставить
-			array_answer = [0, edge(-1, 0)] #, edge(0, 1), edge(1, 2)]
+			array_answer = [0, edge(2, 3)] #, edge(0, 1), edge(1, 2)]
 			count_passed_now_mesh=-1  #число успешно пройденных за эту итерацию ячеек
 			if((array_answer[0]==0)and(array_answer[1].n1>-1)):
 				count_passed_now_mesh = self.get_count_passed_mesh(array_answer)
@@ -2442,8 +2472,10 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
 					self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
 					self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
-				if(len(arr_node1_barrier)>=1):
+				if(len(arr_node1_barrier)>1):
 					message = message + "эти ребра автоматически удалены со склада. "
+				if(len(arr_node1_barrier)==1):
+					message = message + "это ребро автоматически удалено  со склада. "
 				message = message + "Для продолжения работы нажмитте 'ок'"
 				arr_node1_barrier.clear()
 				arr_node2_barrier.clear()
@@ -2456,7 +2488,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				# вызов функции с одним полем ввода. return не нужен из-за рекурсии
 			if((array_answer[0]==0)and(self.path[array_answer[1].n1].number==self.start_node)and(count_passed_now_mesh==0)and(len(array_answer)==2)):
 				print("случай 3")
-				for i in range(0, len(arr_node1_barrier)): # удаление ранее удаленных ребер!
+				for i in range(0, len(arr_node1_barrier)): # удаление ребер!
 					self.sklad.delete_branch_from_Nodes(arr_node2_barrier[i].number, arr_node1_barrier[i].number)
 					self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
 				message = "Робот не может отъехать от стартовой вершины с номером " + str(self.start_node) + ". Для дальнейшей работы уберите препятствие со склада, находящееся между перекрестками " + str(self.path[0].number) + " и " + str(self.path[1].number) + ". Это ребро автоматически удалено со склада."
@@ -2467,9 +2499,126 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.show()
 				return() # тут return нужен, ибо обработчик никакой не вызывается, так как обрабатывать нечего!
 			if((array_answer[0]==0)and((self.path[array_answer[1].n1].number!=self.start_node)and(len(array_answer)==2)or((len(array_answer)>2)and((self.path[array_answer[len(array_answer)-1].n1].number!=self.start_node))))and(count_passed_now_mesh==0)):
-				print("случай 4")
+				if_flag = False
+				if(len(self.mesh_arr)==2):
+					m1 = self.sklad.get_crossroad(self.mesh_arr[0])
+					m2 = self.sklad.get_crossroad(self.mesh_arr[1])
+					print("m1 = ", m1)
+					print("m2 = ", m2)
+					if(m1!=m2):
+						if_flag = True
+						print("случай 4.1")
+						art = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
+						message = "Робот не смог добраться до первой выбранной ячейки (артикул товара: '" + str(art) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
+						if(len(arr_node2_barrier)>1):
+							message = message + " Также препятствия находятся между перекрестками "
+						for i in range(0, (len(arr_node1_barrier)-1)): # удаление ребер!
+							message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
+							self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+							self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+						self.sklad.delete_branch_from_Nodes(arr_node1_barrier[len(arr_node1_barrier)-1].number, arr_node2_barrier[len(arr_node2_barrier)-1].number)
+						self.config.insert_branch_into_table(arr_node1_barrier[len(arr_node1_barrier)-1].number, arr_node2_barrier[len(arr_node2_barrier)-1].number)
+						if(len(arr_node2_barrier)==1):
+							message = message + " Это ребро автоматически удалено со склада."
+						if(len(arr_node2_barrier)>1):
+							message = message + " эти ребра автоматически удалены со склада."
+						self.start_node = arr_node1_barrier[len(arr_node1_barrier)-1].number
+						self.config.change_start_node(self.start_node)
+						self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
+						self.path=self.sklad.get_path()
+						action=self.sklad.get_action()
+						action_size=self.sklad.get_action_size()
+						error = self.sklad.get_error_number()
+						if(error[0] == 1):
+							message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
+							# вызов одного поля ввода
+						else:
+							message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText(message)
+						message_box.show()
+				if(if_flag == False): # замена else, так как при текущей конструкции условия 4.1 применить else нельзя!
+					print("случай 4.2")
+					if(len(self.mesh_arr)==1):
+						art = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
+						message = "Робот не смог добраться до первой выбранной ячейки (артикул товара: '" + str(art) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
+					if(len(self.mesh_arr)==2):
+						art1 = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
+						art2 = self.artikul.get_artikul(self.mesh_arr[1], self.floor_arr[1])
+						message = "Робот не смог добраться до первой выбранной ячейки (артикулы товаров: '" + str(art1) + "' и '" + str(art2) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
+					if(len(arr_node2_barrier)>1):
+						message = message + " Также препятствия находятся между перекрестками "
+					for i in range(0, (len(arr_node1_barrier)-1)): # удаление ребер!
+						message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
+						self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+						self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+					self.sklad.delete_branch_from_Nodes(arr_node1_barrier[len(arr_node1_barrier)-1].number, arr_node2_barrier[len(arr_node2_barrier)-1].number)
+					self.config.insert_branch_into_table(arr_node1_barrier[len(arr_node1_barrier)-1].number, arr_node2_barrier[len(arr_node2_barrier)-1].number)
+					if(len(arr_node2_barrier)==1):
+						message = message + " Это ребро автоматически удалено со склада."
+					if(len(arr_node2_barrier)>1):
+						message = message + " эти ребра автоматически удалены со склада."
+					self.start_node = arr_node1_barrier[len(arr_node1_barrier)-1].number
+					self.config.change_start_node(self.start_node)
+					self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
+					self.path=self.sklad.get_path()
+					action=self.sklad.get_action()
+					action_size=self.sklad.get_action_size()
+					error = self.sklad.get_error_number()
+					if(error[0] == 1):
+						message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
+						# вызов двух полей ввода
+					else:
+						message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText(message)
+					message_box.show()
 			if((array_answer[0]==0)and(count_passed_now_mesh==1)):
 				print("случай 5")
+				art = self.artikul.get_artikul(self.mesh_arr[1], self.floor_arr[1])
+				message = "Робот не смог добраться до второй выбранной ячейки (артикул товара: '" + str(art) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
+				if(len(arr_node2_barrier)>1):
+					message = message + " Также препятствия находятся между перекрестками "
+				for i in range(0, (len(arr_node1_barrier)-1)): # удаление ребер!
+					message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
+					self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+					self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+				self.sklad.delete_branch_from_Nodes(arr_node1_barrier[len(arr_node1_barrier)-1].number, arr_node2_barrier[len(arr_node2_barrier)-1].number)
+				self.config.insert_branch_into_table(arr_node1_barrier[len(arr_node1_barrier)-1].number, arr_node2_barrier[len(arr_node2_barrier)-1].number)
+				if(len(arr_node2_barrier)==1):
+					message = message + " Это ребро автоматически удалено со склада."
+				if(len(arr_node2_barrier)>1):
+					message = message + " эти ребра автоматически удалены со склада."
+				self.start_node = arr_node1_barrier[len(arr_node1_barrier)-1].number
+				print("start node = ", self.start_node)
+				self.config.change_start_node(self.start_node)
+				tmp = copy.copy(self.mesh_arr)
+				print(tmp)
+				self.mesh_arr.clear()
+				self.mesh_arr.append(tmp[1]) # только вторая ячейка!
+				tmp = copy.copy(self.floor_arr)
+				self.floor_arr.clear()
+				self.floor_arr.append(tmp[1]) # только вторая ячейка!
+				self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
+				self.path=self.sklad.get_path()
+				action=self.sklad.get_action()
+				action_size=self.sklad.get_action_size()
+				error = self.sklad.get_error_number()
+				print("error = ", error)
+				if(error[0] == 1):
+					message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
+					# вызов одного поля ввода
+				else:
+					message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText(message)
+				message_box.show()
 			if((array_answer[0]==0)and(count_passed_now_mesh==2)):
 				print("случай 6")
 			if((array_answer[0]==1) and (array_answer[1].n1==-1) and (array_answer[1].n2==-1)): #единственный 100% успешный случай!
