@@ -1,3 +1,5 @@
+# python test_mqtt2.py
+
 # Рабочая версия кода для Распберри!!!
 import time
 import random #generate id of client
@@ -120,7 +122,9 @@ def mqtt_communication(): # может вызываться неограниче
     print("robot is work!")
     
     
-    result_trip=[0, 0, 1, 1, 2]  #номер элементов в path! 
+    result_trip=[1, 2, 3]   #   #номер элементов в path! 
+    #result_trip=[0, 0, 1, 4, 5] # if 6
+    #result_trip=[0, -1, 0]
 #для mqtt_trip проверить, возвращается ли номер в path или сам path !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
     # результат поездки робота
     #пробел в конце обязателен, иначе распарсер на складе не будет работать!
@@ -137,7 +141,6 @@ def mqtt_communication(): # может вызываться неограниче
     time.sleep(0.4)
     client.publish(topic, answer)
     print(answer)
-    
     
     global action_tmp
     global counter_tmp

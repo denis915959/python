@@ -1,158 +1,211 @@
 ﻿# python test.txt
 
+import sys
+import codecs #для считывания русских символов
 import sqlite3
+import copy
+import time
+import random
+from paho.mqtt import client as mqtt_client
+from PyQt5.QtWidgets import QApplication, QDesktopWidget, QFileDialog, QVBoxLayout, QMainWindow, QPushButton, QLineEdit, QWidget, QLabel, QGroupBox, QGridLayout, QMenuBar, QAction, QInputDialog, QMessageBox
+from PyQt5.QtGui import QFont
+from collections import namedtuple
 
-"""class Test:
-	def __init__(self):
-		self.N_sizes = [3, 2, 4, 2]
-		self.mode = 2
-		self.N_size=sum(self.N_sizes) + len(self.N_sizes) - 1
-	def get_crossroad(self, mesh):  # расчет номера перекрестка по номеру ячейки
-		N_size_small=sum(self.N_sizes)	
-		Sum=0
-		sz=len(self.N_sizes)
-		block_mesh=0
-		mesh_tmp=mesh%N_size_small
-		for i in range(0, sz):
-			Sum=Sum+self.N_sizes[i]
-			if(mesh_tmp<Sum):
-				block_mesh=i
-				break
-		cross_row=0 #нумерация с нуля
-		if(self.mode==2):
-			cross_row=int(mesh/(2*sum(self.N_sizes)))
-			return(cross_row*self.N_size+mesh_tmp+block_mesh+1)
-		if(self.mode==1):
-			cross_row=int(mesh/(2*sum(self.N_sizes))) #нумерация с нуля!
-			print(cross_row)
-			return(cross_row*self.N_size+mesh_tmp+block_mesh+2)
-
-test = Test()
-print(test.get_crossroad(4))"""
+from PyQt5.QtWidgets import QApplication, QDialog, QInputDialog, QMessageBox
 
 
-class Artikul:
-	def __init__(self, name_base):
-		self.conn = sqlite3.connect(str(name_base)) # Создание подключения к базе данных SQLite
-		self.cursor = self.conn.cursor() # Создание курсора для выполнения SQL-запросов
-		self.cursor.execute("CREATE TABLE IF NOT EXISTS articuls(number INT, articul TEXT, mesh INT, floor INT)")
-		self.cursor.execute("SELECT COUNT(*) FROM articuls")
-		res = self.cursor.fetchone()
-		self.articul_counter=res[0] #считывается из базы данных!
+class Node:
+	def __init__(self, num, branch_arr, flag1):
+		self.number=num
+		self.branch_array=branch_arr
+		self.crossroad=flag1 #True - Перекресток, нет - рядом с ячейками находится
+		self.traveled_path=0
+		self.previous_node=-1
 
-	def get_artikul_counter(self): #скорее всего, при неудачном get уменьшится!
-		return(self.articul_counter)
-
-	def delete_artikul(self, articul): # удалаяет элемент таблицы по артикулу
-		articul_str=str(articul)
-		self.cursor.execute("DELETE FROM articuls WHERE articul = '{}'".format(articul_str))
-		self.conn.commit()
-		if(self.articul_counter>0):
-			self.articul_counter = self.articul_counter - 1
-		return(bool(self.cursor.rowcount))	
-
-	def delete_mesh(self, mesh_num): # удалаяет элемент таблицы по номеру ячейки
-		self.cursor.execute("DELETE FROM articuls WHERE mesh = '{}'".format(mesh_num))
-		self.conn.commit()
-		if(self.articul_counter>0):
-			self.articul_counter = self.articul_counter - 1
-		return(bool(self.cursor.rowcount))
-
-	def insert_artikul(self, articul1, mesh, floor): # вставка данных в таблицу
-		articul=str(articul1)
-		self.cursor.execute("INSERT INTO articuls (number, articul, mesh, floor) VALUES (?, ?, ?, ?)", (self.articul_counter, articul, mesh, floor))
-		self.conn.commit()
-		self.articul_counter = self.articul_counter + 1
-
-	def clean_table(self): # очистка таблицы
-		self.cursor.execute("DELETE FROM {}".format("articuls")) 
-		self.conn.commit()
-		self.articul_counter = 0
-
-	def get_artikul(self, mesh_num, floor_num): # возвращает артикул по номеру ячейки   # ВНЕСТИ В ТЕТРАДЬ:  WHERE mesh='{}' - только так! Т.е столбец mesh указываем как столбец, иначе же mesh будет пониматься питоном как значение!
-		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE mesh='{}' AND floor ='{}'".format(int(mesh_num), int(floor_num))).fetchall()
-		sz=len(tmp)
-		i=3
-		tmp=str(tmp)
-		res=""
-		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
-			res=res+tmp[i]
-			i=i+1
-		return(res)
-
-	def get_mesh(self, articul): # возвращает номер ячейки по артикулу
-		articul_str=str(articul)
-		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE articul='{}'".format(articul_str)).fetchall()
-		sz=len(tmp)
-		i=2
-		tmp=str(tmp)
-		res=""
-		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
-			res=res+tmp[i]
-			i=i+1
-		return(res)
-
-	def get_floor(self, articul): # возвращает номер яруса по артикулу
-		articul_str=str(articul)
-		tmp = self.cursor.execute("SELECT floor FROM articuls WHERE articul='{}'".format(articul_str)).fetchall()
-		sz=len(tmp)
-		i=2
-		tmp=str(tmp)
-		res=""
-		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
-			res=res+tmp[i]
-			i=i+1
-		return(res)
-
-	def get_mesh_by_number(self, number): # возвращает объект класса mesh по номеру
-		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE number={}".format(number)).fetchall()
-		sz=len(tmp)
-		i=2
-		tmp=str(tmp)
-		mesh=""
-		while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
-			mesh=mesh+tmp[i]
-			i=i+1
-		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE number={}".format(number)).fetchall()
-		sz=len(tmp)
-		i=3
-		tmp=str(tmp)
-		art=""
-		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
-			art=art+tmp[i]
-			i=i+1
-		return(Mesh(int(mesh), art))
+edge = namedtuple('edge', ['n1', 'n2'])
 	
-	def check_mesh(self, mesh, floor): # проверяет занятость ячейки на складе!
-		tmp = self.cursor.execute("SELECT articul FROM articuls WHERE mesh='{}' AND floor = '{}'".format(int(mesh), int(floor))).fetchall()
-		if (len(tmp)==0):
-			return(False)
+		
+
+
+class Test():
+	def __init__(self):
+		self.path = []
+		self.path.append(Node(0, [], True))
+		self.path.append(Node(2, [], True))
+		self.path.append(Node(5, [], False))
+		self.path.append(Node(2, [], True))
+		self.path.append(Node(0, [], True))
+
+	def calculate_orientation(self, array_answer):
+		if(array_answer[0]==0):
+			k = len(array_answer)-1
+			n1 = self.path[array_answer[k].n1].number
+			n2 = self.path[array_answer[k].n2].number
+			delta = n2-n1
+			tmp_orient = -1
+			if(delta == 1):
+				tmp_orient = 2
+			if(delta > 1):
+				tmp_orient = 1
+			if(delta == -1):
+				tmp_orient = 4
+			if(delta < -1):
+				tmp_orient = 3
+			if((n1 == 0)or(n2==0)):
+				if(delta > 0):
+					tmp_orient = 1
+				if(delta < 0):
+					tmp_orient = 3
+			print(tmp_orient)
+
+
+array_answer = [0, edge(1, 2)]
+test = Test()
+test.calculate_orientation(array_answer)
+
+
+"""class sklad_window(QMainWindow): # наследник класса QMainWindow
+	def __init__(self):
+		super().__init__()
+		self.setWindowTitle("Пример кнопок")
+		self.screen = QDesktopWidget().screenGeometry()
+		self.screen_width = self.screen.width() # 1920    # поле класса
+		self.screen_height = self.screen.height() # 1080  # поле класса
+		self.resize(self.screen_width, self.screen_height)
+		self.qt5_objects_list=[]
+		self.setStyleSheet("background-color: lightblue;")
+
+		self.start_node=0
+		self.end_node=0
+		self.robot_in_goal_node = False
+		self.first_window()
+
+
+	def first_window(self):
+		font= QFont()
+		font.setPointSize(12)
+		button_new_sklad = QPushButton("Создать новый склад", self)
+		button_old_sklad = QPushButton("Продолжить работу с ранее созданным складом", self)
+		self.qt5_objects_list.append(button_new_sklad)
+		self.qt5_objects_list.append(button_old_sklad)
+		font_button12 = QFont()
+		font_button12.setPointSize(14)  # Устанавливаем желаемый размер шрифта
+
+		button_new_sklad.setFont(font_button12)  # Устанавливаем шрифт для надписи кнопки
+		button_new_sklad.clicked.connect(lambda* args: self.one_input_field())
+		button_new_sklad.setGeometry(int(self.screen_width*0.1), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3)) # x, y, размеры: x, y
+		button_new_sklad.setStyleSheet("background-color: yellow")
+		button_old_sklad.setFont(font_button12)
+		button_old_sklad.clicked.connect(lambda* args: self.mode_6_input())
+		button_old_sklad.setGeometry(int(self.screen_width*0.55), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3))
+		button_old_sklad.setStyleSheet("background-color: yellow")
+		message = "Маршрут между перекрестками " + str(self.start_node) + " и " + str(self.end_node) + " не может быть построен из-за препятствий на складе."
+		message_box = QMessageBox(self) #если поле ввода не нужно!
+		message_box.setFont(font)
+		message_box.setWindowTitle("Ошибка")
+		message_box.setText(message)
+		ok_button= message_box.addButton(QMessageBox.Ok)
+		ok_button.clicked.connect(self.ok_button_handler)
+		message_box.show()
+
+	def ok_button_handler(self):
+		print("ok")
+
+	def one_input_field(self):  # не показывает из-за того, что self.show только внутри метода работает!
+		font= QFont()
+		font.setPointSize(17)  
+		group_box_set = QGroupBox("Другие варианты", self)
+		group_box_set.setFont(font)
+		group_box_set.setGeometry(100, 200, 800, 700) #на width, height везде заменить!   #100, 200, 800, 700
+		group_box_set.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)
+		button_to_base = QPushButton("Вернуться на базу", self)
+		button_to_base.setFont(font)
+		button_to_base.clicked.connect(lambda* args: self.handler_to_base())
+		button_to_base.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
+		button_to_base.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_to_base)
+		button_on_place = QPushButton("Остаться на месте", self)
+		button_on_place.setFont(font)
+		button_on_place.clicked.connect(lambda* args: self.mode_6_input())
+		button_on_place.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
+		button_on_place.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_on_place)
+		self.qt5_objects_list.append(group_box_set)
+		layout = QVBoxLayout(group_box_set)
+		layout.addWidget(button_to_base)
+		layout.addSpacing(45) #80
+		layout.addWidget(button_on_place)
+		layout.addSpacing(10)
+		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
+		font.setPointSize(17)  
+		group_box_get = QGroupBox("Взять товар со склада", self)
+		group_box_get.setFont(font)
+		group_box_get.setGeometry(1020, 200, 800, 700) #на width, height везде заменить! 
+		group_box_get.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)  
+		text_get_art2_1=QLabel("Введите артикул товара, который хотите взять со склада:", group_box_get) 
+		text_get_art2_1.setFont(font)
+		text_get_art2_1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_1)
+		text_get_art2_2=QLabel("(если вы не хотите брать товар со склада, не заполняйте это поле)", group_box_get) 
+		text_get_art2_2.setFont(font)
+		text_get_art2_2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_2)
+		qle_get_art2 = QLineEdit(group_box_get)            #обязательно group_box указывать!!!!
+		qle_get_art2.setFont(font) 
+		qle_get_art2.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_get_art2)
+		qle_get_arr = []
+		qle_get_arr.append(qle_get_art2)
+		button_get_tovar = QPushButton("Взять товар со склада", self)
+		button_get_tovar.setFont(font)
+		button_get_tovar.clicked.connect(lambda* args: self.handler_get_art(qle_get_arr))
+		button_get_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
+		button_get_tovar.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_get_tovar)
+		self.qt5_objects_list.append(group_box_get)
+		layout = QVBoxLayout(group_box_get)
+		layout.addSpacing(60)
+		layout.addWidget(text_get_art2_1) #3
+		layout.addWidget(text_get_art2_2)
+		layout.addSpacing(20)
+		layout.addWidget(qle_get_art2)
+		layout.addSpacing(300)
+		layout.addWidget(button_get_tovar)
+		layout.addSpacing(20)
+		group_box_get.show()
+
+
+	def mode_6_input(self):
+		message ="Вы можете изменить конечную точку и перестроить маршрут или оставить робота на месте."
+		input_dialog = QInputDialog(self)
+		input_dialog.setWindowTitle("Диалоговое окно")
+		input_dialog.setLabelText(message)
+		input_dialog.setOkButtonText('остаться на месте')
+		input_dialog.setCancelButtonText('перестроить маршрут')
+		if (input_dialog.exec_() == QInputDialog.Rejected):  # Accepted - нажата кнопка "ок", Rejected - кнопка Cancel. Для изменения имен кнопок подходит только такая конструкция!
+			text = input_dialog.textValue()
+			print("z", text, "z")
+			if(text.isdigit()):
+				print(int(text))
+				#input_dialog.show()
 		else:
-			return(True)
+			print("No ")
 
-	def check_artikul(self, artikul):
-		tmp = self.cursor.execute("SELECT mesh FROM articuls WHERE articul='{}'".format(str(artikul))).fetchall()
-		if (len(tmp)==0):
-			return(False)
-		else:
-			return(True)
+	def handler_new_sklad(self):
+		print(1)
 
-	def close(self):
-		self.conn.close()
+	def handler_on_place(self):
+		print(2)
 
-
-config = Artikul("test.db")
-
-config.insert_artikul("d1", 2, 2)
-config.insert_artikul("d2", 2, 2)
-config.insert_artikul("d3", 2, 2)
-
-config.delete_artikul("d1")
-print(config.check_artikul("d2"))
+	def handler_to_base(self):
+		print(3)
 
 
-config.clean_table()
-print(config.check_artikul("d2"))
-
-
-
+if __name__ == "__main__":
+	app = QApplication(sys.argv)
+	window = sklad_window()
+	window.show()
+	sys.exit(app.exec())
+"""

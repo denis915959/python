@@ -755,6 +755,9 @@ class Sklad:
 		explored=[]
 		k=0
 		reverse=False
+		nodes_sz=len(self.Nodes)
+		for i in range(0, nodes_sz):
+			self.Nodes[i].previous_node=-1
 		if(start_node.number==goal_node.number):
 			path=[]
 			path.append(self.Nodes[start_node.number])
@@ -1101,15 +1104,16 @@ class Sklad:
 			return
 		if(len(mesh_arr)==0): #путь от перекрестка до перекрестка!
 			path = self.A_star(self.Nodes[start_node], self.Nodes[end_node])
+			print("after_path")
 			if((len(path)==1)and(path[0]==-1)):
+				print("if 2")
 				self.list.append(-1) #robot_path_node(-1, -1))
 				self.list.append(0)
 				self.list.append(start_node)
 				self.list.append(end_node)
 				return
+			print("after if ")
 			nodes_sz=len(self.Nodes)
-			for i in range(0, nodes_sz):
-				self.Nodes[i].previous_node=-1
 			action=self.make_robot_action(path, sum(self.N_sizes), 0, -1, -1, True)
 			for i in range(0, len(path)):
 				self.Nodes[path[i].number].previous_node=-1
@@ -1125,8 +1129,6 @@ class Sklad:
 				self.list.append(1)
 				return
 			nodes_sz=len(self.Nodes)
-			for i in range(0, nodes_sz):
-				self.Nodes[i].previous_node=-1
 			action1=self.make_robot_action(path1, sum(self.N_sizes), floor_arr[0], mesh1, mesh2, False)
 			for i in range(0, len(path1)): #mesh1 ????
 				self.Nodes[path1[i].number].previous_node=-1
@@ -1144,8 +1146,6 @@ class Sklad:
 					self.list.append(-1)
 					self.list.append(2)
 					return
-				for i in range(0, nodes_sz):
-					self.Nodes[i].previous_node=-1
 				action2=self.make_robot_action(path2, sum(self.N_sizes), floor_arr[1], mesh1, mesh2, False)
 				path=path+path2
 				action=action+action2
@@ -1163,8 +1163,6 @@ class Sklad:
 				self.list.append(-1)
 				self.list.append(3)
 				return
-			for i in range(0, nodes_sz):
-				self.Nodes[i].previous_node=-1
 			action3=self.make_robot_action(path3, sum(self.N_sizes), 1, mesh1, mesh2, True)   #на конечном участке floor всегда должен быть равен 2, иначе не будет работать костыль, связанный с заменой 2/4 на 6/5
 			path=path+path3
 			action=action+action3
@@ -1183,8 +1181,8 @@ class Sklad:
 		if(self.list[0]==-1):  #если есть ошибка, возвращаем ее номер и 2 перекрестка, если они есть. иначе возвращаем пустой массив
 			error.append(self.list[1])
 			if(self.list[1]==0):
-				error.append(list[2])
-				error.append(list[3])
+				error.append(self.list[2])
+				error.append(self.list[3])
 			return(error)
 		else:
 			return(error)
@@ -1211,6 +1209,9 @@ class Sklad:
 
 	def set_orientation(self, orient):
 		self.orientation = orient
+
+	def get_orientation(self):
+		return(self.orientation)
 
 	"""def set_end_node(self, end_node):
 		self.end_node = end_node"""
@@ -1382,6 +1383,28 @@ class Config:
 		else:
 			return(True)
 
+	def get_start_node(self):
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number = 9").fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
+	def get_end_node(self):
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number = 10").fetchall()
+		sz=len(tmp)
+		i=3
+		tmp=str(tmp)
+		res=""
+		while((i<len(tmp)) and (tmp[i]!="'")): #обрезаем лишние кавычки и скобки
+			res=res+tmp[i]
+			i=i+1
+		return(res)
+
 	def close(self):
 		self.conn.close()
 
@@ -1540,8 +1563,22 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.end_node_action = QAction("Изменить номер конечной вершины")
 		self.end_node_action.triggered.connect(self.change_end_node)
 		self.file_menu.addAction(self.end_node_action)
+		self.spravka_menu = self.menuBar().addMenu("Справка")
+		self.get_start_end_action = QAction("Узнать номера конечной и стартовой точек")
+		self.get_start_end_action.triggered.connect(self.get_start_end)
+		self.spravka_menu.addAction(self.get_start_end_action)
+		self.get_barrier_action = QAction("Получить список препятствий")
+		self.get_barrier_action.triggered.connect(self.get_barrier_list)
+		self.spravka_menu.addAction(self.get_barrier_action)
+		self.get_orientation_action = QAction("Узнать текущее положение робота")
+		self.get_orientation_action.triggered.connect(self.get_orientation_mesage)
+		self.spravka_menu.addAction(self.get_orientation_action)
+		self.otladka_menu = self.menuBar().addMenu("Отладка")
+		self.initial_state_action = QAction("Вернуть склад в исходное состояние")
+		self.initial_state_action.triggered.connect(self.initial_state)
+		self.otladka_menu.addAction(self.initial_state_action)
 
-		self.wifi_menu = self.menuBar().addMenu("Wi-fi") #self.wifi_menu = self.wifi_Menu.addMenu("Wi-fi") # self.file_menu
+		self.wifi_menu = self.menuBar().addMenu("Wi-fi")
 		self.reconnect_action = QAction("Переподключиться")
 		self.reconnect_action.triggered.connect(self.reconnect)
 		self.wifi_menu.addAction(self.reconnect_action)
@@ -1551,6 +1588,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.start_node=0
 		self.end_node=0
 		self.robot_in_goal_node = False
+		self.not_mesh = False
 		self.first_window()
 
 
@@ -1559,6 +1597,21 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		for i in range(0, sz):
 			self.qt5_objects_list[i].deleteLater()
 		self.qt5_objects_list.clear()
+
+
+	def initial_state(self):
+		self.end_node = 0
+		self.config.change_end_node(str(0))
+		self.start_node = 0
+		self.config.change_start_node(str(0))
+		config_counter = self.config.get_config_counter()
+		branch_arr=[]
+		for i in range(11, config_counter):	
+			branch = rasparser(self.config.get_parametr(i))
+			self.sklad.insert_branch_to_Nodes(branch[0], branch[1])
+			branch_arr.append(branch)
+		for i in range(0, len(branch_arr)):
+			self.config.delete_branch_from_table(branch_arr[i][0], branch_arr[i][1])
 
 
 	def delete_branch(self):
@@ -1697,6 +1750,46 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def reconnect(self):#удалить!
 		action = self.sklad.get_action()
 		#self.mqtt = MQTT(action, self.path)
+
+
+	def get_start_end(self):
+		font= QFont()
+		font.setPointSize(12) 
+		message_box = QMessageBox(self) #если поле ввода не нужно!
+		message_box.setFont(font)
+		message_box.setWindowTitle("Результат")
+		message_box.setText("Номер стартового перекрестка: " + str(self.config.get_start_node()) + ".                     Номер конечного перекрестка: " + str(self.config.get_end_node()) + ".")
+		message_box.show()
+
+
+	def get_barrier_list(self):
+		config_counter = self.config.get_config_counter()
+		if(config_counter > 11):
+			message= "Препятствия находятся между перекрестками: "
+			for i in range(11, config_counter): # удаление ранее удаленных ребер!	
+				branch = rasparser(self.config.get_parametr(i))
+				message = message + str(branch[0]) + " и " + str(branch[1]) + "; "
+		else:
+			message= "Препятствий на складе нет"
+		font= QFont()
+		font.setPointSize(12) 
+		message_box = QMessageBox(self) #если поле ввода не нужно!
+		message_box.setFont(font)
+		message_box.setWindowTitle("Результат")
+		message_box.setText(message)
+		message_box.show()
+
+
+	def get_orientation_mesage(self):
+		orient = self.sklad.get_orientation()
+		message = "Текущее положение робота: " + str(orient)
+		font= QFont()
+		font.setPointSize(12) 
+		message_box = QMessageBox(self)
+		message_box.setFont(font)
+		message_box.setWindowTitle("Результат")
+		message_box.setText(message)
+		message_box.show()
 
 
 	def first_window(self):
@@ -1887,7 +1980,32 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.artikul=Artikul(str(bd_name))#+".db")
 
 
-	def set_get_artikul(self):  # не показывает из-за того, что self.show только внутри метода работает!
+	def calculate_orientation(self, array_answer):
+		if(array_answer[0]==0):
+			k = len(array_answer)-1
+			n1 = self.path[array_answer[k].n1].number
+			n2 = self.path[array_answer[k].n2].number
+			delta = n2-n1
+			tmp_orient = -1
+			if(delta == 1):
+				tmp_orient = 2
+			if(delta > 1):
+				tmp_orient = 1
+			if(delta == -1):
+				tmp_orient = 4
+			if(delta < -1):
+				tmp_orient = 3
+			if((n1 == 0)or(n2==0)):
+				if(delta > 0):
+					tmp_orient = 1
+				if(delta < 0):
+					tmp_orient = 3
+			self.orientation = tmp_orient
+			self.config.change_orientation(str(tmp_orient))
+			self.sklad.set_orientation(tmp_orient)
+ 
+
+	def set_get_artikul(self):
 		font= QFont()
 		font.setPointSize(17)  
 		group_box_set = QGroupBox("Добавить товар на склад", self)
@@ -1996,7 +2114,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		layout.addWidget(button_set_tovar)
 		layout.addSpacing(20)
 		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
-
 		font.setPointSize(17)  
 		group_box_get = QGroupBox("Взять товар со склада", self)
 		group_box_get.setFont(font)
@@ -2007,7 +2124,92 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		text_get_art1.setFont(font)
 		text_get_art1.setStyleSheet("background-color: lightgreen")
 		self.qt5_objects_list.append(text_get_art1)
-		qle_get_art1 = QLineEdit(group_box_set)
+		qle_get_art1 = QLineEdit(group_box_get)
+		qle_get_art1.setFont(font)
+		qle_get_art1.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_get_art1)
+		text_get_art2_1=QLabel("Введите артикул товара, который хотите взять со склада вторым:", group_box_get) 
+		text_get_art2_1.setFont(font)
+		text_get_art2_1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_1)
+		text_get_art2_2=QLabel("(если вы не хотите брать со склада больше одного товара,", group_box_get) 
+		text_get_art2_2.setFont(font)
+		text_get_art2_2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_2)
+		text_get_art2_3=QLabel(" не заполняйте это поле)", group_box_get) 
+		text_get_art2_3.setFont(font)
+		text_get_art2_3.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_3)
+		qle_get_art2 = QLineEdit(group_box_get)            #обязательно group_box указывать!!!!
+		qle_get_art2.setFont(font) 
+		qle_get_art2.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_get_art2)
+		qle_get_arr = []
+		qle_get_arr.append(qle_get_art1)
+		qle_get_arr.append(qle_get_art2)
+		button_get_tovar = QPushButton("Взять товар со склада", self)
+		button_get_tovar.setFont(font)
+		button_get_tovar.clicked.connect(lambda* args: self.handler_get_art(qle_get_arr))
+		button_get_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
+		button_get_tovar.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_get_tovar)
+		self.qt5_objects_list.append(group_box_get)
+		layout = QVBoxLayout(group_box_get)
+		layout.addSpacing(10)
+		layout.addSpacing(30)
+		layout.addWidget(text_get_art1)
+		layout.addSpacing(15)
+		layout.addWidget(qle_get_art1)
+		layout.addSpacing(160)
+		layout.addWidget(text_get_art2_1) #3
+		layout.addWidget(text_get_art2_2)
+		layout.addWidget(text_get_art2_3)
+		layout.addSpacing(15)
+		layout.addWidget(qle_get_art2)
+		layout.addSpacing(40)
+		layout.addWidget(button_get_tovar)
+		layout.addSpacing(20)
+		group_box_get.show()
+
+	
+	def two_input_fields(self):
+		font= QFont()
+		font.setPointSize(17)  
+		group_box_set = QGroupBox("Другие варианты", self)
+		group_box_set.setFont(font)
+		group_box_set.setGeometry(100, 200, 800, 700) #на width, height везде заменить!
+		group_box_set.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)
+		button_to_base = QPushButton("Вернуться на базу", self)
+		button_to_base.setFont(font)
+		button_to_base.clicked.connect(lambda* args: self.handler_to_base())
+		button_to_base.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
+		button_to_base.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_to_base)
+		button_on_place = QPushButton("Остаться на месте", self)
+		button_on_place.setFont(font)
+		button_on_place.clicked.connect(lambda* args: self.stay_in_place())
+		button_on_place.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
+		button_on_place.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_on_place)
+		self.qt5_objects_list.append(group_box_set)
+		layout = QVBoxLayout(group_box_set)
+		layout.addWidget(button_to_base)
+		layout.addSpacing(45) #80
+		layout.addWidget(button_on_place)
+		layout.addSpacing(10)
+		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
+		font.setPointSize(17)  
+		group_box_get = QGroupBox("Взять товар со склада", self)
+		group_box_get.setFont(font)
+		group_box_get.setGeometry(1020, 200, 800, 700) #на width, height везде заменить! 
+		group_box_get.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)  
+		text_get_art1=QLabel("Введите артикул товара, который хотите взять со склада первым:", group_box_get)
+		text_get_art1.setFont(font)
+		text_get_art1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art1)
+		qle_get_art1 = QLineEdit(group_box_get)
 		qle_get_art1.setFont(font)
 		qle_get_art1.setStyleSheet("background-color: white")
 		self.qt5_objects_list.append(qle_get_art1)
@@ -2055,6 +2257,81 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		group_box_get.show()
 
 
+	def one_input_field(self):  # не показывает из-за того, что self.show только внутри метода работает!
+		font= QFont()
+		font.setPointSize(17)  
+		group_box_set = QGroupBox("Другие варианты", self)
+		group_box_set.setFont(font)
+		group_box_set.setGeometry(100, 200, 800, 700) #на width, height везде заменить!
+		group_box_set.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)
+		button_to_base = QPushButton("Вернуться на базу", self)
+		button_to_base.setFont(font)
+		button_to_base.clicked.connect(lambda* args: self.handler_to_base())
+		button_to_base.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
+		button_to_base.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_to_base)
+		button_on_place = QPushButton("Остаться на месте", self)
+		button_on_place.setFont(font)
+		button_on_place.clicked.connect(lambda* args: self.stay_in_place())
+		button_on_place.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
+		button_on_place.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_on_place)
+		self.qt5_objects_list.append(group_box_set)
+		layout = QVBoxLayout(group_box_set)
+		layout.addWidget(button_to_base)
+		layout.addSpacing(45) #80
+		layout.addWidget(button_on_place)
+		layout.addSpacing(10)
+		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
+		font.setPointSize(17)  
+		group_box_get = QGroupBox("Взять товар со склада", self)
+		group_box_get.setFont(font)
+		group_box_get.setGeometry(1020, 200, 800, 700) #на width, height везде заменить! 
+		group_box_get.setStyleSheet("QGroupBox { background-color: lightgreen }")
+		font.setPointSize(14)  
+		text_get_art2_1=QLabel("Введите артикул товара, который хотите взять со склада:", group_box_get) 
+		text_get_art2_1.setFont(font)
+		text_get_art2_1.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_1)
+		text_get_art2_2=QLabel("(если вы не хотите брать товар со склада, не заполняйте это поле)", group_box_get) 
+		text_get_art2_2.setFont(font)
+		text_get_art2_2.setStyleSheet("background-color: lightgreen")
+		self.qt5_objects_list.append(text_get_art2_2)
+		qle_get_art2 = QLineEdit(group_box_get)            #обязательно group_box указывать!!!!
+		qle_get_art2.setFont(font) 
+		qle_get_art2.setStyleSheet("background-color: white")
+		self.qt5_objects_list.append(qle_get_art2)
+		qle_get_arr = []
+		qle_get_arr.append(qle_get_art2)
+		button_get_tovar = QPushButton("Взять товар со склада", self)
+		button_get_tovar.setFont(font)
+		button_get_tovar.clicked.connect(lambda* args: self.handler_get_art(qle_get_arr))
+		button_get_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
+		button_get_tovar.setStyleSheet("background-color: yellow")
+		self.qt5_objects_list.append(button_get_tovar)
+		self.qt5_objects_list.append(group_box_get)
+		layout = QVBoxLayout(group_box_get)
+		layout.addSpacing(60)
+		layout.addWidget(text_get_art2_1) #3
+		layout.addWidget(text_get_art2_2)
+		layout.addSpacing(20)
+		layout.addWidget(qle_get_art2)
+		layout.addSpacing(300)
+		layout.addWidget(button_get_tovar)
+		layout.addSpacing(20)
+		group_box_get.show()
+
+
+	def handler_to_base(self): # здесь start_node менять не надо
+		self.mesh_arr.clear()
+		self.floor_arr.clear()
+		print("to_base")
+		qle_get_arr=[]
+		self.not_mesh = True
+		self.handler_get_art(qle_get_arr)
+
+
 	def handler_old_sklad(self):
 		self.clear_window()
 		self.choice_bd_name()
@@ -2071,10 +2348,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.start_node = int(self.config.get_parametr(9))
 		self.end_node = int(self.config.get_parametr(10)) #start_node и end_node не хранится в классе склад!
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
-		config_counter = self.config.get_config_counter() #указывает на нужную строку в баззе данных! т.е при сохранении строки счетчик указывает на пустую!
+		config_counter = self.config.get_config_counter() # при сохранении строки счетчик указывает на пустую строку!
 		for i in range(11, config_counter): # удаление ранее удаленных ребер!	
 			branch = rasparser(self.config.get_parametr(i))
-			print(branch)   # Удалить после добавления еще одной раскладки меню!
 			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
 		self.set_get_artikul()
 	
@@ -2159,8 +2435,34 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			return(len(self.mesh_arr))
 
 
+	def ok_button_handler(self):
+		self.not_mesh = False
+		self.mode_6_input()
+
+
+	def mode_6_input(self):
+		message ="Вы можете изменить конечную точку и перестроить маршрут или оставить робота на месте."
+		input_dialog = QInputDialog(self)
+		input_dialog.setWindowTitle("Диалоговое окно")
+		input_dialog.setLabelText(message)
+		input_dialog.setOkButtonText('остаться на месте')
+		input_dialog.setCancelButtonText('перестроить маршрут')
+		if (input_dialog.exec_() == QInputDialog.Rejected):  # Accepted - нажата кнопка "ок", Rejected - кнопка Cancel. Для изменения имен кнопок подходит только такая конструкция!
+			text = input_dialog.textValue()
+			if(text.isdigit()): #and (int(text)<=self.sklad.get_max_node_number())):
+				self.end_node = int(text)
+				self.config.change_end_node(text)
+				self.not_mesh = True
+				self.mesh_arr.clear()
+				self.floor_arr.clear()
+				qle_get_arr=[]
+				self.handler_get_art(qle_get_arr)
+				#return() #?
+		else:
+			self.stay_in_place()
+
+
 	def handler_get_art(self, qle_get_arr): #, qle_get_art1, qle_get_art2):
-		print("sz = ", self.artikul.get_artikul_counter())
 		articul1=""
 		articul2=""
 		if(len(qle_get_arr)==1):	
@@ -2199,7 +2501,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			message_box.setText("Оба товара с такими артикулами не найдены! Попробуйте заново")
 			message_box.show()
 			return()
-		if(articul1 == articul2):
+		if((articul1 == articul2)and(len(qle_get_arr)>0)):
 			message_box = QMessageBox(self) #если поле ввода не нужно!
 			message_box.setFont(font)
 			message_box.setWindowTitle("Ошибка")
@@ -2268,7 +2570,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			self.mesh_arr.append(mesh2)
 			self.floor_arr.append(floor2)
 			#self.artikul.delete_artikul(articul2) #после взятия товара это вызывается!
-		if(len(self.mesh_arr)>0): #т.е введен хотя бы один артикул
+		if((len(self.mesh_arr)>0) or (self.not_mesh == True)): #т.е введен хотя бы один артикул
 			self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
 			self.path=self.sklad.get_path()
 			action=self.sklad.get_action()
@@ -2301,8 +2603,11 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText(message)
+					ok_button= message_box.addButton(QMessageBox.Ok)
+					ok_button.clicked.connect(self.ok_button_handler)
 					message_box.show()
 					return()
+				self.not_mesh = False
 				if(error[0]==1):
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
@@ -2330,9 +2635,20 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				print("counter = ", action[i].counter)
 				print("")"""
 			mqtt = MQTT(action, self.path) # восстановить после отладки!
-			#array_answer = mqtt.mqtt_communication()
+			array_answer = mqtt.mqtt_communication()
+			print(array_answer)
+			if(len(array_answer)==0):
+				error = "Невозможно соединиться с роботом, попробуйте еще раз"
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText(error)
+				message_box.show()
+				self.set_get_artikul()
+				return()
+			self.calculate_orientation(array_answer)
 			#сюда преобразование формата array_answer вставить
-			array_answer = [0, edge(0, 1)] #, edge(0, 1), edge(1, 2)]
+			#array_answer = [0, edge(2, 3)] #, edge(0, 1), edge(1, 2)]
 			count_passed_now_mesh=-1  #число успешно пройденных за эту итерацию ячеек
 			if((array_answer[0]==0)and(array_answer[1].n1>-1)):
 				count_passed_now_mesh = self.get_count_passed_mesh(array_answer)
@@ -2342,17 +2658,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					array_number_mesh_with_barrier=1
 				else:
 					array_number_mesh_with_barrier=2
-			#print("array_number_mesh_with_barrier = ", array_number_mesh_with_barrier) # удалить после отладки всех if!
 			arr_node1_barrier=[]
 			arr_node2_barrier=[]
-			if(len(array_answer)==0): # ошибка с соединем mqtt
-				error = "Невозможно соединиться с роботом, попробуйте еще раз"
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText(error)
-				message_box.show()
-				return()
 			# сюда приходит не номера перекрестков, а номера элементов в path!!!!
 			sz=len(array_answer)
 			if(array_answer[1].n1>-1): #т.е это препятствие между перекрестками!
@@ -2370,7 +2677,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText(error)
 				message_box.show()
-			if((array_answer[0]==1) and (array_answer[1].n1!=-1)):
+			if((array_answer[0]==1) and (array_answer[1].n1!=-1)): # робот доехал, но есть препятствия!
 				error = "Робот успешно взял весь необходимый товар, но между перекрестками " + str(arr_node1_barrier[0].number) + " и " + str(arr_node2_barrier[0].number)
 				for i in range(1, len(arr_node1_barrier)):
 					error = error + ", " + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number)
@@ -2381,10 +2688,12 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.robot_in_goal_node = True
 				for i in range(0, len(arr_node1_barrier)): # удаление ребер!
 					self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+					self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
+				message_box.setWindowTitle("Результат")
 				message_box.setText(error)
+				self.set_get_artikul()
 				message_box.show()
 			if_6_flag = False
 			if((if_6_flag==False)and(array_answer[0]==0)and((array_number_mesh_with_barrier==1)and(len(self.mesh_arr)==1))or((len(self.mesh_arr)==2)and(self.mesh_arr[0]==self.mesh_arr[1]))):
@@ -2420,7 +2729,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText(message)
 				message_box.show()
-				# вызов функции с двумя полями ввода. return не нужен из-за рекурсии
+				self.two_input_fields() # return не нужен из-за рекурсии
 			if((if_6_flag==False)and(array_answer[0]==0)and(len(self.mesh_arr)==2)and((array_number_mesh_with_barrier==1)or(array_number_mesh_with_barrier==2))and(self.mesh_arr[0]!=self.mesh_arr[1])):
 				print("случай 2")
 				if_6_flag = True
@@ -2454,7 +2763,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText(message)
 				message_box.show()
-				# вызов функции с одним полем ввода. return не нужен из-за рекурсии
+				self.one_input_field() # return не нужен из-за рекурсии
 			if((if_6_flag==False)and(array_answer[0]==0)and(self.path[array_answer[1].n1].number==self.start_node)and(count_passed_now_mesh==0)and(len(array_answer)==2)):
 				print("случай 3")
 				if_6_flag = True
@@ -2512,7 +2821,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						error = self.sklad.get_error_number()
 						if(error[0] == 1):
 							message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
-							# вызов одного поля ввода
+							self.one_input_field()
 						else:
 							message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
 						message_box = QMessageBox(self) #если поле ввода не нужно!
@@ -2550,7 +2859,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					error = self.sklad.get_error_number()
 					if(error[0] == 1):
 						message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
-						# вызов двух полей ввода
+						self.two_input_fields()
 					else:
 						message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
 					message_box = QMessageBox(self) #если поле ввода не нужно!
@@ -2590,7 +2899,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				error = self.sklad.get_error_number()
 				if(error[0] == 1):
 					message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
-					# вызов одного поля ввода
+					self.one_input_field()
 				else:
 					message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
 				message_box = QMessageBox(self) #если поле ввода не нужно!
@@ -2624,18 +2933,32 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				action_size=self.sklad.get_action_size()
 				error = self.sklad.get_error_number()
 				if((len(error)==3)and(error[0] == 0)):
-					message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
-					# вызов одного поля ввода
+					message = message + " Маршрут перестроить невозможно. Нажмите 'ок' для дальнейшей работы с программой."
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText(message)
+					#message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel) # - можно добавить 2 кнопки!
+					message_box.buttonClicked.connect(self.mode_6_input)
+					message_box.show()
 				else:
 					message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText(message)
-				message_box.show()
+					message_box = QMessageBox(self) #если поле ввода не нужно!
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText(message)
+					message_box.show()
 			if((array_answer[0]==1) and (array_answer[1].n1==-1) and (array_answer[1].n2==-1)): #единственный 100% успешный случай!
+				message_box = QMessageBox(self)
+				message_box.setFont(font)
+				message_box.setWindowTitle("Результат")
+				message_box.setText("Робот успешно добрался до конечной точки!")
+				message_box.show()
+				self.start_node = self.end_node
+				self.config.change_start_node(self.start_node)
 				self.robot_in_goal_node = True
-			self.robot_in_goal_node=True #УДАЛИТЬ !!!!!!!!!!!!!!!!!!!!!!!!!!!
+				self.set_get_artikul()
+			#self.robot_in_goal_node=True #УДАЛИТЬ !!!!!!!!!!!!!!!!!!!!!!!!!!!
 		print("sz = ", self.artikul.get_artikul_counter())  # удалить потом
 		print("mesh = ", self.mesh_arr)  # удалить потом
 		print("floor = ", self.floor_arr)  # удалить потом
@@ -2643,12 +2966,19 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			qle_get_arr[i].clear()
 
 
+	def stay_in_place(self): # тут изменение start_node вроде как не нужно
+		self.not_mesh=False
+		self.mesh_arr.clear()
+		self.floor_arr.clear()
+		self.robot_in_goal_node = False
+		self.config.change_orientation(self.sklad.get_orientation())
+		self.set_get_artikul()
+
+
 	def handler_set_art(self, qle_set_art1, qle_mesh1, qle_floor1, qle_set_art2, qle_mesh2, qle_floor2):
 		print("sz = ", self.artikul.get_artikul_counter())
 		articul1 = qle_set_art1.text()
 		check_art1=self.artikul.check_artikul(articul1)
-		"""mesh2 = int(qle_mesh2.text())
-		check_barrier2 = self.config.check_barrier(mesh2)"""
 		articul2 = qle_set_art2.text()
 		check_art2=self.artikul.check_artikul(articul2)
 		count_of_mesh = self.sklad.get_max_mesh_number()
@@ -2958,9 +3288,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.set_get_artikul()
 
 
-
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = sklad_window()
-    window.show()
-    sys.exit(app.exec())
+	app = QApplication(sys.argv)
+	window = sklad_window()
+	window.show()
+	sys.exit(app.exec())
