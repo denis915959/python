@@ -35,6 +35,7 @@ class robot_path_node:
 		self.counter=counter1
 
 edge = namedtuple('edge', ['n1', 'n2'])
+first_part = namedtuple('first_part', ['n1', 'n2', 'n3', 'n4'])
 
 class MQTT:
 	def __init__(self, robot_action, path):
@@ -140,9 +141,6 @@ class MQTT:
 				return([])
 			if (self.attempt_counter>=2): #4
 				return([])
-				"""print("Невозможно соединиться с роботом, проверьте его исправность!")
-				array_answer=[-1, -1, -1]
-				return(array_answer)"""
 			self.client.on_message = self.message_confirm
 			t2=time.process_time()
 			t=t2-t1
@@ -167,10 +165,6 @@ class MQTT:
 		i=0
 		tmp=0
 		while(i<len(self.result_from_robot)):
-			"""if(self.connect_counter>=3): #если добрались до распарсера, то уже все хорошо!
-				return([])"""
-			print("i1 = ", i)
-			print(self.result_from_robot[i])
 			if(self.result_from_robot[i]==" "):
 				break
 			if(self.result_from_robot[i]=="-"):
@@ -178,21 +172,14 @@ class MQTT:
 			else:
 				tmp=tmp*10 + int(self.result_from_robot[i])
 			i=i+1
-			print("i2 = ", i)
 		i=i+1
 		array_answer.append(tmp)
 		while(i<len(self.result_from_robot)):
-			"""if(self.connect_counter>=3):
-				return([])"""
 			n1=0
 			minus=False
-			#print("result_from_robot = ", self.result_from_robot)
-			print(i)
 			while(i<len(self.result_from_robot)):
 				if(self.result_from_robot[i]==" "):
 					break
-				"""if(self.connect_counter>=3):
-					return([])"""
 				if(self.result_from_robot[i]=="-"):
 					minus=True
 				else:
@@ -204,14 +191,9 @@ class MQTT:
 			i=i+1
 			n2=0
 			minus=False
-			#print("result_from_robot = ", self.result_from_robot)
-			print("len = ", len(self.result_from_robot))
-			print("i = ", i)
 			while(i<len(self.result_from_robot)):
 				if(self.result_from_robot[i]==" "):
 					break
-				"""if(self.connect_counter>=3):
-					return([])"""
 				if(self.result_from_robot[i]=="-"):
 					minus=True
 				else:
@@ -221,10 +203,36 @@ class MQTT:
 				n2 = -n2
 			minus=False
 			i=i+1
-			array_answer.append(edge(n1, n2))
+			n3=0
+			minus=False
+			while(i<len(self.result_from_robot)):
+				if(self.result_from_robot[i]==" "):
+					break
+				if(self.result_from_robot[i]=="-"):
+					minus=True
+				else:
+					n3=n3*10 + int(self.result_from_robot[i])
+				i=i+1
+			if(minus==True):
+				n3 = -n3
+			minus=False
+			i=i+1
+			n4=0
+			minus=False
+			while(i<len(self.result_from_robot)):
+				if(self.result_from_robot[i]==" "):
+					break
+				if(self.result_from_robot[i]=="-"):
+					minus=True
+				else:
+					n4=n4*10 + int(self.result_from_robot[i])
+				i=i+1
+			if(minus==True):
+				n4 = -n4
+			minus=False
+			i=i+1
+			array_answer.append(first_part(n1, n2, n3, n4)) #edge(n1, n2))
 		#возврат переменных к исходному состоянию
-		"""if(self.connect_counter>=3):
-			return([])"""
 		self.recv_flag=True
 		self.attempt_counter = 0
 		self.result_from_robot=""
@@ -1104,7 +1112,6 @@ class Sklad:
 			return
 		if(len(mesh_arr)==0): #путь от перекрестка до перекрестка!
 			path = self.A_star(self.Nodes[start_node], self.Nodes[end_node])
-			print("after_path")
 			if((len(path)==1)and(path[0]==-1)):
 				print("if 2")
 				self.list.append(-1) #robot_path_node(-1, -1))
@@ -1112,7 +1119,6 @@ class Sklad:
 				self.list.append(start_node)
 				self.list.append(end_node)
 				return
-			print("after if ")
 			nodes_sz=len(self.Nodes)
 			action=self.make_robot_action(path, sum(self.N_sizes), 0, -1, -1, True)
 			for i in range(0, len(path)):
@@ -1213,8 +1219,13 @@ class Sklad:
 	def get_orientation(self):
 		return(self.orientation)
 
-	"""def set_end_node(self, end_node):
-		self.end_node = end_node"""
+	def get_remote_mesh(self, mesh):
+		num_mesh_row = mesh//sum(self.N_sizes)
+		res_int = num_mesh_row%2
+		if(res_int == 0):
+			return(False)
+		else:
+			return(True)
 
 	def get_max_floor(self):
 		return(self.max_floor)
@@ -1225,6 +1236,14 @@ class Sklad:
 			res=(sum(self.N_sizes) + len(self.N_sizes) - 1)*(self.M//2)
 		if(self.mode == 1):
 			res=(sum(self.N_sizes) + len(self.N_sizes) + 1)*(self.M//2)
+		return(res)
+
+	def get_number_opposite_mesh(self, mesh):
+		remote = self.get_remote_mesh(mesh)
+		if(remote == True):
+			res = mesh - sum(self.N_sizes)
+		else:
+			res = mesh + sum(self.N_sizes)
 		return(res)
 
 	def Print(self): # для отладки полезно!
@@ -1248,7 +1267,7 @@ class Config:
 		self.cursor.execute("SELECT COUNT(*) FROM config")
 		res = self.cursor.fetchone()
 		self.config_counter=res[0] #считывается из базы данных!
-		self.cursor.execute("CREATE TABLE IF NOT EXISTS mesh_barrier(number INT, mesh INT)")
+		self.cursor.execute("CREATE TABLE IF NOT EXISTS mesh_barrier(number INT, mesh INT, opposite_mesh INT)")
 		self.cursor.execute("SELECT COUNT(*) FROM mesh_barrier")
 		res = self.cursor.fetchone()
 		self.barrier_counter=res[0] #считывается из базы данных!
@@ -1314,7 +1333,7 @@ class Config:
 				self.cursor.execute("DELETE FROM config WHERE ROWID = '{}'".format(self.config_counter))
 				self.conn.commit()
 			if(rowid==self.config_counter):
-				self.cursor.execute("DELETE FROM config WHERE parametr = '{}'".format(msg))
+				self.cursor.execute("DELETE FROM config WHERE parametr = '{}' AND number > 10".format(msg))
 				self.conn.commit()
 				success=bool(self.cursor.rowcount)
 		if ((self.config_counter>0)and(success==True)):
@@ -1355,10 +1374,13 @@ class Config:
 		self.cursor.execute("UPDATE config SET parametr = ? WHERE number = ?", (str(end_node), num)) # замена элемента в таблице по номеру!
 		self.conn.commit()
 
-	def set_barrier_before_mesh(self, mesh): # добавление препятствия перед ячейкой
-		self.cursor.execute("INSERT INTO mesh_barrier (number, mesh) VALUES (?, ?)", (self.barrier_counter, int(mesh)))
-		self.conn.commit()
-		self.barrier_counter = self.barrier_counter + 1
+	def set_barrier_before_mesh(self, mesh, opposite_mesh): # добавление препятствия перед ячейкой
+		flag1 = self.check_barrier(mesh)
+		flag2 = self.check_barrier(opposite_mesh)
+		if((flag1==False)and(flag2==False)):
+			self.cursor.execute("INSERT INTO mesh_barrier (number, mesh, opposite_mesh) VALUES (?, ?, ?)", (self.barrier_counter, int(mesh), int(opposite_mesh)))
+			self.conn.commit()
+			self.barrier_counter = self.barrier_counter + 1
 
 	def delete_barrier_before_mesh(self, mesh):
 		self.cursor.execute("DELETE FROM mesh_barrier WHERE mesh = '{}'".format(int(mesh)))
@@ -1377,11 +1399,51 @@ class Config:
 		self.barrier_counter = 0
 
 	def check_barrier(self, mesh):
-		tmp = self.cursor.execute("SELECT number FROM mesh_barrier WHERE mesh='{}'".format(int(mesh))).fetchall()
-		if (len(tmp)==0):
-			return(False)
+		tmp1 = self.cursor.execute("SELECT number FROM mesh_barrier WHERE mesh='{}'".format(int(mesh))).fetchall()
+		tmp2 = self.cursor.execute("SELECT number FROM mesh_barrier WHERE opposite_mesh='{}'".format(int(mesh))).fetchall()
+		if (len(tmp1)==0):
+			flag1 = False
 		else:
+			flag1 = True
+		if (len(tmp2)==0):
+			flag2 = False
+		else:
+			flag2 = True
+		if((flag1 == True)or(flag2 == True)):
 			return(True)
+		else:
+			return(False)
+
+	def get_all_mesh_barrier(self): # массив ячеек с препятствиями
+		tmp = self.cursor.execute("SELECT mesh FROM mesh_barrier").fetchall()
+		tmp=str(tmp)
+		res=[]
+		i=2
+		while(i<len(tmp)):
+			res_tmp=""
+			while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+				res_tmp=res_tmp+tmp[i]
+				i=i+1
+			i=i+5
+			res.append(int(res_tmp))
+		return(res)
+
+	def get_all_mesh_no_barrier(self): # массив ячеек без препятствий, но напртив ячеек с препятствиями
+		tmp = self.cursor.execute("SELECT opposite_mesh FROM mesh_barrier").fetchall()
+		tmp=str(tmp)
+		res=[]
+		i=2
+		while(i<len(tmp)):
+			res_tmp=""
+			while((i<len(tmp)) and (tmp[i]!=",")): #обрезаем лишние кавычки и скобки
+				res_tmp=res_tmp+tmp[i]
+				i=i+1
+			i=i+5
+			res.append(int(res_tmp))
+		for i in range(0, len(res)):
+			if(res[i]==-1):
+				del res[i]
+		return(res)
 
 	def get_start_node(self):
 		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number = 9").fetchall()
@@ -1589,6 +1651,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.end_node=0
 		self.robot_in_goal_node = False
 		self.not_mesh = False
+		self.count_passed_mesh = 0
 		self.first_window()
 
 
@@ -1808,6 +1871,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		button_old_sklad.clicked.connect(lambda* args: self.handler_old_sklad())
 		button_old_sklad.setGeometry(int(self.screen_width*0.55), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3))
 		button_old_sklad.setStyleSheet("background-color: yellow")
+		button_old_sklad.show()
+		button_new_sklad.show()
 
 
 	def handler_new_sklad(self):
@@ -1962,11 +2027,17 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	
 	def choice_bd_name(self):
-		file_dialog = QFileDialog()
-		file_dialog.setNameFilter("DB files (*.db)")  # указываем фильтр для расширения .db
-		file_dialog.setWindowTitle("Выберите базу данных с данными склада")  # устанавливаем заголовок диалогового окна, перед exec должен вызываться!
-		file_dialog.exec()
-		file_path = file_dialog.selectedFiles()[0]  # получаем список выбранных файлов, но так как файл 1, то [0]
+		self.bd_is_choice = False
+		self.file_dialog = QFileDialog()
+		self.file_dialog.accepted.connect(self.bd_name_ok)
+		self.file_dialog.setNameFilter("DB files (*.db)")  # указываем фильтр для расширения .db
+		self.file_dialog.setWindowTitle("Выберите базу данных с данными склада")  # устанавливаем заголовок диалогового окна, перед exec должен вызываться!
+		self.file_dialog.exec()
+
+
+	def bd_name_ok(self):
+		self.bd_is_choice = True
+		file_path = self.file_dialog.selectedFiles()[0]  # получаем список выбранных файлов, но так как файл 1, то [0]
 		bd_name=""
 		if file_path: # получаем имя базы данных
 			sz=len(file_path)
@@ -1980,11 +2051,11 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.artikul=Artikul(str(bd_name))#+".db")
 
 
-	def calculate_orientation(self, array_answer):
-		if(array_answer[0]==0):
+	def calculate_orientation(self, array_answer, mesh_arr, path):
+		if((array_answer[0]==0)and(array_answer[1].n1>-1)): #причиной остановки послужил перекресток
 			k = len(array_answer)-1
-			n1 = self.path[array_answer[k].n1].number
-			n2 = self.path[array_answer[k].n2].number
+			n1 = path[array_answer[k].n1].number
+			n2 = path[array_answer[k].n2].number
 			delta = n2-n1
 			tmp_orient = -1
 			if(delta == 1):
@@ -2000,6 +2071,31 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					tmp_orient = 1
 				if(delta < 0):
 					tmp_orient = 3
+			self.orientation = tmp_orient
+			self.config.change_orientation(str(tmp_orient))
+			self.sklad.set_orientation(tmp_orient)     
+		if((array_answer[0]==0)and(array_answer[1].n1==-1)): #причиной остановки послужила ячейка
+			crossroad = self.sklad.get_crossroad(mesh_arr[array_answer[1].n2])
+			Count = 0
+			for i in range(0, len(path)):
+				if(path[i].number==crossroad):
+					Count = Count + 1
+			if(array_answer[1].n2==0): # первый товар в маршруте
+				Count = 1
+			counter = 0
+			for i in range(0, len(path)):
+				if(path[i].number==crossroad):
+					counter = counter + 1
+				if(counter == Count):
+					break
+			crossroad1 = path[i-1].number
+			crossroad2 = path[i].number
+			delta = crossroad2-crossroad1
+			tmp_orient = -1
+			if(delta == 1):
+				tmp_orient = 2
+			if(delta == -1):
+				tmp_orient = 4
 			self.orientation = tmp_orient
 			self.config.change_orientation(str(tmp_orient))
 			self.sklad.set_orientation(tmp_orient)
@@ -2335,6 +2431,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def handler_old_sklad(self):
 		self.clear_window()
 		self.choice_bd_name()
+		if(self.bd_is_choice == False):
+			self.first_window()
+			return()
 		mode = int(self.config.get_parametr(0))
 		M = int(self.config.get_parametr(1))
 		str_N_sizes=self.config.get_parametr(2)
@@ -2382,7 +2481,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def get_count_passed_mesh(self, robot_answer): #возвращает количество успешно пройденных ячеек
 		len_arr_ans=len(robot_answer)
-		if((robot_answer[1].n2 >= 0)and(robot_answer[0] == 0)): #Препятствие между 2 перекрестками и оно есть!
+		if((robot_answer[1].n2 >= 0)and(robot_answer[0] == 0)and(robot_answer[1].n1 > -1)): #Препятствие между 2 перекрестками и оно есть!
 			if(len(self.mesh_arr)==0):
 				return(0)
 			node1 = self.sklad.get_crossroad(self.mesh_arr[0])
@@ -2460,6 +2559,124 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				#return() #?
 		else:
 			self.stay_in_place()
+
+
+	def decode_array_answer_to_get_mesh_barrier(self, orientation, array_answer, mesh_arr): # эта функция только для len(mesh_arr)==2
+		mesh_barrier=[]
+		no_mesh_barrier=[]
+		if(len(mesh_arr)>0):
+			if(len(mesh_arr)==2):
+				crossroad1 = self.sklad.get_crossroad(mesh_arr[0])
+				crossroad2 = self.sklad.get_crossroad(mesh_arr[1])
+			if(orientation == 2):
+				if((len(mesh_arr)==2)and(crossroad1==crossroad2)):
+					remote1 = self.sklad.get_remote_mesh(mesh_arr[0])
+					remote2 = self.sklad.get_remote_mesh(mesh_arr[1])
+					if(array_answer[1].n3==1): # слева препятствие
+						if(remote1==True):
+							mesh_barrier.append(mesh_arr[0])
+						if(remote2==True):
+							mesh_barrier.append(mesh_arr[1])
+					if(array_answer[1].n4==1): # справа препятствие
+						if(remote1==False):
+							mesh_barrier.append(mesh_arr[0])
+						if(remote2==False):
+							mesh_barrier.append(mesh_arr[1])
+					if(len(mesh_barrier)==1): # no_mesh_barrier заполняем
+						if(mesh_barrier[0] == mesh_arr[0]):
+							no_mesh_barrier.append(mesh_arr[1])
+						if(mesh_barrier[0] == mesh_arr[1]):
+							no_mesh_barrier.append(mesh_arr[0])
+				else: # напротив разных перекрестков находятся
+					mesh = mesh_arr[array_answer[1].n2]
+					mesh_opposite = self.sklad.get_number_opposite_mesh(mesh)
+					remote = self.sklad.get_remote_mesh(mesh)
+					remote_opposite = self.sklad.get_remote_mesh(mesh_opposite)
+					if(array_answer[1].n3==1): # слева препятствие
+						if(remote==True):
+							mesh_barrier.append(mesh)
+						if(remote_opposite==True):
+							mesh_barrier.append(mesh_opposite)
+					if(array_answer[1].n4==1): # справа препятствие
+						if(remote==False):
+							mesh_barrier.append(mesh)
+						if(remote_opposite==False):
+							mesh_barrier.append(mesh_opposite)
+					if(len(mesh_barrier)==1):
+						if(mesh_barrier[0] == mesh):
+							no_mesh_barrier.append(mesh_opposite)
+						if(mesh_barrier[0] == mesh_opposite):
+							no_mesh_barrier.append(mesh)
+			if(orientation == 4):
+				if((len(mesh_arr)==2)and(crossroad1==crossroad2)):
+					remote1 = self.sklad.get_remote_mesh(mesh_arr[0])
+					remote2 = self.sklad.get_remote_mesh(mesh_arr[1])
+					if(array_answer[1].n4==1): # справа препятствие
+						if(remote1==True):
+							mesh_barrier.append(mesh_arr[0])
+						if(remote2==True):
+							mesh_barrier.append(mesh_arr[1])
+						if(remote1==False):
+							no_mesh_barrier.append(mesh_arr[0])
+						if(remote2==False):
+							no_mesh_barrier.append(mesh_arr[1])
+					if(array_answer[1].n3==1): # слева препятствие
+						if(remote1==False):
+							mesh_barrier.append(mesh_arr[0])
+						if(remote2==False):
+							mesh_barrier.append(mesh_arr[1])
+						if(remote1==True):
+							no_mesh_barrier.append(mesh_arr[0])
+						if(remote2==True):
+							no_mesh_barrier.append(mesh_arr[1])
+					if(len(mesh_barrier)==1): # no_mesh_barrier заполняем
+						if(mesh_barrier[0] == mesh_arr[0]):
+							no_mesh_barrier.append(mesh_arr[1])
+						if(mesh_barrier[0] == mesh_arr[1]):
+							no_mesh_barrier.append(mesh_arr[0])
+					if((len(mesh_barrier)==2)and(mesh_barrier[0]==mesh_barrier[1])):
+						del mesh_barrier[1]
+					if((len(no_mesh_barrier)==2)and(no_mesh_barrier[0]==no_mesh_barrier[1])):
+						del no_mesh_barrier[1]
+				else: # напротив разных перекрестков находятся
+					mesh = mesh_arr[array_answer[1].n2]
+					mesh_opposite = self.sklad.get_number_opposite_mesh(mesh)
+					remote = self.sklad.get_remote_mesh(mesh)
+					remote_opposite = self.sklad.get_remote_mesh(mesh_opposite)
+					if(array_answer[1].n4==1): # справа препятствие
+						if(remote==True):
+							mesh_barrier.append(mesh)
+						if(remote_opposite==True):
+							mesh_barrier.append(mesh_opposite)
+						if(remote==False):
+							no_mesh_barrier.append(mesh)
+						if(remote_opposite==False):
+							no_mesh_barrier.append(mesh_opposite)
+					if(array_answer[1].n3==1): # слева препятствие
+						if(remote==False):
+							mesh_barrier.append(mesh)
+						if(remote_opposite==False):
+							mesh_barrier.append(mesh_opposite)
+						if(remote==True):
+							no_mesh_barrier.append(mesh)
+						if(remote_opposite==True):
+							no_mesh_barrier.append(mesh_opposite)
+					if(len(mesh_barrier)==1):
+						if(mesh_barrier[0] == mesh):
+							no_mesh_barrier.append(mesh_opposite)
+						if(mesh_barrier[0] == mesh_opposite):
+							no_mesh_barrier.append(mesh)
+					if((len(mesh_barrier)==2)and(mesh_barrier[0]==mesh_barrier[1])):
+						del mesh_barrier[1]
+					if((len(no_mesh_barrier)==2)and(no_mesh_barrier[0]==no_mesh_barrier[1])):
+						del no_mesh_barrier[1]
+		res=[]
+		for i in range(0, len(mesh_barrier)):
+			res.append(mesh_barrier[i])
+		res.append(-1)
+		for i in range(0, len(no_mesh_barrier)):
+			res.append(no_mesh_barrier[i])
+		return(res)
 
 
 	def handler_get_art(self, qle_get_arr): #, qle_get_art1, qle_get_art2):
@@ -2646,18 +2863,19 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.show()
 				self.set_get_artikul()
 				return()
-			self.calculate_orientation(array_answer)
+			self.calculate_orientation(array_answer, self.mesh_arr, self.path)
 			#сюда преобразование формата array_answer вставить
 			#array_answer = [0, edge(2, 3)] #, edge(0, 1), edge(1, 2)]
 			count_passed_now_mesh=-1  #число успешно пройденных за эту итерацию ячеек
 			if((array_answer[0]==0)and(array_answer[1].n1>-1)):
 				count_passed_now_mesh = self.get_count_passed_mesh(array_answer)
+			self.count_passed_mesh = self.count_passed_mesh + count_passed_now_mesh
 			array_number_mesh_with_barrier=-1  # 1 - если перед первой ячейкой из mesh_arr встретилось препятствие! 2 - если перед второй ячейкой из mesh_arr встретилось препятствие! 
-			if((array_answer[1].n1==-1)and(array_answer[1].n2>-1)):
+			"""if((array_answer[1].n1==-1)and(array_answer[1].n2>-1)):
 				if(array_answer[1].n2 == self.mesh_arr[0]):
 					array_number_mesh_with_barrier=1
 				else:
-					array_number_mesh_with_barrier=2
+					array_number_mesh_with_barrier=2"""
 			arr_node1_barrier=[]
 			arr_node2_barrier=[]
 			# сюда приходит не номера перекрестков, а номера элементов в path!!!!
@@ -2696,7 +2914,19 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.set_get_artikul()
 				message_box.show()
 			if_6_flag = False
-			if((if_6_flag==False)and(array_answer[0]==0)and((array_number_mesh_with_barrier==1)and(len(self.mesh_arr)==1))or((len(self.mesh_arr)==2)and(self.mesh_arr[0]==self.mesh_arr[1]))):
+			#if((if_6_flag==False)and(array_answer[0]==0)and((array_number_mesh_with_barrier==1)and(len(self.mesh_arr)==1))or((len(self.mesh_arr)==2)and(self.mesh_arr[0]==self.mesh_arr[1]))):
+			if((if_6_flag==False)and(array_answer[0]==0)and(array_answer[1].n1==-1)and(len(self.mesh_arr)==1)):
+
+
+				if(len(self.mesh_arr)==1):
+					for i in range(0, len(mesh_barrier)):
+						if(self.mesh_arr[0]==mesh_barrier[i]):
+							mesh_barrier_in_mesh_arr.append(mesh_barrier[i])
+					for i in range(0, len(mesh_no_barrier)):
+						if(self.mesh_arr[0]==mesh_no_barrier[i]):
+							mesh_no_barrier_in_mesh_arr.append(mesh_no_barrier[i])
+
+
 				print("случай 1")
 				if_6_flag=True
 				mesh_barrier = array_answer[1].n2
@@ -2730,9 +2960,58 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setText(message)
 				message_box.show()
 				self.two_input_fields() # return не нужен из-за рекурсии
-			if((if_6_flag==False)and(array_answer[0]==0)and(len(self.mesh_arr)==2)and((array_number_mesh_with_barrier==1)or(array_number_mesh_with_barrier==2))and(self.mesh_arr[0]!=self.mesh_arr[1])):
+			if((if_6_flag==False)and(array_answer[0]==0)and(array_answer[1].n1==-1)and(len(self.mesh_arr)==2)):
 				print("случай 2")
 				if_6_flag = True
+				res = self.decode_array_answer_to_get_mesh_barrier(self.orientation, array_answer, copy.copy(self.mesh_arr))
+				mesh_barrier = []
+				mesh_no_barrier = []
+				i=0
+				print(res)
+				while(res[i]!=-1):
+					mesh_barrier.append(res[i])
+					i=i+1
+				for j in range(i+1, len(res)):
+					mesh_no_barrier.append(res[j])
+				print("mesh_barrier = ", mesh_barrier)
+				print("mesh_no_barrier = ", mesh_no_barrier)
+				mesh_barrier_in_mesh_arr = []
+				mesh_no_barrier_in_mesh_arr = []
+				if(len(self.mesh_arr)==2):
+					for i in range(0, len(mesh_barrier)):
+						if(self.mesh_arr[0]==mesh_barrier[i]):
+							mesh_barrier_in_mesh_arr.append(mesh_barrier[i])
+						if(self.mesh_arr[1]==mesh_barrier[i]):
+							mesh_barrier_in_mesh_arr.append(mesh_barrier[i])
+					if((len(mesh_barrier_in_mesh_arr)==2)and(mesh_barrier_in_mesh_arr[0]==mesh_barrier_in_mesh_arr[1])): # если ячейка одна и та же!
+						del mesh_barrier_in_mesh_arr[1]
+					for i in range(0, len(mesh_no_barrier)):
+						if(self.mesh_arr[0]==mesh_no_barrier[i]):
+							mesh_no_barrier_in_mesh_arr.append(mesh_no_barrier[i])
+						if(self.mesh_arr[1]==mesh_no_barrier[i]):
+							mesh_no_barrier_in_mesh_arr.append(mesh_no_barrier[i])
+					if((len(mesh_no_barrier_in_mesh_arr)==2)and(mesh_no_barrier_in_mesh_arr[0]==mesh_no_barrier_in_mesh_arr[1])): # если ячейка одна и та же!
+						del mesh_no_barrier_in_mesh_arr[1]
+					
+				print("mesh_barrier_in_mesh_arr = ", mesh_barrier_in_mesh_arr)
+				print("mesh_no_barrier_in_mesh_arr = ", mesh_no_barrier_in_mesh_arr)
+				if((len(mesh_barrier_in_mesh_arr)==0)and(len(mesh_no_barrier_in_mesh_arr)==1)): # препятствие только напротив нужной ячейки
+					print("случай 2.1")
+					if(self.mesh_arr[0]==self.mesh_arr[1]):
+						articul1 = self.artikul.get_artikul(mesh_no_barrier_in_mesh_arr[0], self.floor_arr[0])
+						articul2 = self.artikul.get_artikul(mesh_no_barrier_in_mesh_arr[0], self.floor_arr[1])
+						message = "Робот не может взять товары с артикулами " + articul1 + " и " + articul2 + " из ячейки " + self.artikul.get_mesh(articul1) + ", так как напротив этой ячейки находится препятствие. "
+					else:
+						articul1 = self.artikul.get_artikul(mesh_no_barrier_in_mesh_arr[0], self.floor_arr[array_answer[1].n2])
+						message = "Робот не может взять товар с артикулом " + articul1 + " из ячейки " + self.artikul.get_mesh(articul1) + ", так как напротив этой ячейки находится препятствие. "
+					print(message)
+
+				"""if(len(mesh_barrier)==1)and()):
+					print("случай 2.2")
+
+				if((crossroad1 == crossroad2)and(array_answer[1].n3>-1)):
+					print("случай 2.3")"""
+					
 				mesh_barrier = array_answer[1].n2
 				floor_barrier = -1
 				if(len(self.mesh_arr)==2):
@@ -2746,7 +3025,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message = message + "Также препятствия находятся между перекрестками "
 				if(len(arr_node1_barrier)==1):
 					message = message + "Также препятствие находится между перекрестками "
-				for i in range(0, len(arr_node1_barrier)): # удаление ранее удаленных ребер!
+				for i in range(0, len(arr_node1_barrier)): # удаление ребер!
 					message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
 					self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
 					self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
@@ -2764,7 +3043,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setText(message)
 				message_box.show()
 				self.one_input_field() # return не нужен из-за рекурсии
-			if((if_6_flag==False)and(array_answer[0]==0)and(self.path[array_answer[1].n1].number==self.start_node)and(count_passed_now_mesh==0)and(len(array_answer)==2)):
+			if((if_6_flag==False)and(array_answer[0]==0)and(self.path[array_answer[1].n1].number==self.start_node)and(self.count_passed_mesh==0)and(len(array_answer)==2)):
 				print("случай 3")
 				if_6_flag = True
 				for i in range(0, len(arr_node1_barrier)): # удаление ребер!
@@ -2787,7 +3066,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setText(message)
 				message_box.show()
 				return() # тут return нужен, ибо обработчик никакой не вызывается, так как обрабатывать нечего!
-			if((if_6_flag==False)and(array_answer[0]==0)and((self.path[array_answer[1].n1].number!=self.start_node)and(len(array_answer)==2)or((len(array_answer)>2)and((self.path[array_answer[len(array_answer)-1].n1].number!=self.start_node))))and(count_passed_now_mesh==0)and(len(self.mesh_arr)>0)):
+			if((if_6_flag==False)and(array_answer[0]==0)and((self.path[array_answer[1].n1].number!=self.start_node)and(len(array_answer)==2)or((len(array_answer)>2)and((self.path[array_answer[len(array_answer)-1].n1].number!=self.start_node))))and(self.count_passed_mesh==0)and(len(self.mesh_arr)>0)):
 				if_flag = False
 				if_6_flag = True
 				if(len(self.mesh_arr)==2):
@@ -2867,10 +3146,13 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText(message)
 					message_box.show()
-			if((if_6_flag==False)and(array_answer[0]==0)and(count_passed_now_mesh==1)and(len(self.mesh_arr)>1)):
+			if((if_6_flag==False)and(array_answer[0]==0)and(self.count_passed_mesh==1) and((len(self.mesh_arr)==1)and(count_passed_now_mesh==0))or((len(self.mesh_arr)==2)and(count_passed_now_mesh==1))):
 				print("случай 5")
 				if_6_flag = True
-				art = self.artikul.get_artikul(self.mesh_arr[1], self.floor_arr[1])
+				if(len(self.mesh_arr)==2):
+					art = self.artikul.get_artikul(self.mesh_arr[1], self.floor_arr[1])
+				if(len(self.mesh_arr)==1):
+					art = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
 				message = "Робот не смог добраться до второй выбранной ячейки (артикул товара: '" + str(art) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
 				if(len(arr_node2_barrier)>1):
 					message = message + " Также препятствия находятся между перекрестками "
@@ -2888,10 +3170,16 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.config.change_start_node(self.start_node)
 				tmp = copy.copy(self.mesh_arr)
 				self.mesh_arr.clear()
-				self.mesh_arr.append(tmp[1]) # только вторая ячейка!
-				tmp = copy.copy(self.floor_arr)
+				if(len(tmp)==2):
+					self.mesh_arr.append(tmp[1]) # только вторая ячейка!
+				if(len(tmp)==1):
+					self.mesh_arr.append(tmp[0]) # только вторая ячейка!
+				tmp = copy.copy(self.floor_arr)  # не забыть этаж if!
 				self.floor_arr.clear()
-				self.floor_arr.append(tmp[1]) # только вторая ячейка!
+				if(len(tmp)==2):
+					self.floor_arr.append(tmp[1])
+				if(len(tmp)==1):
+					self.floor_arr.append(tmp[0])
 				self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
 				self.path=self.sklad.get_path()
 				action=self.sklad.get_action()

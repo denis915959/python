@@ -35,12 +35,32 @@ class Test():
 		self.path.append(Node(5, [], False))
 		self.path.append(Node(2, [], True))
 		self.path.append(Node(0, [], True))
+		self.sklad = Test()
+
+	def get_crossroad(self, mesh):
+		parametr = 0
+		return(parametr)
 
 	def calculate_orientation(self, array_answer):
 		if(array_answer[0]==0):
-			k = len(array_answer)-1
-			n1 = self.path[array_answer[k].n1].number
-			n2 = self.path[array_answer[k].n2].number
+			if(array_answer[1].n1==-1):
+				k = len(array_answer)-1
+				n1 = self.path[array_answer[k].n1].number
+				n2 = self.path[array_answer[k].n2].number
+			else:
+				crossroad = self.sklad.get_crossroad(array_answer[1].n2)
+				if(array_answer[1].n2 == self.mesh_arr[0]):
+					num_in_mesh_arr = 1
+				if((len(self.mesh_arr)==2)and(array_answer[1].n2 == self.mesh_arr[1]):
+					num_in_mesh_arr = 2
+				count = 0
+				sz = len(self.path)
+				for i in range(1, sz):
+					if(self.path[i].number == crossroad):
+						count = count + 1
+					if(count == num_in_mesh_arr):
+						n1 = self.path[i-1].number
+						n2 = self.path[i].number
 			delta = n2-n1
 			tmp_orient = -1
 			if(delta == 1):
@@ -56,6 +76,7 @@ class Test():
 					tmp_orient = 1
 				if(delta < 0):
 					tmp_orient = 3
+				
 			print(tmp_orient)
 
 
