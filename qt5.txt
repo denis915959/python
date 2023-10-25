@@ -1909,6 +1909,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def get_mesh_barrier(self):
 		mesh_barrier = self.config.get_all_mesh_barrier()
 		mesh_no_barrier = self.config.get_all_mesh_no_barrier()
+		message=""
 		if(len(mesh_barrier)==0):
 			message = "Препятствий перед ячейками нет!"
 		if(len(mesh_barrier)>=1):
@@ -1916,7 +1917,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			for i in range(1, len(mesh_barrier)):
 				message = message + ", " + str(mesh_barrier[i])
 		if(len(mesh_no_barrier)>=1):
-			message = ". Ячейки, недоступные из-за лежащих напротив них препятствий: " + str(mesh_no_barrier[0])
+			message = message + ". Ячейки, недоступные из-за лежащих напротив них препятствий: " + str(mesh_no_barrier[0])
 			for i in range(1, len(mesh_no_barrier)):
 				message = message + ", " + str(mesh_no_barrier[i])
 		font= QFont()
@@ -2522,9 +2523,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.start_node = int(self.config.get_parametr(9))
 		self.end_node = int(self.config.get_parametr(10)) #start_node и end_node не хранится в классе склад!
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
-
-		self.artikul.get_all_artikuls()
-
 		config_counter = self.config.get_config_counter() # при сохранении строки счетчик указывает на пустую строку!
 		for i in range(11, config_counter): # удаление ранее удаленных ребер!	
 			branch = rasparser(self.config.get_parametr(i))
@@ -2532,7 +2530,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.set_get_artikul()
 	
 
-	def decode_array_answer_to_get_mesh_barrier(self, orientation, array_answer, mesh_arr): # эта функция вернет номера ячеек из mesh_arr, которые блокированы препятствиями и номера ячеек из mesh_arr, которые напротив блокированных
+	def decode_array_answer_to_get_mesh_barrier(self, orientation, array_answer, mesh_arr): # эта функция вернет номера ячеек, которые блокированы препятствиями и номера ячеек, которые напротив блокированных?
 		mesh_barrier=[]
 		no_mesh_barrier=[]
 		if(len(mesh_arr)>0):
@@ -2697,14 +2695,34 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						if(array_answer[1].n4==1): # справа препятствие
 							if(remote==False):
 								no_mesh_barrier.append(mesh)
+					if(len(mesh_barrier)==1):
+						mesh_opposite = self.sklad.get_number_opposite_mesh(mesh)
+						if(mesh_barrier[0] == mesh):
+							no_mesh_barrier.append(mesh_opposite)
+						if(mesh_barrier[0] == mesh_opposite):
+							no_mesh_barrier.append(mesh)
+					if((len(no_mesh_barrier)==1)and(len(mesh_barrier)==0)):
+						mesh_opposite = self.sklad.get_number_opposite_mesh(mesh)
+						mesh_barrier.append(mesh_opposite)
 		res=[]
-		#print(mesh_barrier)
-		#print(no_mesh_barrier)
 		for i in range(0, len(mesh_barrier)):
 			res.append(mesh_barrier[i])
 		res.append(-1)
 		for i in range(0, len(no_mesh_barrier)):
 			res.append(no_mesh_barrier[i])
+		"""res.append(-1)
+		sz1 = len(mesh_barrier)
+		sz2 = len(no_mesh_barrier)
+		if((sz1 + sz2)==1):
+			if(sz1==1):
+				res.append(self.sklad.get_number_opposite_mesh(mesh_barrier[0]))
+				if((array_answer[1].n3==1)and(array_answer[1].n4==1)):
+					res.append(True) # True - ячейка в 3-м массиве с препятствием
+				if(((array_answer[1].n3==0)and(array_answer[1].n4==1))or((array_answer[1].n3==1)and(array_answer[1].n4==0))): # если только с одной стороны препятствие, а длина mesh_bar == 1, то это то же самое препятствие, и у ячейки напротив препятствия нет!
+					res.append(False)
+			if(sz2==1):
+				res.append(self.sklad.get_number_opposite_mesh(no_mesh_barrier[0]))
+				res.append(False) # False - ячейка в 3-м массиве без препятствия"""
 		return(res)
 
 	
@@ -3111,7 +3129,10 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText(message)
 				message_box.show()
-				self.two_input_fields() # return не нужен из-за рекурсии
+				if(self.count_passed_mesh == 0):
+					self.two_input_fields() # return не нужен из-за рекурсии
+				if(self.count_passed_mesh == 1):
+					self.one_input_field() # return не нужен из-за рекурсии
 			if((if_6_flag==False)and(array_answer[0]==0)and(array_answer[1].n1==-1)and(len(self.mesh_arr)==2)):
 				print("случай 2")
 				if_6_flag = True
@@ -3431,11 +3452,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.show()
 			if((array_answer[0]==1) and (array_answer[1].n1==-1) and (array_answer[1].n2==-1)): #единственный 100% успешный случай!
 				self.type_graphic_function = 0
-				message_box = QMessageBox(self)
-				message_box.setFont(font)
-				message_box.setWindowTitle("Результат")
-				message_box.setText("Робот успешно добрался до конечной точки!")
-				message_box.show()
 				self.start_node = self.end_node
 				self.config.change_start_node(self.start_node)
 				self.robot_in_goal_node = True
@@ -3447,6 +3463,11 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					articul2 = self.artikul.get_artikul(self.mesh_arr[1], self.floor_arr[1])
 					self.artikul.delete_artikul(articul1)
 					self.artikul.delete_artikul(articul2)
+				message_box = QMessageBox(self)
+				message_box.setFont(font)
+				message_box.setWindowTitle("Результат")
+				message_box.setText("Робот успешно добрался до конечной точки!")
+				message_box.show()
 				self.set_get_artikul()
 			#self.robot_in_goal_node=True #УДАЛИТЬ !!!!!!!!!!!!!!!!!!!!!!!!!!!
 		"""print("mesh = ", self.mesh_arr)  # удалить потом
