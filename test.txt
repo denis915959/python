@@ -26,22 +26,23 @@ edge = namedtuple('edge', ['n1', 'n2'])
 	
 		
 
+from prettytable import PrettyTable
 
 class Test():
 	def __init__(self):
-		self.path = []
+		"""self.path = []
 		self.path.append(Node(0, [], True))
 		self.path.append(Node(2, [], True))
 		self.path.append(Node(5, [], False))
 		self.path.append(Node(2, [], True))
-		self.path.append(Node(0, [], True))
-		self.sklad = Test()
+		self.path.append(Node(0, [], True))"""
+		#self.sklad = Test()
 
 	def get_crossroad(self, mesh):
 		parametr = 0
 		return(parametr)
 
-	def calculate_orientation(self, array_answer):
+	"""def calculate_orientation(self, array_answer):
 		if(array_answer[0]==0):
 			if(array_answer[1].n1==-1):
 				k = len(array_answer)-1
@@ -51,7 +52,7 @@ class Test():
 				crossroad = self.sklad.get_crossroad(array_answer[1].n2)
 				if(array_answer[1].n2 == self.mesh_arr[0]):
 					num_in_mesh_arr = 1
-				if((len(self.mesh_arr)==2)and(array_answer[1].n2 == self.mesh_arr[1]):
+				if((len(self.mesh_arr)==2)and(array_answer[1].n2 == self.mesh_arr[1])):
 					num_in_mesh_arr = 2
 				count = 0
 				sz = len(self.path)
@@ -77,156 +78,17 @@ class Test():
 				if(delta < 0):
 					tmp_orient = 3
 				
-			print(tmp_orient)
+			print(tmp_orient)"""
+
+	def save_articuls_into_prettytable(self):
+		table = PrettyTable()
+		table.field_names = ["Артикул", "Номер ячейки", "Номер столбца"]
+		table.add_row(["a1", str(0), str(2)]) # Цикл сюда вставить!
+		with open("Артикулы.txt", "w") as file:
+			file.write(str(table))
 
 
 array_answer = [0, edge(1, 2)]
 test = Test()
-test.calculate_orientation(array_answer)
+test.save_articuls_into_prettytable()
 
-
-"""class sklad_window(QMainWindow): # наследник класса QMainWindow
-	def __init__(self):
-		super().__init__()
-		self.setWindowTitle("Пример кнопок")
-		self.screen = QDesktopWidget().screenGeometry()
-		self.screen_width = self.screen.width() # 1920    # поле класса
-		self.screen_height = self.screen.height() # 1080  # поле класса
-		self.resize(self.screen_width, self.screen_height)
-		self.qt5_objects_list=[]
-		self.setStyleSheet("background-color: lightblue;")
-
-		self.start_node=0
-		self.end_node=0
-		self.robot_in_goal_node = False
-		self.first_window()
-
-
-	def first_window(self):
-		font= QFont()
-		font.setPointSize(12)
-		button_new_sklad = QPushButton("Создать новый склад", self)
-		button_old_sklad = QPushButton("Продолжить работу с ранее созданным складом", self)
-		self.qt5_objects_list.append(button_new_sklad)
-		self.qt5_objects_list.append(button_old_sklad)
-		font_button12 = QFont()
-		font_button12.setPointSize(14)  # Устанавливаем желаемый размер шрифта
-
-		button_new_sklad.setFont(font_button12)  # Устанавливаем шрифт для надписи кнопки
-		button_new_sklad.clicked.connect(lambda* args: self.one_input_field())
-		button_new_sklad.setGeometry(int(self.screen_width*0.1), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3)) # x, y, размеры: x, y
-		button_new_sklad.setStyleSheet("background-color: yellow")
-		button_old_sklad.setFont(font_button12)
-		button_old_sklad.clicked.connect(lambda* args: self.mode_6_input())
-		button_old_sklad.setGeometry(int(self.screen_width*0.55), int(self.screen_height*0.3), int(self.screen_width*0.3), int(self.screen_height*0.3))
-		button_old_sklad.setStyleSheet("background-color: yellow")
-		message = "Маршрут между перекрестками " + str(self.start_node) + " и " + str(self.end_node) + " не может быть построен из-за препятствий на складе."
-		message_box = QMessageBox(self) #если поле ввода не нужно!
-		message_box.setFont(font)
-		message_box.setWindowTitle("Ошибка")
-		message_box.setText(message)
-		ok_button= message_box.addButton(QMessageBox.Ok)
-		ok_button.clicked.connect(self.ok_button_handler)
-		message_box.show()
-
-	def ok_button_handler(self):
-		print("ok")
-
-	def one_input_field(self):  # не показывает из-за того, что self.show только внутри метода работает!
-		font= QFont()
-		font.setPointSize(17)  
-		group_box_set = QGroupBox("Другие варианты", self)
-		group_box_set.setFont(font)
-		group_box_set.setGeometry(100, 200, 800, 700) #на width, height везде заменить!   #100, 200, 800, 700
-		group_box_set.setStyleSheet("QGroupBox { background-color: lightgreen }")
-		font.setPointSize(14)
-		button_to_base = QPushButton("Вернуться на базу", self)
-		button_to_base.setFont(font)
-		button_to_base.clicked.connect(lambda* args: self.handler_to_base())
-		button_to_base.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
-		button_to_base.setStyleSheet("background-color: yellow")
-		self.qt5_objects_list.append(button_to_base)
-		button_on_place = QPushButton("Остаться на месте", self)
-		button_on_place.setFont(font)
-		button_on_place.clicked.connect(lambda* args: self.mode_6_input())
-		button_on_place.setFixedSize(760, 170) #задает размер кнопки, даже если использован QVBoxLayout
-		button_on_place.setStyleSheet("background-color: yellow")
-		self.qt5_objects_list.append(button_on_place)
-		self.qt5_objects_list.append(group_box_set)
-		layout = QVBoxLayout(group_box_set)
-		layout.addWidget(button_to_base)
-		layout.addSpacing(45) #80
-		layout.addWidget(button_on_place)
-		layout.addSpacing(10)
-		group_box_set.show()  #для отдельных объектов тоже можно применять метод show()!
-		font.setPointSize(17)  
-		group_box_get = QGroupBox("Взять товар со склада", self)
-		group_box_get.setFont(font)
-		group_box_get.setGeometry(1020, 200, 800, 700) #на width, height везде заменить! 
-		group_box_get.setStyleSheet("QGroupBox { background-color: lightgreen }")
-		font.setPointSize(14)  
-		text_get_art2_1=QLabel("Введите артикул товара, который хотите взять со склада:", group_box_get) 
-		text_get_art2_1.setFont(font)
-		text_get_art2_1.setStyleSheet("background-color: lightgreen")
-		self.qt5_objects_list.append(text_get_art2_1)
-		text_get_art2_2=QLabel("(если вы не хотите брать товар со склада, не заполняйте это поле)", group_box_get) 
-		text_get_art2_2.setFont(font)
-		text_get_art2_2.setStyleSheet("background-color: lightgreen")
-		self.qt5_objects_list.append(text_get_art2_2)
-		qle_get_art2 = QLineEdit(group_box_get)            #обязательно group_box указывать!!!!
-		qle_get_art2.setFont(font) 
-		qle_get_art2.setStyleSheet("background-color: white")
-		self.qt5_objects_list.append(qle_get_art2)
-		qle_get_arr = []
-		qle_get_arr.append(qle_get_art2)
-		button_get_tovar = QPushButton("Взять товар со склада", self)
-		button_get_tovar.setFont(font)
-		button_get_tovar.clicked.connect(lambda* args: self.handler_get_art(qle_get_arr))
-		button_get_tovar.setFixedSize(760, 120) #задает размер кнопки, даже если использован QVBoxLayout
-		button_get_tovar.setStyleSheet("background-color: yellow")
-		self.qt5_objects_list.append(button_get_tovar)
-		self.qt5_objects_list.append(group_box_get)
-		layout = QVBoxLayout(group_box_get)
-		layout.addSpacing(60)
-		layout.addWidget(text_get_art2_1) #3
-		layout.addWidget(text_get_art2_2)
-		layout.addSpacing(20)
-		layout.addWidget(qle_get_art2)
-		layout.addSpacing(300)
-		layout.addWidget(button_get_tovar)
-		layout.addSpacing(20)
-		group_box_get.show()
-
-
-	def mode_6_input(self):
-		message ="Вы можете изменить конечную точку и перестроить маршрут или оставить робота на месте."
-		input_dialog = QInputDialog(self)
-		input_dialog.setWindowTitle("Диалоговое окно")
-		input_dialog.setLabelText(message)
-		input_dialog.setOkButtonText('остаться на месте')
-		input_dialog.setCancelButtonText('перестроить маршрут')
-		if (input_dialog.exec_() == QInputDialog.Rejected):  # Accepted - нажата кнопка "ок", Rejected - кнопка Cancel. Для изменения имен кнопок подходит только такая конструкция!
-			text = input_dialog.textValue()
-			print("z", text, "z")
-			if(text.isdigit()):
-				print(int(text))
-				#input_dialog.show()
-		else:
-			print("No ")
-
-	def handler_new_sklad(self):
-		print(1)
-
-	def handler_on_place(self):
-		print(2)
-
-	def handler_to_base(self):
-		print(3)
-
-
-if __name__ == "__main__":
-	app = QApplication(sys.argv)
-	window = sklad_window()
-	window.show()
-	sys.exit(app.exec())
-"""
