@@ -175,6 +175,7 @@ class MQTT:
 			i=i+1
 		i=i+1
 		array_answer.append(tmp)
+		count_arr=0
 		while(i<len(self.result_from_robot)):
 			n1=0
 			minus=False
@@ -204,35 +205,39 @@ class MQTT:
 				n2 = -n2
 			minus=False
 			i=i+1
-			n3=0
-			minus=False
-			while(i<len(self.result_from_robot)):
-				if(self.result_from_robot[i]==" "):
-					break
-				if(self.result_from_robot[i]=="-"):
-					minus=True
-				else:
-					n3=n3*10 + int(self.result_from_robot[i])
+			if(count_arr==0):
+				n3=0
+				minus=False
+				while(i<len(self.result_from_robot)):
+					if(self.result_from_robot[i]==" "):
+						break
+					if(self.result_from_robot[i]=="-"):
+						minus=True
+					else:
+						n3=n3*10 + int(self.result_from_robot[i])
+					i=i+1
+				if(minus==True):
+					n3 = -n3
+				minus=False
 				i=i+1
-			if(minus==True):
-				n3 = -n3
-			minus=False
-			i=i+1
-			n4=0
-			minus=False
-			while(i<len(self.result_from_robot)):
-				if(self.result_from_robot[i]==" "):
-					break
-				if(self.result_from_robot[i]=="-"):
-					minus=True
-				else:
-					n4=n4*10 + int(self.result_from_robot[i])
+				n4=0
+				minus=False
+				while(i<len(self.result_from_robot)):
+					if(self.result_from_robot[i]==" "):
+						break
+					if(self.result_from_robot[i]=="-"):
+						minus=True
+					else:
+						n4=n4*10 + int(self.result_from_robot[i])
+					i=i+1
+				if(minus==True):
+					n4 = -n4
+				minus=False
 				i=i+1
-			if(minus==True):
-				n4 = -n4
-			minus=False
-			i=i+1
-			array_answer.append(first_part(n1, n2, n3, n4)) #edge(n1, n2))
+				array_answer.append(first_part(n1, n2, n3, n4)) #edge(n1, n2))
+			else:
+				array_answer.append(edge(n1, n2))
+			count_arr=1
 		#возврат переменных к исходному состоянию
 		self.recv_flag=True
 		self.attempt_counter = 0
@@ -1645,6 +1650,10 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.end_node_action = QAction("Изменить номер конечной вершины")
 		self.end_node_action.triggered.connect(self.change_end_node)
 		self.file_menu.addAction(self.end_node_action)
+		self.spravka_menu = self.menuBar().addMenu("Маршрут")
+		self.path_between_crossroads_action = QAction("Построить маршрут до перекрестка")
+		self.path_between_crossroads_action.triggered.connect(self.path_between_crossroads)
+		self.spravka_menu.addAction(self.path_between_crossroads_action)
 		self.spravka_menu = self.menuBar().addMenu("Справка")
 		self.get_start_end_action = QAction("Узнать номера конечной и стартовой точек")
 		self.get_start_end_action.triggered.connect(self.get_start_end)
@@ -1652,7 +1661,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.get_barrier_action = QAction("Получить список препятствий")
 		self.get_barrier_action.triggered.connect(self.get_barrier_list)
 		self.spravka_menu.addAction(self.get_barrier_action)
-		self.get_orientation_action = QAction("Узнать текущее положение робота")
+		self.get_orientation_action = QAction("Узнать текущее направление робота")
 		self.get_orientation_action.triggered.connect(self.get_orientation_mesage)
 		self.spravka_menu.addAction(self.get_orientation_action)
 		self.get_mesh_barrier_action = QAction("Получить список ячеек с препятствиями")
@@ -1681,6 +1690,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.mesh_arr_element = -1
 		self.floor_arr_element = -1
 		self.type_graphic_function = 0 # set-get, 1 - one_input_field, 2 - two_input_fields, 3 - изменить конечную точку
+		self.input_field = True # нужно для построения маршрута между 2 перекрестками через "Маршрут"
 		self.first_window()
 
 
@@ -1721,6 +1731,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Такого ребра нет на складе, попробуйте заново!")
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.delete_branch)
 				message_box.show()
 
 
@@ -1736,6 +1748,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Такого ребра не существует,  или оно уже было восстановлено. Попробуйте заново!")
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.insert_branch)
 				message_box.show() #show обязателен для виджетов или групп виджетов!!!!!
 			else:
 				self.sklad.insert_branch_to_Nodes(branch[0], branch[1])	
@@ -1751,6 +1765,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Такого направления для робота не существует, попробуйте заново!")
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.change_orientation)
 				message_box.show()
 			else:
 				self.orientation = int(text)
@@ -1760,7 +1776,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def change_start_node(self):
 		max = self.sklad.get_max_node_number()
-		text, ok = QInputDialog.getText(self, "Изменить стартовую вершину", "Введите номер новой стартовой вершины:")
+		text, ok = QInputDialog.getText(self, "Изменить стартовую точку", "Введите номер нового стартового перекрестка:")
 		if ok:
 			if(int(text)>max):
 				font= QFont()
@@ -1768,7 +1784,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Слишком большой номер вершины, максимальный номер вершины для этого склада: " + str(max))
+				message_box.setText("Слишком большой номер перекрестка, максимальный номер перекрестка для этого склада: " + str(max))
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.change_start_node)
 				message_box.show()
 			else:
 				self.start_node = int(text)
@@ -1777,7 +1795,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def change_end_node(self):
 		max = self.sklad.get_max_node_number()
-		text, ok = QInputDialog.getText(self, "Изменить конечную вершину", "Введите номер новой конечной вершины:")
+		text, ok = QInputDialog.getText(self, "Изменить конечную точку", "Введите номер нового конечного перекрестка:")
 		if ok:
 			if(int(text)>max):
 				font= QFont()
@@ -1785,7 +1803,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Слишком большой номер вершины, максимальный номер вершины для этого склада: " + str(max))
+				message_box.setText("Слишком большой номер перекрестка, максимальный номер перекрестка для этого склада: " + str(max))
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.change_end_node)
 				message_box.show()
 			else:
 				self.end_node = int(text)
@@ -1799,11 +1819,13 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			font.setPointSize(12) 
 			max = self.sklad.get_max_mesh_number()
 			mesh=int(text)
-			if(mesh>=max): # >=, так как нумерация ячеек с нуля!
+			if(mesh>max): # >=, так как нумерация ячеек с нуля!
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Слишком большой номер ячейки, такой ячейки на складе нет, попробуйте заново!")
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.set_barrier_mesh)
 				message_box.show()
 			else:
 				if(self.config.check_barrier(mesh)==True):
@@ -1811,9 +1833,16 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText("Ячейка уже помечена как недоступная!")
+					ok_button = message_box.addButton(QMessageBox.Ok)
+					ok_button.clicked.connect(self.set_barrier_mesh)
 					message_box.show()
 				else:
-					self.config.set_barrier_before_mesh(mesh, -1)
+					opposite = self.sklad.get_number_opposite_mesh(mesh)
+					flag = self.config.check_barrier(opposite)
+					if(flag == True):
+						self.config.set_barrier_before_mesh(mesh, -1)
+					if(flag == False):
+						self.config.set_barrier_before_mesh(mesh, opposite)
 
 
 	def delete_barrier_mesh(self):
@@ -1823,11 +1852,13 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			font.setPointSize(12) 
 			max = self.sklad.get_max_mesh_number()
 			mesh=int(text)
-			if(mesh>=max): # >=, так как нумерация ячеек с нуля!
+			if(mesh>max): # >=, так как нумерация ячеек с нуля!
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Слишком большой номер ячейки, такой ячейки на складе нет, попробуйте заново!")
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.delete_barrier_mesh)
 				message_box.show()
 			else:
 				if(self.config.check_barrier(mesh)==False):
@@ -1835,6 +1866,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText("Ячейка уже восстановлена!")
+					ok_button = message_box.addButton(QMessageBox.Ok)
+					ok_button.clicked.connect(self.delete_barrier_mesh)
 					message_box.show()
 				else:
 					self.config.delete_barrier_before_mesh(mesh)
@@ -1875,7 +1908,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def get_orientation_mesage(self):
 		orient = self.sklad.get_orientation()
-		message = "Текущее положение робота: " + str(orient)
+		message = "Текущее направление робота: " + str(orient)
 		font= QFont()
 		font.setPointSize(12) 
 		message_box = QMessageBox(self)
@@ -1927,6 +1960,157 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		message_box.setWindowTitle("Результат")
 		message_box.setText(message)
 		message_box.show()
+
+
+	def path_between_crossroads(self):
+		if(self.input_field == True):
+			max = self.sklad.get_max_node_number()
+			text, ok = QInputDialog.getText(self, "Поле ввода", "Номер стартового перекрестка: " + str(self.start_node) + ", ведите номер конечного перекрестка:")
+		else:
+			ok = False
+		if((ok)or(self.input_field == False)): # ok - это переменная типа bool
+			if((self.input_field == True)and(int(text)>max)):
+				font= QFont()
+				font.setPointSize(12) 
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Слишком большой номер перекрестка, максимальный номер перекрестка для этого склада: " + str(max))
+				ok_button = message_box.addButton(QMessageBox.Ok)
+				ok_button.clicked.connect(self.change_start_node)
+				message_box.show()
+			else:
+				if(self.input_field == True):
+					self.end_node = int(text)
+					self.config.change_end_node(text)
+				self.sklad.make_full_path(self.start_node, -1, [], self.end_node, -1, [])
+				self.path=self.sklad.get_path()
+				action=self.sklad.get_action()
+				action_size=self.sklad.get_action_size()
+				font= QFont()
+				font.setPointSize(12) 
+				if(action_size==0):
+					self.input_field = True
+					message_box = QMessageBox(self)
+					message_box.setFont(font)
+					message_box.setWindowTitle("Ошибка")
+					message_box.setText("Робот уже находится в нужной точке склада!")
+					message_box.show()
+					return()
+				if(action_size==-1): #ошибка при построении маршрута!
+					error = self.sklad.get_error_number()
+					if((error[0]==0)):#and(len(error)==3)):
+						self.start_node=error[1]
+						self.end_node=error[2]
+						message = "Маршрут между перекрестками " + str(self.start_node) + " и " + str(self.end_node) + " не может быть построен из-за препятствий на складе."
+						self.input_field = True
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText(message)
+						ok_button= message_box.addButton(QMessageBox.Ok)
+						ok_button.clicked.connect(self.path_between_crossroads)
+						message_box.show()
+						return()
+				if(action_size>0):
+					mqtt = MQTT(action, self.path) # восстановить после отладки!
+					array_answer = mqtt.mqtt_communication()
+					if(len(array_answer)==0):
+						error = "Невозможно соединиться с роботом, попробуйте еще раз"
+						self.input_field = True # Так как ситуация требует вмешательства оператора
+						self.orientation = self.old_orientation
+						self.config.change_orientation(str(self.orientation))
+						self.sklad.set_orientation(self.orientation)
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText(error)
+						ok_button = message_box.addButton(QMessageBox.Ok)
+						ok_button.clicked.connect(self.path_between_crossroads)
+						message_box.show()
+						return()
+					arr_node1_barrier=[]
+					arr_node2_barrier=[]
+					sz=len(array_answer)
+					if(array_answer[1].n1>-1): #т.е это препятствие между перекрестками!
+						for i in range(1, sz): #если ячейки, то со 2 элемента удаление происходит!
+							arr_node1_barrier.append(self.path[array_answer[i].n1])
+							arr_node2_barrier.append(self.path[array_answer[i].n2])
+					if((array_answer[0]==1) and (array_answer[1].n1!=-1)): # робот доехал, но есть препятствия!
+						error = "Робот успешно добрался до конечного перекрестка, но между перекрестками " + str(arr_node1_barrier[0].number) + " и " + str(arr_node2_barrier[0].number)
+						for i in range(1, len(arr_node1_barrier)):
+							error = error + ", " + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number)
+						if(len(arr_node1_barrier)==1):
+							error = error + " возникло препятствие, это ребро уже удалено со склада!"
+						else:
+							error = error + " возникли препятствия, эти ребра уже удалены со склада!"
+						self.robot_in_goal_node = True
+						for i in range(0, len(arr_node1_barrier)): # удаление ребер!
+							self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+							self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+						self.input_field = True
+						self.start_node = self.end_node
+						self.config.change_start_node(self.start_node)
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Результат")
+						message_box.setText(error)
+						self.set_get_artikul()
+						message_box.show()
+					if(array_answer[0]==1)and(array_answer[1].n1==-1)and(array_answer[1].n2==-1):
+						self.start_node = self.end_node
+						self.config.change_start_node(self.start_node)
+						self.input_field = True
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Сообщение")
+						message_box.setText("Робот успешно добрался до заданного перекрестка!")
+						ok_button = message_box.addButton(QMessageBox.Ok)
+						ok_button.clicked.connect
+						message_box.show()
+					if(array_answer[0]==0):
+						self.calculate_orientation(array_answer, [], self.path)
+						self.config.change_orientation(str(self.orientation))
+						self.sklad.set_orientation(self.orientation)
+						self.old_orientation = self.orientation
+						message = "Робот не может добраться от перекрестка с номером " + str(self.start_node) + " до перекрестка с номером " + str(self.end_node) + ", препятствие находится между перекрестками " + str(arr_node1_barrier[0].number) + " и " + str(arr_node2_barrier[0].number)
+						self.sklad.delete_branch_from_Nodes(arr_node1_barrier[0].number, arr_node2_barrier[0].number)
+						self.config.insert_branch_into_table(arr_node1_barrier[0].number, arr_node2_barrier[0].number) 
+						if(len(arr_node2_barrier)>1):
+							message = message + ". Также препятствия находятся между перекрестками "
+						print(len(arr_node1_barrier))
+						for i in range(1, len(arr_node1_barrier)): # удаление ребер!
+							message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
+							self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
+							self.config.insert_branch_into_table(arr_node1_barrier[i].number, arr_node2_barrier[i].number) 
+						if(len(arr_node2_barrier)==1):
+							message = message + ", это ребро автоматически удалено со склада."
+						if(len(arr_node2_barrier)>1):
+							message = message + " эти ребра автоматически удалены со склада."
+						tmp_path = copy.copy(self.path)
+						self.sklad.make_full_path(self.start_node, -1, [], self.end_node, -1, [])
+						self.path=self.sklad.get_path()
+						action=self.sklad.get_action()
+						action_size=self.sklad.get_action_size()
+						error = self.sklad.get_error_number()
+						print(error)
+						if((len(error)==3)and(error[0] == 0)):
+							message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
+							self.input_field = True
+						else:
+							message = message + " Но маршрут удалось перестроить, для продолжения движения робота нажмите 'ок'"
+							self.input_field = False
+						if(len(self.path)>0):
+							self.start_node = self.path[array_answer[len(array_answer)-1].n1].number
+							self.config.change_start_node(self.start_node)
+						message_box = QMessageBox(self) #если поле ввода не нужно!
+						message_box.setFont(font)
+						message_box.setWindowTitle("Ошибка")
+						message_box.setText(message)
+						ok_button = message_box.addButton(QMessageBox.Ok)
+						ok_button.clicked.connect(self.path_between_crossroads)
+						message_box.show()
+						return() # тут return нужен, ибо обработчик никакой не вызывается, так как обрабатывать нечего!
 
 
 	def first_window(self):
@@ -2498,7 +2682,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def handler_to_base(self): # здесь start_node менять не надо
 		self.mesh_arr.clear()
 		self.floor_arr.clear()
-		print("to_base")
 		qle_get_arr=[]
 		self.not_mesh = True
 		self.handler_get_art(qle_get_arr)
@@ -2710,19 +2893,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		res.append(-1)
 		for i in range(0, len(no_mesh_barrier)):
 			res.append(no_mesh_barrier[i])
-		"""res.append(-1)
-		sz1 = len(mesh_barrier)
-		sz2 = len(no_mesh_barrier)
-		if((sz1 + sz2)==1):
-			if(sz1==1):
-				res.append(self.sklad.get_number_opposite_mesh(mesh_barrier[0]))
-				if((array_answer[1].n3==1)and(array_answer[1].n4==1)):
-					res.append(True) # True - ячейка в 3-м массиве с препятствием
-				if(((array_answer[1].n3==0)and(array_answer[1].n4==1))or((array_answer[1].n3==1)and(array_answer[1].n4==0))): # если только с одной стороны препятствие, а длина mesh_bar == 1, то это то же самое препятствие, и у ячейки напротив препятствия нет!
-					res.append(False)
-			if(sz2==1):
-				res.append(self.sklad.get_number_opposite_mesh(no_mesh_barrier[0]))
-				res.append(False) # False - ячейка в 3-м массиве без препятствия"""
 		return(res)
 
 	
@@ -3260,7 +3430,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				if((len(error)>0)and(error[0] == 1)):
 					message = message + " Маршрут перестроить невозможно. Для дальнейшей работы уберите препятствие, находящееся между перекрестками " + str(tmp_path[0].number) + " и " + str(tmp_path[1].number) + ". Для продолжения работы с программой нажмите 'ок'"
 				else:
-					message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+					message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
@@ -3305,7 +3475,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 							message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
 							self.one_input_field()
 						else:
-							message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+							message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
 						message_box = QMessageBox(self) #если поле ввода не нужно!
 						message_box.setFont(font)
 						message_box.setWindowTitle("Ошибка")
@@ -3343,7 +3513,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
 						self.two_input_fields()
 					else:
-						message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+						message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
@@ -3395,7 +3565,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
 					self.one_input_field()
 				else:
-					message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+					message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
@@ -3444,7 +3614,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.buttonClicked.connect(self.mode_6_input)
 					message_box.show()
 				else:
-					message = message + " Но маршрут удалось перестроить, робот автоматически начал движения. Для продолжения работы с программой нажмите 'ок'"
+					message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
@@ -3469,9 +3639,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setText("Робот успешно добрался до конечной точки!")
 				message_box.show()
 				self.set_get_artikul()
-			#self.robot_in_goal_node=True #УДАЛИТЬ !!!!!!!!!!!!!!!!!!!!!!!!!!!
-		"""print("mesh = ", self.mesh_arr)  # удалить потом
-		print("floor = ", self.floor_arr)  # удалить потом"""
 		for i in range(0, len(qle_get_arr)):
 			qle_get_arr[i].clear()
 

@@ -1,6 +1,10 @@
 ﻿# python test.txt
 
-import sys
+a=1
+b=a
+a=2
+print(b)
+"""import sys
 import codecs #для считывания русских символов
 import sqlite3
 import copy
@@ -30,19 +34,19 @@ from prettytable import PrettyTable
 
 class Test():
 	def __init__(self):
-		"""self.path = []
+		self.path = []
 		self.path.append(Node(0, [], True))
 		self.path.append(Node(2, [], True))
 		self.path.append(Node(5, [], False))
 		self.path.append(Node(2, [], True))
-		self.path.append(Node(0, [], True))"""
+		self.path.append(Node(0, [], True))
 		#self.sklad = Test()
 
 	def get_crossroad(self, mesh):
 		parametr = 0
 		return(parametr)
 
-	"""def calculate_orientation(self, array_answer):
+	def calculate_orientation(self, array_answer):
 		if(array_answer[0]==0):
 			if(array_answer[1].n1==-1):
 				k = len(array_answer)-1
@@ -78,7 +82,7 @@ class Test():
 				if(delta < 0):
 					tmp_orient = 3
 				
-			print(tmp_orient)"""
+			print(tmp_orient)
 
 	def save_articuls_into_prettytable(self):
 		table = PrettyTable()
@@ -90,5 +94,5 @@ class Test():
 
 array_answer = [0, edge(1, 2)]
 test = Test()
-test.save_articuls_into_prettytable()
+test.save_articuls_into_prettytable()"""
 
