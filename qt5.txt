@@ -1420,6 +1420,20 @@ class Config:
 		else:
 			return(False)
 
+	def check_only_barrier(self, mesh):
+		tmp1 = self.cursor.execute("SELECT number FROM mesh_barrier WHERE mesh='{}'".format(int(mesh))).fetchall()
+		if (len(tmp1)==0):
+			return(False)
+		else:
+			return(True)
+
+	def check_no_barrier(self, mesh):
+		tmp1 = self.cursor.execute("SELECT number FROM mesh_barrier WHERE opposite_mesh='{}'".format(int(mesh))).fetchall()
+		if (len(tmp1)==0):
+			return(False)
+		else:
+			return(True)
+	
 	def get_all_mesh_barrier(self): # массив ячеек с препятствиями
 		tmp = self.cursor.execute("SELECT mesh FROM mesh_barrier").fetchall()
 		tmp=str(tmp)
@@ -3063,46 +3077,106 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			return()
 		if((len(articul1)!=0)and(len(articul2)==0)):  #т.е есть препятствие перед одной из ячеек
 			mesh1=int(self.artikul.get_mesh(articul1))
-			if(self.config.check_barrier(mesh1) == True): #т.е есть препятствие перед первой ячейкой!
+			if(self.config.check_only_barrier(mesh1) == True): #т.е есть препятствие перед первой ячейкой!
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (перед ней лежит препятствие). Пожалуйста, выберите другой товар")
 				message_box.show()
 				return()
-		if((len(articul2)!=0)and(len(articul1)==0)):
+			if(self.config.check_no_barrier(mesh1) == True): #т.е есть препятствие перед первой ячейкой!
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (напротив нее лежит препятствие). Пожалуйста, выберите другой товар")
+				message_box.show()
+				return()
+		if((len(articul2)!=0)and(len(articul1)==0)): #только одна ячейка введена
 			mesh2=int(self.artikul.get_mesh(articul2))
-			if(self.config.check_barrier(mesh2) == True): #т.е есть препятствие перед первой ячейкой!
+			if(self.config.check_only_barrier(mesh2) == True): #т.е есть препятствие перед единственной ячейкой!
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (перед ней лежит препятствие). Пожалуйста, выберите другой товар")
+				message_box.show()
+				return()
+			if(self.config.check_no_barrier(mesh2) == True): #т.е есть препятствие перед первой ячейкой!
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (напротив нее лежит препятствие). Пожалуйста, выберите другой товар")
 				message_box.show()
 				return()
 		if((len(articul2)!=0)and(len(articul1)!=0)):
 			mesh1=int(self.artikul.get_mesh(articul1))
 			mesh2=int(self.artikul.get_mesh(articul2))
-			check_barrier1=self.config.check_barrier(mesh1)
-			check_barrier2=self.config.check_barrier(mesh2)
-			if((check_barrier1 == True)and(check_barrier2 == False)): #т.е есть препятствие перед одной из ячеек
+			check_only_barrier1=self.config.check_only_barrier(mesh1)
+			check_only_barrier2=self.config.check_only_barrier(mesh2)
+			check_no_barrier1=self.config.check_no_barrier(mesh1)
+			check_no_barrier2=self.config.check_no_barrier(mesh2)
+			if_flag=False
+			if((check_only_barrier1 == True)and(check_only_barrier2 == False)and(check_no_barrier2 == False)and(if_flag==False)): #т.е есть препятствие перед одной из ячеек
+				if_flag=True
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (перед ней лежит препятствие). Пожалуйста, выберите другой товар")
 				message_box.show()
 				return()
-			if((check_barrier2 == True)and(check_barrier1 == False)): #т.е есть препятствие перед одной из ячеек
+			if((check_only_barrier2 == True)and(check_only_barrier1 == False)and(check_no_barrier1 == False)and(if_flag==False)): #т.е есть препятствие перед одной из ячеек
+				if_flag=True
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul2) + "' недоступна (перед ней лежит препятствие). Пожалуйста, выберите другой товар")
 				message_box.show()
 				return()
-			if((check_barrier2 == True)and(check_barrier1 == True)):
+			if((check_only_barrier2 == True)and(check_only_barrier1 == True)and(if_flag==False)):
+				if_flag=True
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText("Обе ячейки недоступны (перед ними лежат препятствия). Пожалуйста, выберите другие товары")
+				message_box.show()
+				return()
+			if((check_no_barrier1 == True)and(check_no_barrier2 == False)and(check_only_barrier2 == False)and(if_flag==False)): #т.е есть препятствие перед одной из ячеек
+				if_flag=True
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (напротив нее лежит препятствие). Пожалуйста, выберите другой товар")
+				message_box.show()
+				return()
+			if((check_no_barrier2 == True)and(check_no_barrier1 == False)and(check_only_barrier1 == False)and(if_flag==False)): #т.е есть препятствие перед одной из ячеек
+				if_flag=True
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul2) + "' недоступна (напротив нее лежит препятствие). Пожалуйста, выберите другой товар")
+				message_box.show()
+				return()
+			if((check_no_barrier2 == True)and(check_no_barrier1 == True)and(if_flag==False)):
+				if_flag=True
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Обе ячейки недоступны (напротив них лежат препятствия). Пожалуйста, выберите другие товары")
+				message_box.show()
+				return()
+			if((check_no_barrier2 == True)and(check_only_barrier1 == True)and(if_flag==False)): #т.е есть препятствие перед одной из ячеек, а напротив второй препятствин
+				if_flag=True
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul1) + "' недоступна (перед ней лежит препятствие), а напротив ячейки, в которой находится товар с артикулом '" + str(articul2) + "', лежит препятствие . Пожалуйста, выберите другие товары")
+				message_box.show()
+				return()
+			if((check_only_barrier2 == True)and(check_no_barrier1 == True)and(if_flag==False)): #т.е есть препятствие перед одной из ячеек, а напротив второй препятствин
+				if_flag=True
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul2) + "' недоступна (перед ней лежит препятствие), а напротив ячейки, в которой находится товар с артикулом '" + str(articul1) + "', лежит препятствие . Пожалуйста, выберите другие товары")
 				message_box.show()
 				return()
 		self.mesh_arr=[]
