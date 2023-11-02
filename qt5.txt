@@ -3283,7 +3283,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			count_passed_now_mesh=-1  #число успешно пройденных за эту итерацию ячеек
 			if((array_answer[0]==0)and(array_answer[1].n1>-1)):
 				count_passed_now_mesh = self.get_count_passed_mesh(array_answer)
-			self.count_passed_mesh = self.count_passed_mesh + count_passed_now_mesh
+			self.count_passed_mesh = self.count_passed_mesh + count_passed_now_mesh #обновляется перед if!
 			array_number_mesh_with_barrier=-1  # 1 - если перед первой ячейкой из mesh_arr встретилось препятствие! 2 - если перед второй ячейкой из mesh_arr встретилось препятствие! 
 			arr_node1_barrier=[]
 			arr_node2_barrier=[]
@@ -3489,7 +3489,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				if(num_input_fields==2):
 					self.two_input_fields()
 			if((if_6_flag==False)and(array_answer[0]==0)and(self.path[array_answer[1].n1].number==self.start_node)and(self.count_passed_mesh==0)and(len(array_answer)==2)):
-				print("случай 3")
+				print("случай 3") # от стартовой ячейки не может отъехать
 				if_6_flag = True
 				for i in range(0, len(arr_node1_barrier)): # удаление ребер!
 					self.sklad.delete_branch_from_Nodes(arr_node2_barrier[i].number, arr_node1_barrier[i].number)
@@ -3593,8 +3593,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText(message)
 					message_box.show()
-			if((if_6_flag==False)and(array_answer[0]==0)and(self.count_passed_mesh==1) and((len(self.mesh_arr)==1)and(count_passed_now_mesh==0))or((len(self.mesh_arr)==2)and(count_passed_now_mesh==1))):
-				print("случай 5")
+			if((if_6_flag==False)and(array_answer[0]==0)and(((len(self.mesh_arr)==2)and
+(self.count_passed_mesh==1)and(count_passed_now_mesh==1))or((len(self.mesh_arr)==1)and(self.count_passed_mesh==1)and(count_passed_now_mesh==1)))):   # одна ячейка уже была взята
+				print("случай 5") #self.count_passed_mesh обновляется перед if!
 				if_6_flag = True
 				if(count_passed_now_mesh==1): # т.е одна ячейка из mesh_arr взята в эту итерацию
 					articul = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
