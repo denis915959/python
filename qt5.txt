@@ -1703,8 +1703,12 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.count_passed_mesh = 0
 		self.mesh_arr_element = -1
 		self.floor_arr_element = -1
+		self.error_iteration = False # True, если идет цикл ошибок
 		self.type_graphic_function = 0 # set-get, 1 - one_input_field, 2 - two_input_fields, 3 - изменить конечную точку
 		self.input_field = True # нужно для построения маршрута между 2 перекрестками через "Маршрут"
+		self.error_iteration_counter=0
+		self.mesh_arr=[]
+		self.floor_arr=[]
 		self.first_window()
 
 
@@ -1934,7 +1938,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def save_articuls_into_prettytable(self):
 		table = PrettyTable()
-		table.field_names = ["Артикул", "Номер ячейки", "Номер столбца"]
+		table.field_names = ["Артикул", "Номер ячейки", "Номер яруса"]
 		art_array=self.artikul.get_all_artikuls()
 		sz = len(art_array)
 		for i in range(0, sz):
@@ -2541,6 +2545,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	
 	def two_input_fields(self):
+		self.error_iteration = True
 		self.type_graphic_function = 2
 		font= QFont()
 		font.setPointSize(17)  
@@ -2627,6 +2632,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def one_input_field(self):  # не показывает из-за того, что self.show только внутри метода работает!
+		self.error_iteration = True
 		self.type_graphic_function = 1
 		font= QFont()
 		font.setPointSize(17)  
@@ -3030,6 +3036,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def handler_get_art(self, qle_get_arr): #, qle_get_art1, qle_get_art2):
+		if(self.error_iteration==True):
+			self.error_iteration_counter = self.error_iteration_counter + 1
+		print("self.mesh_arr0 = ", self.mesh_arr)
 		articul1=""
 		articul2=""
 		if(len(qle_get_arr)==1):	
@@ -3072,10 +3081,15 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			message_box = QMessageBox(self) #если поле ввода не нужно!
 			message_box.setFont(font)
 			message_box.setWindowTitle("Ошибка")
-			message_box.setText("Два товара не могут иметь один и тот же артикул! Попробуйте заново")
-			message_box.show()
-			return()
-		if((len(articul1)!=0)and(len(articul2)==0)):  #т.е есть препятствие перед одной из ячеек
+			if((self.type_graphic_function==2)and(self.error_iteration == True)):
+				message_box.setText("Вы не ввели артикулы!")
+				message_box.show()
+				return()
+			elif(self.error_iteration == False):
+				message_box.setText("Два товара не могут иметь один и тот же артикул! Попробуйте заново")
+				message_box.show()
+				return()			
+		if((len(articul1)!=0)and(len(articul2)==0)and(self.error_iteration == False)):  #т.е есть препятствие перед одной из ячеек
 			mesh1=int(self.artikul.get_mesh(articul1))
 			if(self.config.check_only_barrier(mesh1) == True): #т.е есть препятствие перед первой ячейкой!
 				message_box = QMessageBox(self) #если поле ввода не нужно!
@@ -3179,6 +3193,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setText("Ячейка, в которой находится товар с артикулом '" + str(articul2) + "' недоступна (перед ней лежит препятствие), а напротив ячейки, в которой находится товар с артикулом '" + str(articul1) + "', лежит препятствие . Пожалуйста, выберите другие товары")
 				message_box.show()
 				return()
+		tmp_mesh_arr=copy.deepcopy(self.mesh_arr)
+		tmp_floor_arr=copy.deepcopy(self.floor_arr)
+		print("tmp_mesh_arr = ", tmp_mesh_arr)
 		self.mesh_arr=[]
 		self.floor_arr=[]
 		if(self.mesh_arr_element!=-1):
@@ -3186,10 +3203,24 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			self.floor_arr.append(self.floor_arr_element)
 			self.mesh_arr_element=-1
 			self.floor_arr_element=-1
+		
+		if((self.error_iteration_counter>=2)and(len(tmp_mesh_arr)==1)): #в случае одного поля ввода проблемы именно в этой ситуации возникают (при 2 полях ввода эта проблема неактуальна)
+			self.floor_arr = copy.deepcopy(tmp_floor_arr)
+			self.mesh_arr = copy.deepcopy(tmp_mesh_arr)
 		mesh1=-1
 		floor1=-1
 		mesh2=-1
 		floor2=-1
+		print("mesh_arr7 = ", self.mesh_arr)
+		if((self.type_graphic_function==1)and(self.error_iteration == True)and(len(self.mesh_arr)==1)):
+			art2=self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
+			if(articul1==art2):
+				message_box = QMessageBox(self) #если поле ввода не нужно!
+				message_box.setFont(font)
+				message_box.setWindowTitle("Ошибка")
+				message_box.setText("Артикул '" + str(art2) + "' уже выбран на прошлых этапах!")
+				message_box.show()
+				return()
 		if((len(articul1)!=0)and(check_art1==True)and(check_art2==True)):
 			mesh1=int(self.artikul.get_mesh(articul1))
 			floor1=int(self.artikul.get_floor(articul1))
@@ -3200,8 +3231,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			floor2=int(self.artikul.get_floor(articul2))
 			self.mesh_arr.append(mesh2)
 			self.floor_arr.append(floor2)
-		if((len(self.mesh_arr)>0) or (self.not_mesh == True)): #т.е введен хотя бы один артикул
-			print("mesh_arr = ", self.mesh_arr) # УДАЛИТЬ ПОСЛЕ ОТЛАДКИ!!!!!!!!!!!
+		if((len(self.mesh_arr)>0) or (self.not_mesh == True)or(self.error_iteration == True)): #т.е введен хотя бы один артикул
+			print("mesh_arr6 = ", self.mesh_arr) # УДАЛИТЬ ПОСЛЕ ОТЛАДКИ!!!!!!!!!!!
 			self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
 			self.path=self.sklad.get_path()
 			action=self.sklad.get_action()
@@ -3237,6 +3268,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					ok_button= message_box.addButton(QMessageBox.Ok)
 					ok_button.clicked.connect(self.ok_button_handler)
 					message_box.show()
+					print("self.mesh_arr3 = ", self.mesh_arr)
 					return()
 				self.not_mesh = False
 				if(error[0]==1):
@@ -3259,6 +3291,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText("Маршрут до конечной точки не может быть построен из-за препятствий на складе.")
 					message_box.show()
+					print("self.mesh_arr3 = ", self.mesh_arr)
 					return()
 			"""sz = len(action) #удалить!!!!!!!!!!
 			for i in range(0, sz):
@@ -3277,6 +3310,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				ok_button.clicked.connect(self.ok_no_connect)
 				message_box.show()
 				return()
+			print("self.mesh_arr2=", self.mesh_arr)
 			self.calculate_orientation(array_answer, self.mesh_arr, self.path)
 			#сюда преобразование формата array_answer вставить
 			#array_answer = [0, edge(2, 3)] #, edge(0, 1), edge(1, 2)]
@@ -3543,6 +3577,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						action_size=self.sklad.get_action_size()
 						error = self.sklad.get_error_number()
 						if((count_passed_now_mesh==0)and(len(self.mesh_arr)==2)):
+							print("k4")
 							self.mesh_arr_element = self.mesh_arr[1]
 							self.floor_arr_element = self.floor_arr[1]
 						if(error[0] == 1):
@@ -3673,6 +3708,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.start_node = arr_node1_barrier[len(arr_node1_barrier)-1].number
 				self.config.change_start_node(self.start_node)
 				self.mesh_arr.clear()
+				print("k3")
 				self.floor_arr.clear()
 				self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
 				self.path=self.sklad.get_path()
@@ -3696,6 +3732,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setText(message)
 					message_box.show()
 			if((array_answer[0]==1) and (array_answer[1].n1==-1) and (array_answer[1].n2==-1)): #единственный 100% успешный случай!
+				self.error_iteration = False
 				self.type_graphic_function = 0
 				self.start_node = self.end_node
 				self.config.change_start_node(self.start_node)
@@ -3719,6 +3756,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def stay_in_place(self): # тут изменение start_node вроде как не нужно
+		self.error_iteration = False
 		self.type_graphic_function = 0
 		self.not_mesh=False
 		self.mesh_arr.clear()
