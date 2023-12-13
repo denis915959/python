@@ -1635,7 +1635,7 @@ def rasparser(string):
 class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def __init__(self):
 		super().__init__()
-		self.setWindowTitle("Пример кнопок")
+		self.setWindowTitle("Приложение")
 		self.screen = QDesktopWidget().screenGeometry()
 		self.screen_width = self.screen.width() # 1920    # поле класса
 		self.screen_height = self.screen.height() # 1080  # поле класса
@@ -3928,7 +3928,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Введенные в оба поля ячейки одинаковы, измените номер хотя бы одной ячейки!")
+				message_box.setText("Введенные номера ячеек и ярусов одинаковы!")
 				message_box.show()
 				return()
 			if((check_mesh1 == True)and(check_mesh2 == True)): # обе ячейки уже заполнены товаром!

@@ -1,6 +1,6 @@
 # python test_mqtt2.py
-
 # Рабочая версия кода для Распберри!!!
+
 import time
 import random #generate id of client
 from paho.mqtt import client as mqtt_client
@@ -34,7 +34,9 @@ def connect_mqtt() -> mqtt_client:
         if rc == 0:
             print("Connected to MQTT Broker!")
         else:
-            print("Failed to connect, return code %dn", rc)
+            #print("Failed to connect, return code %dn", rc)
+            print("else")
+            
 
     client = mqtt_client.Client(client_id)
     client.username_pw_set(username, password)
@@ -98,14 +100,22 @@ def on_message(client, userdata, msg):
 def mqtt_communication(): # может вызываться неограничеенное чсло раз
     global array_is_received
     global robot_action
+    print("before connect")
     client = connect_mqtt()
+    print("after connect")
     client.loop_start()
+    print("after loop start")
     client.subscribe(topic)
-    while(array_is_received==False):
+    print("before while")
+    while(array_is_received==False): # Ожидание подключения?
         client.on_message=on_message
+        #print("in while") #при выводе на экран почему-то бесконечный цикл
+    print("after while")
     
     client.loop_stop()
+    print("after loop stop")
     client = connect_mqtt()
+    print("after connect mqtt")
     client.loop_start()
     
     res = client.publish(topic, "-2") #прием прошел успешно, уведомляем об этом склад
@@ -125,9 +135,9 @@ def mqtt_communication(): # может вызываться неограниче
     result_trip=[1, -1, -1, -1, -1]   #   #номер элементов в path! 
     #result_trip=[0, 2, 3, -1, -1] # if 6
 
-    #result_trip=[0, 0, 1, -1, -1, 1, 2]
-
     #result_trip=[0, 1, 2, -1, -1]
+
+    #result_trip=[0, -1, 0, 1, 0]
     #result_trip=[1, 0, 1, -1, -1]
 #для mqtt_trip проверить, возвращается ли номер в path или сам path !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
     # результат поездки робота

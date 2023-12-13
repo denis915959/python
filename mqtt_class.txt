@@ -1,5 +1,5 @@
-﻿# python mqtt_class.txt
-# рабочая финальная версия для винды! остальные версии неактуальны!
+﻿# python mqtt_class.txt 
+# 5 декабря 2023 передатчик
 
 import random
 import time
@@ -14,6 +14,7 @@ class robot_path_node:
 		self.counter=counter1
 
 edge = namedtuple('edge', ['n1', 'n2'])
+first_part = namedtuple('first_part', ['n1', 'n2', 'n3', 'n4'])
 		
 
 class MQTT:
@@ -116,13 +117,10 @@ class MQTT:
 		self.client.subscribe(self.topic)
 		t1=time.process_time()
 		while(self.recv_flag): #теперь добавим таймер!
-			if(self.connect_counter>=3):
+			if(self.connect_counter>=4):
 				return([])
 			if (self.attempt_counter>=2): #4
 				return([])
-				"""print("Невозможно соединиться с роботом, проверьте его исправность!")
-				array_answer=[-1, -1, -1]
-				return(array_answer)"""
 			self.client.on_message = self.message_confirm
 			t2=time.process_time()
 			t=t2-t1
@@ -134,23 +132,19 @@ class MQTT:
 				self.publish(self.client)
 				self.client.subscribe(self.topic) 
 				t1 = t2
-		if(self.connect_counter>=3):
+		if(self.connect_counter>=4):
 			return([])
 		self.client.subscribe(self.topic)
 		self.recv_flag=True
 		#self.reconnect_mqtt()
 		while(self.recv_flag): #все 3 сообщения приняты. осталось написать recv_robot_result
-			if(self.connect_counter>=3):
+			if(self.connect_counter>=4): #3
 				return([])
 			self.client.on_message = self.recv_robot_result  #тоже метод! 
 		array_answer=[] #распарсер принятой строки с результатами поедки робота!
 		i=0
 		tmp=0
 		while(i<len(self.result_from_robot)):
-			"""if(self.connect_counter>=3): #если добрались до распарсера, то уже все хорошо!
-				return([])"""
-			print("i1 = ", i)
-			print(self.result_from_robot[i])
 			if(self.result_from_robot[i]==" "):
 				break
 			if(self.result_from_robot[i]=="-"):
@@ -158,21 +152,15 @@ class MQTT:
 			else:
 				tmp=tmp*10 + int(self.result_from_robot[i])
 			i=i+1
-			print("i2 = ", i)
 		i=i+1
 		array_answer.append(tmp)
+		count_arr=0
 		while(i<len(self.result_from_robot)):
-			"""if(self.connect_counter>=3):
-				return([])"""
 			n1=0
 			minus=False
-			#print("result_from_robot = ", self.result_from_robot)
-			print(i)
 			while(i<len(self.result_from_robot)):
 				if(self.result_from_robot[i]==" "):
 					break
-				"""if(self.connect_counter>=3):
-					return([])"""
 				if(self.result_from_robot[i]=="-"):
 					minus=True
 				else:
@@ -184,14 +172,9 @@ class MQTT:
 			i=i+1
 			n2=0
 			minus=False
-			#print("result_from_robot = ", self.result_from_robot)
-			print("len = ", len(self.result_from_robot))
-			print("i = ", i)
 			while(i<len(self.result_from_robot)):
 				if(self.result_from_robot[i]==" "):
 					break
-				"""if(self.connect_counter>=3):
-					return([])"""
 				if(self.result_from_robot[i]=="-"):
 					minus=True
 				else:
@@ -201,10 +184,40 @@ class MQTT:
 				n2 = -n2
 			minus=False
 			i=i+1
-			array_answer.append(edge(n1, n2))
+			if(count_arr==0):
+				n3=0
+				minus=False
+				while(i<len(self.result_from_robot)):
+					if(self.result_from_robot[i]==" "):
+						break
+					if(self.result_from_robot[i]=="-"):
+						minus=True
+					else:
+						n3=n3*10 + int(self.result_from_robot[i])
+					i=i+1
+				if(minus==True):
+					n3 = -n3
+				minus=False
+				i=i+1
+				n4=0
+				minus=False
+				while(i<len(self.result_from_robot)):
+					if(self.result_from_robot[i]==" "):
+						break
+					if(self.result_from_robot[i]=="-"):
+						minus=True
+					else:
+						n4=n4*10 + int(self.result_from_robot[i])
+					i=i+1
+				if(minus==True):
+					n4 = -n4
+				minus=False
+				i=i+1
+				array_answer.append(first_part(n1, n2, n3, n4)) #edge(n1, n2))
+			else:
+				array_answer.append(edge(n1, n2))
+			count_arr=1
 		#возврат переменных к исходному состоянию
-		"""if(self.connect_counter>=3):
-			return([])"""
 		self.recv_flag=True
 		self.attempt_counter = 0
 		self.result_from_robot=""
