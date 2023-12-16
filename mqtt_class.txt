@@ -18,7 +18,7 @@ first_part = namedtuple('first_part', ['n1', 'n2', 'n3', 'n4'])
 		
 
 class MQTT:
-	def __init__(self, robot_action, path):
+	def __init__(self, robot_action, path, wait=10):
 		self.robot_action = copy.deepcopy(robot_action)
 		self.path = copy.deepcopy(path)
 		self.result_from_robot= "" #на новой итерации этот массив надо очищать! как и robot_action
@@ -33,6 +33,7 @@ class MQTT:
 		self.client_id = f'python-mqtt-{random.randint(0, 1000)}'
 		self.attempt_counter=0
 		self.connect_counter=0
+		self.wait=wait
 
 
 	def on_connect(self, client, userdata, flags, rc):
@@ -91,40 +92,36 @@ class MQTT:
 
 
 	def publish(self, client):
+		msg=str(len(self.robot_action)) + ","
 		for i in range(0, self.size_message):
-			time.sleep(0.2)
-			if(i==0):
-				msg = -1
-			if(i==1):
-				msg = len(self.robot_action) # +1 убрать, это для проверки разрыва соединения!!
 			if ((i%2==0)and(i>1)):
-				msg = self.robot_action[(i-2)//2].action
+				msg=msg+str(self.robot_action[(i-2)//2].action) + "," #msg = self.robot_action[(i-2)//2].action
 			if ((i%2==1)and(i>1)):
-				msg = self.robot_action[(i-2)//2].counter
-			result = client.publish(self.topic, msg)
-			status = result[0]
-			if status == 0:
-				print(f"Sent '{msg}' to topic '{self.topic}'")
-			else:
-				print(f"Failed to send message to topic {self.topic}")
+				msg=msg+str(self.robot_action[(i-2)//2].counter) + ","
+		result = client.publish(self.topic, msg)
+		status = result[0]
+		if status == 0:
+			print(f"Sent '{msg}' to topic '{self.topic}'")
+		else:
+			print(f"Failed to send message to topic {self.topic}")
 		self.attempt_counter = self.attempt_counter + 1
-
+			
 
 	def mqtt_communication(self):
 		self.client = self.connect_mqtt()
 		self.client.loop_start()
-		self.publish(self.client)
+		self.publish(self.client)  # 1-й раз отправляем данные
 		self.client.subscribe(self.topic)
 		t1=time.process_time()
 		while(self.recv_flag): #теперь добавим таймер!
 			if(self.connect_counter>=4):
 				return([])
-			if (self.attempt_counter>=2): #4
+			if (self.attempt_counter>2): #4
 				return([])
 			self.client.on_message = self.message_confirm
 			t2=time.process_time()
 			t=t2-t1
-			if(t>=10.0): #чем хуже качество интернет-соединения, тем выше этот таймер. для 2 палок на распберри такого таймера за глаза хватает
+			if(t>=self.wait): #чем хуже качество интернет-соединения, тем выше этот таймер. для 2 палок на распберри таймера 10 за глаза хватает
 				print("not successfully send !!!!!")
 				self.client.loop_stop()
 				self.client = self.connect_mqtt()

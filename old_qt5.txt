@@ -1,4 +1,4 @@
-# python qt5.txt
+# python old_qt5.txt
 
 import sys
 import codecs #для считывания русских символов
@@ -55,7 +55,6 @@ class MQTT:
 		self.attempt_counter=0
 		self.connect_counter=0
 		self.wait=wait
-		print("wait = ", self.wait)
 
 
 	def on_connect(self, client, userdata, flags, rc):
@@ -841,7 +840,6 @@ class Sklad:
 				k=2
 		not_path=[]
 		not_path.append(-1)
-		print("not_path")
 		return(not_path)	
 
  
@@ -1134,10 +1132,8 @@ class Sklad:
 			mesh1=start_mesh
 			mesh2=mesh_arr[0]    # в этой функции надо убрать start_mesh и end_mesh!
 			node2=int(self.get_crossroad(int(mesh2)))
-			print("n1, n2 = ", node1, node2)
 			path1 = self.A_star(self.Nodes[node1], self.Nodes[node2])
-			if((len(path1)==1)and(path1[0]==-1)): # почему оказывается в этом блоке?:
-				print("path1 = ", path1)
+			if((len(path1)==1)and(path1[0]==-1)):
 				self.list.append(-1)
 				self.list.append(1)
 				return
@@ -1189,17 +1185,15 @@ class Sklad:
 		return(self.list[0])
 
 
-	def get_error_number(self): # здесь что-то не так
+	def get_error_number(self):
 		error = []
 		if(self.list[0]==-1):  #если есть ошибка, возвращаем ее номер и 2 перекрестка, если они есть. иначе возвращаем пустой массив
 			error.append(self.list[1])
-			print("if self.list = ", self.list)
 			if(self.list[1]==0):
 				error.append(self.list[2])
 				error.append(self.list[3])
 			return(error)
 		else:
-			print("else self.list = ", self.list)
 			return(error)
 
 
@@ -1280,7 +1274,6 @@ class Config:
 		self.cursor.execute("SELECT COUNT(*) FROM mesh_barrier")
 		res = self.cursor.fetchone()
 		self.barrier_counter=res[0] #считывается из базы данных!
-                
 
 	def get_config_counter(self): #указывет на пустую строку, котоая будети заполнена первой!
 		return(self.config_counter)
@@ -1289,7 +1282,6 @@ class Config:
 		self.cursor.execute("INSERT INTO config (number, parametr) VALUES (?, ?)", (self.config_counter, parametr))
 		self.conn.commit() #self попробовать убрать!
 		self.config_counter = self.config_counter + 1
-
 
 	def delete_parametr(self, number): # удаление параметров склада, было изменено без испытаний
 		self.cursor.execute("DELETE FROM config WHERE number = '{}'".format(number))
@@ -1321,7 +1313,7 @@ class Config:
 			num1=num2
 			num2=tmp
 		msg=str(num1) + ", " + str(num2)
-		rowid_db = self.cursor.execute("SELECT ROWID FROM config WHERE parametr = '{}' AND number > 11".format(msg)).fetchall()
+		rowid_db = self.cursor.execute("SELECT ROWID FROM config WHERE parametr = '{}' AND number > 10".format(msg)).fetchall()
 		rowid_db = str(rowid_db)
 		sz= len(rowid_db) - 3
 		rowid = ""
@@ -1357,7 +1349,7 @@ class Config:
 			num1=num2
 			num2=tmp
 		parametr=str(num1) + ", " + str(num2)
-		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number > 11 AND parametr = '{}'".format(parametr)).fetchall()
+		tmp = self.cursor.execute("SELECT parametr FROM config WHERE number > 10 AND parametr = '{}'".format(parametr)).fetchall()
 		sz=len(tmp)
 		i=3
 		tmp=str(tmp)
@@ -1383,11 +1375,6 @@ class Config:
 	def change_end_node(self, end_node):
 		num = 10
 		self.cursor.execute("UPDATE config SET parametr = ? WHERE number = ?", (str(end_node), num)) # замена элемента в таблице по номеру!
-		self.conn.commit()
-
-	def change_wait(self, wait):
-		num = 11
-		self.cursor.execute("UPDATE config SET parametr = ? WHERE number = ?", (str(wait), num)) # замена элемента в таблице по номеру!
 		self.conn.commit()
 
 	def set_barrier_before_mesh(self, mesh, opposite_mesh): # добавление препятствия перед ячейкой
@@ -1700,18 +1687,14 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.otladka_menu.addAction(self.initial_state_action)
 
 		self.wifi_menu = self.menuBar().addMenu("Wi-fi")
-		self.change_wait_action = QAction("Изменить время ожидания соединения")
-		self.change_wait_action.triggered.connect(self.change_wait)
-		self.wifi_menu.addAction(self.change_wait_action)
-		self.get_wait_action = QAction("Узнать время ожидания соединения")
-		self.get_wait_action.triggered.connect(self.get_wait)
-		self.wifi_menu.addAction(self.get_wait_action)
+		self.reconnect_action = QAction("Переподключиться")
+		self.reconnect_action.triggered.connect(self.reconnect)
+		self.wifi_menu.addAction(self.reconnect_action)
 		self.orientation = -1
 		self.max_floor = -1
 		self.robot_in_goal_node = False #флаг для цикла ошибок при поездке робота
 		self.start_node=0
 		self.end_node=0
-		self.wait=0
 		self.robot_in_goal_node = False
 		self.not_mesh = False
 		self.count_passed_mesh = 0
@@ -1740,7 +1723,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.config.change_start_node(str(0))
 		config_counter = self.config.get_config_counter()
 		branch_arr=[]
-		for i in range(12, config_counter):	
+		for i in range(11, config_counter):	
 			branch = rasparser(self.config.get_parametr(i))
 			self.sklad.insert_branch_to_Nodes(branch[0], branch[1])
 			branch_arr.append(branch)
@@ -1905,23 +1888,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					self.config.delete_barrier_before_mesh(mesh)
 
 
-	def change_wait(self):#удалить!
-		text, ok = QInputDialog.getText(self, "Изменить время ожидания соединения", "введите время ожидания (целое значение):")
-		if ok:
-			font= QFont()
-			font.setPointSize(12) 
-			wait=int(text)
-			if(wait<0):
-				message_box = QMessageBox(self) #если поле ввода не нужно!
-				message_box.setFont(font)
-				message_box.setWindowTitle("Ошибка")
-				message_box.setText("Отрицательное время, попробуйте заново!")
-				ok_button = message_box.addButton(QMessageBox.Ok)
-				ok_button.clicked.connect(self.delete_barrier_mesh)
-				message_box.show()
-			else:
-				self.wait=wait
-				self.config.change_wait(wait)
+	def reconnect(self):#удалить!
+		action = self.sklad.get_action()
+		#self.mqtt = MQTT(action, self.path)
 
 
 	def get_start_end(self):
@@ -1936,9 +1905,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def get_barrier_list(self):
 		config_counter = self.config.get_config_counter()
-		if(config_counter > 12):
+		if(config_counter > 11):
 			message= "Препятствия находятся между перекрестками: "
-			for i in range(12, config_counter): # удаление ранее удаленных ребер!	
+			for i in range(11, config_counter): # удаление ранее удаленных ребер!	
 				branch = rasparser(self.config.get_parametr(i))
 				message = message + str(branch[0]) + " и " + str(branch[1]) + "; "
 		else:
@@ -2008,18 +1977,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		message_box.show()
 
 
-	def get_wait(self):
-		wait = int(self.config.get_parametr(11))
-		message = "Время ожидания соединения: " + str(wait)
-		font= QFont()
-		font.setPointSize(12) 
-		message_box = QMessageBox(self)
-		message_box.setFont(font)
-		message_box.setWindowTitle("Результат")
-		message_box.setText(message)
-		message_box.show()
-
-
 	def path_between_crossroads(self):
 		if(self.input_field == True):
 			max = self.sklad.get_max_node_number()
@@ -2071,10 +2028,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						message_box.show()
 						return()
 				if(action_size>0):
-					if(self.wait>0):
-						mqtt = MQTT(action, self.path, self.wait)
-					else: # используем 10 - значение по умолчанию
-						mqtt = MQTT(action, self.path)
+					mqtt = MQTT(action, self.path) # восстановить после отладки!
 					array_answer = mqtt.mqtt_communication()
 					if(len(array_answer)==0):
 						error = "Невозможно соединиться с роботом, попробуйте еще раз"
@@ -2139,6 +2093,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						self.config.insert_branch_into_table(arr_node1_barrier[0].number, arr_node2_barrier[0].number) 
 						if(len(arr_node2_barrier)>1):
 							message = message + ". Также препятствия находятся между перекрестками "
+						print(len(arr_node1_barrier))
 						for i in range(1, len(arr_node1_barrier)): # удаление ребер!
 							message = message + str(arr_node1_barrier[i].number) + " и " + str(arr_node2_barrier[i].number) + ", "
 							self.sklad.delete_branch_from_Nodes(arr_node1_barrier[i].number, arr_node2_barrier[i].number)
@@ -2153,6 +2108,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						action=self.sklad.get_action()
 						action_size=self.sklad.get_action_size()
 						error = self.sklad.get_error_number()
+						print(error)
 						if((len(error)==3)and(error[0] == 0)):
 							message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
 							self.input_field = True
@@ -2766,10 +2722,9 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.orientation = int(self.config.get_parametr(8))
 		self.start_node = int(self.config.get_parametr(9))
 		self.end_node = int(self.config.get_parametr(10)) #start_node и end_node не хранится в классе склад!
-		self.wait=int(self.config.get_parametr(11))
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
 		config_counter = self.config.get_config_counter() # при сохранении строки счетчик указывает на пустую строку!
-		for i in range(12, config_counter): # удаление ранее удаленных ребер!	
+		for i in range(11, config_counter): # удаление ранее удаленных ребер!	
 			branch = rasparser(self.config.get_parametr(i))
 			self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
 		self.set_get_artikul()
@@ -3080,6 +3035,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def handler_get_art(self, qle_get_arr): #, qle_get_art1, qle_get_art2):
 		if(self.error_iteration==True):
 			self.error_iteration_counter = self.error_iteration_counter + 1
+		print("self.mesh_arr0 = ", self.mesh_arr)
 		articul1=""
 		articul2=""
 		if(len(qle_get_arr)==1):	
@@ -3236,6 +3192,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				return()
 		tmp_mesh_arr=copy.deepcopy(self.mesh_arr)
 		tmp_floor_arr=copy.deepcopy(self.floor_arr)
+		print("tmp_mesh_arr = ", tmp_mesh_arr)
 		self.mesh_arr=[]
 		self.floor_arr=[]
 		if(self.mesh_arr_element!=-1):
@@ -3251,6 +3208,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		floor1=-1
 		mesh2=-1
 		floor2=-1
+		print("mesh_arr7 = ", self.mesh_arr)
 		if((self.type_graphic_function==1)and(self.error_iteration == True)and(len(self.mesh_arr)==1)):
 			art2=self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
 			if(articul1==art2):
@@ -3271,6 +3229,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 			self.mesh_arr.append(mesh2)
 			self.floor_arr.append(floor2)
 		if((len(self.mesh_arr)>0) or (self.not_mesh == True)or(self.error_iteration == True)): #т.е введен хотя бы один артикул
+			print("mesh_arr6 = ", self.mesh_arr) # УДАЛИТЬ ПОСЛЕ ОТЛАДКИ!!!!!!!!!!!
 			self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
 			self.path=self.sklad.get_path()
 			action=self.sklad.get_action()
@@ -3306,6 +3265,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					ok_button= message_box.addButton(QMessageBox.Ok)
 					ok_button.clicked.connect(self.ok_button_handler)
 					message_box.show()
+					print("self.mesh_arr3 = ", self.mesh_arr)
 					return()
 				self.not_mesh = False
 				if(error[0]==1):
@@ -3328,11 +3288,14 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText("Маршрут до конечной точки не может быть построен из-за препятствий на складе.")
 					message_box.show()
+					print("self.mesh_arr3 = ", self.mesh_arr)
 					return()
-			if(self.wait>0):
-				mqtt = MQTT(action, self.path, self.wait)
-			else: # используем 10 - значение по умолчанию
-				mqtt = MQTT(action, self.path)
+			"""sz = len(action) #удалить!!!!!!!!!!
+			for i in range(0, sz):
+				print("action = ", action[i].action)
+				print("counter = ", action[i].counter)
+				print("")"""
+			mqtt = MQTT(action, self.path) # восстановить после отладки!
 			array_answer = mqtt.mqtt_communication()
 			if(len(array_answer)==0):
 				error = "Невозможно соединиться с роботом, попробуйте еще раз"
@@ -3391,7 +3354,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.set_get_artikul()
 				message_box.show()
 			if_6_flag = False
-			print("start 6 if!!!!!")
 			if((if_6_flag==False)and(array_answer[0]==0)and(array_answer[1].n1==-1)and(len(self.mesh_arr)==1)):
 				print("случай 1")
 				if_6_flag = True
@@ -3580,7 +3542,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				message_box.setText(message)
 				message_box.show()
 				return() # тут return нужен, ибо обработчик никакой не вызывается, так как обрабатывать нечего!
-			if((if_6_flag==False)and(array_answer[0]==0)and(((self.path[array_answer[1].n1].number!=self.start_node)and(len(array_answer)==2))or((len(array_answer)>2)and(self.path[array_answer[len(array_answer)-1].n1].number!=self.start_node)))and(count_passed_now_mesh==0)and(len(self.mesh_arr)>0)): # до первой не добраться
+			if((if_6_flag==False)and(array_answer[0]==0)and(((self.path[array_answer[1].n1].number!=self.start_node)and(len(array_answer)==2))or((len(array_answer)>2)and(self.path[array_answer[len(array_answer)-1].n1].number!=self.start_node)))and(count_passed_now_mesh==0)and(len(self.mesh_arr)>0)): 
 				if_flag = False
 				if_6_flag = True
 				if((len(self.mesh_arr)==2)or(self.count_passed_mesh==1)): # 1 поле ввода
@@ -3589,7 +3551,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						m2 = self.sklad.get_crossroad(self.mesh_arr[1])
 					if(((len(self.mesh_arr)==2)and(m1!=m2))or(self.count_passed_mesh==1)):
 						if_flag = True
-						print("случай 4.1") # 1 поле ввода, так как вторая ячейка еще в перспективе может быть взята
+						print("случай 4.1")
 						art = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
 						message = "Робот не смог добраться до первой выбранной ячейки (артикул товара: '" + str(art) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
 						if(len(arr_node2_barrier)>1):
@@ -3612,6 +3574,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						action_size=self.sklad.get_action_size()
 						error = self.sklad.get_error_number()
 						if((count_passed_now_mesh==0)and(len(self.mesh_arr)==2)):
+							print("k4")
 							self.mesh_arr_element = self.mesh_arr[1]
 							self.floor_arr_element = self.floor_arr[1]
 						if(error[0] == 1):
@@ -3625,7 +3588,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 						message_box.setText(message)
 						message_box.show()
 				if(if_flag == False): # замена else, так как при текущей конструкции условия 4.1 применить else нельзя!
-					print("случай 4.2")  # 2 поля ввода
+					print("случай 4.2")
 					if(len(self.mesh_arr)==1):
 						art = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
 						message = "Робот не смог добраться до первой выбранной ячейки (артикул товара: '" + str(art) + "') из-за препятствия между перекрестками " + str(arr_node1_barrier[len(arr_node1_barrier)-1].number) + " и " + str(arr_node2_barrier[len(arr_node2_barrier)-1].number) + "."
@@ -3662,12 +3625,10 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box.setWindowTitle("Ошибка")
 					message_box.setText(message)
 					message_box.show()
-					print("end случай 4.2")
 			if((if_6_flag==False)and(array_answer[0]==0)and(((len(self.mesh_arr)==2)and
-(self.count_passed_mesh==1)and(count_passed_now_mesh==1))or((len(self.mesh_arr)==1)and(self.count_passed_mesh==1)and(count_passed_now_mesh==1)))):   # одна ячейка сейчас взята на этой итерации
+(self.count_passed_mesh==1)and(count_passed_now_mesh==1))or((len(self.mesh_arr)==1)and(self.count_passed_mesh==1)and(count_passed_now_mesh==1)))):   # одна ячейка уже была взята
 				print("случай 5") #self.count_passed_mesh обновляется перед if!
 				if_6_flag = True
-				print("5 mesh = ", self.mesh_arr)
 				if(count_passed_now_mesh==1): # т.е одна ячейка из mesh_arr взята в эту итерацию
 					articul = self.artikul.get_artikul(self.mesh_arr[0], self.floor_arr[0])
 					self.artikul.delete_artikul(articul)
@@ -3694,18 +3655,8 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.mesh_arr.clear()
 				if(len(tmp)==2):
 					self.mesh_arr.append(tmp[1]) # только вторая ячейка!
-					"""floor_tmp=[]
-					floor_tmp.append(self.floor_arr[1])
-					self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, floor_tmp)
-					self.path=self.sklad.get_path()
-					error = self.sklad.get_error_number()
-					print("tmp error = ", error)
-					if((len(error)>0)and((error[0]==1)or(error[0]==0))): # случай, когда одну ячейку взяли, а вторая недоступна!
-						print("clear mesh arr")
-						self.mesh_arr.clear()
-						self.floor_arr.clear()"""
 				if(len(tmp)==1):
-					self.mesh_arr.append(tmp[0]) # только первая ячейка!
+					self.mesh_arr.append(tmp[0]) # только вторая ячейка!
 				tmp = copy.copy(self.floor_arr)  # не забыть этаж if!
 				self.floor_arr.clear()
 				if(len(tmp)==2):
@@ -3717,20 +3668,17 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				action=self.sklad.get_action()
 				action_size=self.sklad.get_action_size()
 				error = self.sklad.get_error_number()
-				if(len(error)>0):
-					if(error[0] == 1):
-						message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
-						self.mesh_arr.clear()
-						self.one_input_field()
-					else:
-						message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
+				if(error[0] == 1):
+					message = message + " Маршрут перестроить невозможно. Для продолжения работы с программой нажмите 'ок'"
+					self.one_input_field()
+				else:
+					message = message + " Но маршрут удалось перестроить, робот автоматически начал движение. Для продолжения работы с программой нажмите 'ок'"
 				message_box = QMessageBox(self) #если поле ввода не нужно!
 				message_box.setFont(font)
 				message_box.setWindowTitle("Ошибка")
 				message_box.setText(message)
 				message_box.show()
-				print("end 5 mesh = ", self.mesh_arr)
-			if((if_6_flag==False)and(array_answer[0]==0)and(count_passed_now_mesh==len(self.mesh_arr))): # все ячейки взяты, но до базы дойти не получается
+			if((if_6_flag==False)and(array_answer[0]==0)and(count_passed_now_mesh==len(self.mesh_arr))):
 				print("случай 6")
 				if_6_flag = True
 				if(len(self.mesh_arr)==1):
@@ -3757,6 +3705,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.start_node = arr_node1_barrier[len(arr_node1_barrier)-1].number
 				self.config.change_start_node(self.start_node)
 				self.mesh_arr.clear()
+				print("k3")
 				self.floor_arr.clear()
 				self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, self.floor_arr)
 				self.path=self.sklad.get_path()
@@ -4119,7 +4068,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.config.insert_parametr(str(self.orientation))
 		self.config.insert_parametr(str(self.start_node))
 		self.config.insert_parametr(str(self.end_node))
-		self.config.insert_parametr(str(self.wait))
 		self.sklad = Sklad(mode, M, N_sizes, cost_between_blocks, cost_between_rows, cost_between_mesh, number_to_zero_node, self.max_floor, self.orientation)
 		self.set_get_artikul()
 

@@ -10,6 +10,17 @@ class robot_path_node:
 	def __init__(self, action1, counter1):
 		self.action=action1
 		self.counter=counter1
+
+class MQTT_RPi:
+    def __init__(self):
+        self.robot_action=[]
+        
+        
+        
+        
+        
+        
+        
         
 robot_action=[]
 action_tmp=-1           #принятое значение поля action, которое еще не добавлено в robot_action
@@ -46,15 +57,15 @@ def connect_mqtt() -> mqtt_client:
 
 
 def on_message(client, userdata, msg):
-    global action_tmp
-    global counter_tmp
-    global recv_counter #counter of received messages
+    action_tmp=0
+    counter_tmp=0
+    #global recv_counter #counter of received messages
     global start_recv
     global actions_size
     global robot_action
     global array_is_received
             
-    print("counter = ", recv_counter) #good work!
+    #print("counter = ", recv_counter) #good work!
 
     message=msg.payload.decode() #int(msg.payload.decode())
     if((message[0]=="#")and(message[1]=="$")): #this is system messaage!
@@ -63,38 +74,38 @@ def on_message(client, userdata, msg):
     if((message[0]=="m")and(message[1]=="e")): #this is system messaage!
         print("err")
         return
-    message=int(message)
-        
-    print(f"Received `{message}` from `{msg.topic}` topic")
-    if(len(robot_action)<actions_size): # action_counter < actions_size):
-        print("in if !!!!!!!")
-        if(recv_counter>=2): #receive of array
-            if(recv_counter%2==0):
-                action_tmp=message
-            else:
-                counter_tmp=message
-                robot_action.append(robot_path_node(action_tmp, counter_tmp))
-        
-    if(recv_counter==1):
-            #print("start -1")
-            actions_size=message
-
-    if(message==-1):
-        start_recv=True
-            
-    if(start_recv==True):
+    message=str(message)
+    len_message=len(message)
+    if(len_message>2):
         print("clear")
         start_recv=False
         robot_action.clear()
         recv_counter=0 
-        action_tmp=-1
-        counter_tmp=-1
         array_is_received = False
-            
-    recv_counter+=1
-    print("len before print = ", len(robot_action))
-    if((len(robot_action)==actions_size)and(array_is_received==False)): # array was receive and array send to arduino!
-        array_is_received=True
+    i=0
+    tmp=0
+    print(f"Received `{message}` from `{msg.topic}` topic")
+
+    while(message[i]!=","):
+        tmp=tmp*10+int(message[i])
+        i=i+1
+    robot_action_sz=tmp
+    print("robot_action_sz ", robot_action_sz)
+    i=i+1
+
+    while(i < len_message):
+        action_tmp=0
+        while(message[i]!=","):
+            action_tmp = action_tmp*10+int(message[i])
+            i = i+1
+        counter_tmp=0
+        i = i+1
+        while(message[i]!=","):
+            counter_tmp = counter_tmp*10+int(message[i])
+            i = i+1
+        robot_action.append(robot_path_node(action_tmp, counter_tmp))
+        i = i+1
+    array_is_received=True
 
 
 def mqtt_communication(): # может вызываться неограничеенное чсло раз
