@@ -175,6 +175,6 @@ for i in range(0, 1):
         mqtt=None"""
         mqtt1=MQTT_RPi()
         flag=mqtt1.mqtt_communication()
-        #mqtt1=None
+        mqtt1=None
 
 

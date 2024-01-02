@@ -1653,25 +1653,25 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 		self.qt5_objects_list=[]
 		self.setStyleSheet("background-color: lightblue;")
 		self.file_menu = self.menuBar().addMenu("Склад")#self.file_menu = self.menu_bar.addMenu("Меню")
-		self.delete_action = QAction("Удалить ребро")
+		self.delete_action = QAction("Добавить препятствие между перекрестками")
 		self.delete_action.triggered.connect(self.delete_branch)
 		self.file_menu.addAction(self.delete_action)
-		self.insert_action = QAction("Восстановить ребро")
+		self.insert_action = QAction("Удалить препятствие между перекрестками")
 		self.insert_action.triggered.connect(self.insert_branch)
 		self.file_menu.addAction(self.insert_action)
 		self.orientation_action = QAction("Изменить направление робота")
 		self.orientation_action.triggered.connect(self.change_orientation)
 		self.file_menu.addAction(self.orientation_action)
-		self.barrier_mesh_action = QAction("Пометить ячейку как недоступную")
+		self.barrier_mesh_action = QAction("Добавить препятствие перед ячейкой")
 		self.barrier_mesh_action.triggered.connect(self.set_barrier_mesh)
 		self.file_menu.addAction(self.barrier_mesh_action)
-		self.del_barrier_mesh_action = QAction("Сделать ячейку доступной")
+		self.del_barrier_mesh_action = QAction("Удалить препятствие перед ячейкой")
 		self.del_barrier_mesh_action.triggered.connect(self.delete_barrier_mesh)
 		self.file_menu.addAction(self.del_barrier_mesh_action)
-		self.start_node_action = QAction("Изменить номер стартовой вершины")
+		self.start_node_action = QAction("Изменить номер стартового перекрестка")
 		self.start_node_action.triggered.connect(self.change_start_node)
 		self.file_menu.addAction(self.start_node_action)
-		self.end_node_action = QAction("Изменить номер конечной вершины")
+		self.end_node_action = QAction("Изменить номер конечного перекрестка")
 		self.end_node_action.triggered.connect(self.change_end_node)
 		self.file_menu.addAction(self.end_node_action)
 		self.spravka_menu = self.menuBar().addMenu("Маршрут")
@@ -1750,7 +1750,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def delete_branch(self):
-		text, ok = QInputDialog.getText(self, "Удаление ребра", "введите номера перекрестков, задающих ребро (через запятую):") #Введенный текст сохраняется в переменной text, а значение ok устанавливается в True, если пользователь нажал кнопку "ОК", и в False, если пользователь нажал кнопку "Отмена".
+		text, ok = QInputDialog.getText(self, "Добавление препятствия между перекрестками", "введите номера перекрестков, определяющих положение препятствия (через запятую и пробел):") #Введенный текст сохраняется в переменной text, а значение ok устанавливается в True, если пользователь нажал кнопку "ОК", и в False, если пользователь нажал кнопку "Отмена".
 		if ok:
 			branch=rasparser(text)	
 			flag = self.sklad.delete_branch_from_Nodes(branch[0], branch[1])
@@ -1769,7 +1769,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def insert_branch(self):
-		text, ok = QInputDialog.getText(self, "Восстановление ребра", "введите номера перекрестков, задающих ребро (через запятую):")
+		text, ok = QInputDialog.getText(self, "Удаление препятствия между перекрестками", "введите номера перекрестков, определяющих положение препятствия (через запятую и пробел):")
 		if ok:
 			branch=rasparser(text)
 			flag=self.config.delete_branch_from_table(branch[0], branch[1])
@@ -1788,7 +1788,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def change_orientation(self):
-		text, ok = QInputDialog.getText(self, "Изменить направление", "введите новое направление робота:")
+		text, ok = QInputDialog.getText(self, "Изменить направление", "введите новое направление робота(цифры 1, 2, 3 или 4):")
 		if ok:
 			if((text!="1")and(text!="2")and(text!="3")and(text!="4")):
 				font= QFont()
@@ -1808,7 +1808,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def change_start_node(self):
 		max = self.sklad.get_max_node_number()
-		text, ok = QInputDialog.getText(self, "Изменить стартовую точку", "Введите номер нового стартового перекрестка:")
+		text, ok = QInputDialog.getText(self, "Изменить стартовую точку", "Введите номер нового стартового перекрестка:               ")
 		if ok:
 			if(int(text)>max):
 				font= QFont()
@@ -1827,7 +1827,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 	def change_end_node(self):
 		max = self.sklad.get_max_node_number()
-		text, ok = QInputDialog.getText(self, "Изменить конечную точку", "Введите номер нового конечного перекрестка:")
+		text, ok = QInputDialog.getText(self, "Изменить конечную точку", "Введите номер нового конечного перекрестка:               ")
 		if ok:
 			if(int(text)>max):
 				font= QFont()
@@ -1845,7 +1845,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def set_barrier_mesh(self):
-		text, ok = QInputDialog.getText(self, "Пометить ячейку как недоступную", "введите номер ячейки:")
+		text, ok = QInputDialog.getText(self, "Добавить препятствие перед ячейкой", "введите номер ячейки:                                                                   ")
 		if ok:
 			font= QFont()
 			font.setPointSize(12) 
@@ -1878,7 +1878,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def delete_barrier_mesh(self):
-		text, ok = QInputDialog.getText(self, "Сделать ячейку доступной", "введите номер ячейки:")
+		text, ok = QInputDialog.getText(self, "Удалить препятствие перед ячейкой", "введите номер ячейки:                                                                   ")
 		if ok:
 			font= QFont()
 			font.setPointSize(12) 
@@ -1906,7 +1906,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 
 
 	def change_wait(self):#удалить!
-		text, ok = QInputDialog.getText(self, "Изменить время ожидания соединения", "введите время ожидания (целое значение):")
+		text, ok = QInputDialog.getText(self, "Изменить время ожидания соединения", "введите время ожидания (целое значение):                                      ")
 		if ok:
 			font= QFont()
 			font.setPointSize(12) 
@@ -2023,7 +2023,7 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 	def path_between_crossroads(self):
 		if(self.input_field == True):
 			max = self.sklad.get_max_node_number()
-			text, ok = QInputDialog.getText(self, "Поле ввода", "Номер стартового перекрестка: " + str(self.start_node) + ", ведите номер конечного перекрестка:")
+			text, ok = QInputDialog.getText(self, "", "Номер стартового перекрестка: " + str(self.start_node) + ", введите номер конечного перекрестка:")
 		else:
 			ok = False
 		if((ok)or(self.input_field == False)): # ok - это переменная типа bool
@@ -3312,14 +3312,14 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
-					message_box.setText("Маршрут до первой ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо первого выбранного")
+					message_box.setText("Маршрут до первой выбранной ячейки не может быть построен из-за препятствий на складе. Попробуйте выбрать другой товар вместо первого выбранного")
 					message_box.show()
 					return()
 				if(error[0]==2):
 					message_box = QMessageBox(self) #если поле ввода не нужно!
 					message_box.setFont(font)
 					message_box.setWindowTitle("Ошибка")
-					message_box.setText("Маршрут от первой до второй ячейки не может быть построен из-за препятствий на складе. попробуйте выбрать другой товар вместо второго выбранного")
+					message_box.setText("Маршрут от первой до второй выбранной ячейки не может быть построен из-за препятствий на складе. Попробуйте выбрать другой товар вместо второго выбранного")
 					message_box.show()
 					return()
 				if(error[0]==3):
@@ -3694,16 +3694,6 @@ class sklad_window(QMainWindow): # наследник класса QMainWindow
 				self.mesh_arr.clear()
 				if(len(tmp)==2):
 					self.mesh_arr.append(tmp[1]) # только вторая ячейка!
-					"""floor_tmp=[]
-					floor_tmp.append(self.floor_arr[1])
-					self.sklad.make_full_path(self.start_node, -1, self.mesh_arr, self.end_node, -1, floor_tmp)
-					self.path=self.sklad.get_path()
-					error = self.sklad.get_error_number()
-					print("tmp error = ", error)
-					if((len(error)>0)and((error[0]==1)or(error[0]==0))): # случай, когда одну ячейку взяли, а вторая недоступна!
-						print("clear mesh arr")
-						self.mesh_arr.clear()
-						self.floor_arr.clear()"""
 				if(len(tmp)==1):
 					self.mesh_arr.append(tmp[0]) # только первая ячейка!
 				tmp = copy.copy(self.floor_arr)  # не забыть этаж if!
