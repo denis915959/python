@@ -1,98 +1,37 @@
 ﻿# python test.txt
 
-a=1
-b=a
-a=2
-print(b)
-"""import sys
-import codecs #для считывания русских символов
-import sqlite3
-import copy
-import time
-import random
-from paho.mqtt import client as mqtt_client
-from PyQt5.QtWidgets import QApplication, QDesktopWidget, QFileDialog, QVBoxLayout, QMainWindow, QPushButton, QLineEdit, QWidget, QLabel, QGroupBox, QGridLayout, QMenuBar, QAction, QInputDialog, QMessageBox
-from PyQt5.QtGui import QFont
-from collections import namedtuple
+import matplotlib.pyplot as plt
+import numpy as np
 
-from PyQt5.QtWidgets import QApplication, QDialog, QInputDialog, QMessageBox
+# Generate some sample data
+x = np.linspace(0, 10, 100)  # X values from 0 to 10
 
+# Define three different Y values for the three plots
+y1 = np.sin(x)                # First graph: sine function
+y2 = np.cos(x)                # Second graph: cosine function
+y3 = np.tan(x)                # Third graph: tangent function (limited range)
 
-class Node:
-	def __init__(self, num, branch_arr, flag1):
-		self.number=num
-		self.branch_array=branch_arr
-		self.crossroad=flag1 #True - Перекресток, нет - рядом с ячейками находится
-		self.traveled_path=0
-		self.previous_node=-1
+# Create a figure and axis
+plt.figure(figsize=(10, 6))
 
-edge = namedtuple('edge', ['n1', 'n2'])
-	
-		
+# Plot the first graph in red
+plt.plot(x, y1, color='red', label='sin(x)')
 
-from prettytable import PrettyTable
+# Plot the second graph in green
+plt.plot(x, y2, color='green', label='cos(x)')
 
-class Test():
-	def __init__(self):
-		self.path = []
-		self.path.append(Node(0, [], True))
-		self.path.append(Node(2, [], True))
-		self.path.append(Node(5, [], False))
-		self.path.append(Node(2, [], True))
-		self.path.append(Node(0, [], True))
-		#self.sklad = Test()
+# Plot the third graph in blue, limiting y-axis for better visibility
+plt.plot(x, y3, color='blue', label='tan(x)')
+plt.ylim(-10, 10)  # Limit y-axis to avoid extreme values of tan(x)
 
-	def get_crossroad(self, mesh):
-		parametr = 0
-		return(parametr)
+# Add title and labels
+plt.title('Multiple Graphs on One Canvas')
+plt.xlabel('X values')
+plt.ylabel('Y values')
 
-	def calculate_orientation(self, array_answer):
-		if(array_answer[0]==0):
-			if(array_answer[1].n1==-1):
-				k = len(array_answer)-1
-				n1 = self.path[array_answer[k].n1].number
-				n2 = self.path[array_answer[k].n2].number
-			else:
-				crossroad = self.sklad.get_crossroad(array_answer[1].n2)
-				if(array_answer[1].n2 == self.mesh_arr[0]):
-					num_in_mesh_arr = 1
-				if((len(self.mesh_arr)==2)and(array_answer[1].n2 == self.mesh_arr[1])):
-					num_in_mesh_arr = 2
-				count = 0
-				sz = len(self.path)
-				for i in range(1, sz):
-					if(self.path[i].number == crossroad):
-						count = count + 1
-					if(count == num_in_mesh_arr):
-						n1 = self.path[i-1].number
-						n2 = self.path[i].number
-			delta = n2-n1
-			tmp_orient = -1
-			if(delta == 1):
-				tmp_orient = 2
-			if(delta > 1):
-				tmp_orient = 1
-			if(delta == -1):
-				tmp_orient = 4
-			if(delta < -1):
-				tmp_orient = 3
-			if((n1 == 0)or(n2==0)):
-				if(delta > 0):
-					tmp_orient = 1
-				if(delta < 0):
-					tmp_orient = 3
-				
-			print(tmp_orient)
+# Show legend to identify each line
+plt.legend()
 
-	def save_articuls_into_prettytable(self):
-		table = PrettyTable()
-		table.field_names = ["Артикул", "Номер ячейки", "Номер столбца"]
-		table.add_row(["a1", str(0), str(2)]) # Цикл сюда вставить!
-		with open("Артикулы.txt", "w") as file:
-			file.write(str(table))
-
-
-array_answer = [0, edge(1, 2)]
-test = Test()
-test.save_articuls_into_prettytable()"""
-
+# Display the plot
+plt.grid()
+plt.show()

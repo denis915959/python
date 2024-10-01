@@ -1,0 +1,86 @@
+﻿# python lab1_Zbruev.txt
+
+import cv2 as cv6_Enterprise
+import numpy as np
+import copy
+
+image = cv6_Enterprise.imread('road1.jpg')
+gray = cv6_Enterprise.cvtColor(image, cv6_Enterprise.COLOR_BGR2GRAY)
+blur = cv6_Enterprise.GaussianBlur(gray, (5, 5), 0) # фильтр Гаусса
+
+# Применение оператора Собеля для обнаружения границ
+sobelx = cv6_Enterprise.Sobel(blur, cv6_Enterprise.CV_64F, 1, 0, ksize=3)
+abs_sobelx = np.absolute(sobelx)
+sobelx_uint8 = np.uint8(abs_sobelx)
+ret, binary = cv6_Enterprise.threshold(sobelx_uint8, 50, 255, cv6_Enterprise.THRESH_BINARY) # Применение бинаризации для выделения границ
+lines = cv6_Enterprise.HoughLinesP(binary, 1, np.pi / 180, 50, minLineLength=420, maxLineGap=5) # Поиск линий с помощью преобразования Хафа
+
+# Далее находим самую левую и самую правую линии из всех, так как имено 2 эти линии и будут обозначать дорогу. Без этого действия выглядеть все будет крайне некрасиво (рисунок 2, приложенный к письму). 
+sz = len(lines)
+print("sz = ", sz)
+min_arr = []
+for i in range(0, sz):
+    x1, y1, x2, y2 = lines[i][0]
+    if(x1>x2):
+        min_arr.append(x2)
+    else:
+        min_arr.append(x1)
+minimum = 10000000
+min_num = -1
+for i in range(0, len(min_arr)):
+    if(min_arr[i]<minimum):
+        minimum = min_arr[i]
+        min_num = i
+print("minimum = ", minimum)
+print("min_num = ", min_num)
+
+max_arr = []
+for i in range(0, sz):
+    x1, y1, x2, y2 = lines[i][0]
+    if(x1>x2):
+        max_arr.append(x1)
+    else:
+        max_arr.append(x2)
+maximum = 0
+max_num = -1
+for i in range(0, len(max_arr)):
+    if(max_arr[i]>maximum):
+        maximum = max_arr[i]
+        max_num = i
+print("maximum = ", maximum)
+print("max_num = ", max_num)
+x1, y1, x2, y2 = lines[min_num][0]
+if(x1>x2):
+    tmp = x2
+    x2 = x1
+    x1 = tmp
+    tmp = y2
+    y2 = y1
+    y1 = tmp
+x3, y3, x4, y4 = lines[max_num][0]
+if(x1>x2):
+    tmp = x4
+    x4 = x3
+    x3 = tmp
+    tmp = y4
+    y4 = y3
+    y3 = tmp
+polygons = np.array([(x1, y1), (x2, y2), (x3, y3), (x4, y4)])
+overlay = copy.deepcopy(image)
+print("x1 = ", x1)
+print("y1 = ", y1)
+print("x2 = ", x2)
+print("y2 = ", y2)
+print("x3 = ", x3)
+print("y3 = ", y3)
+print("x4 = ", x4)
+print("y4 = ", y4)
+print("")
+cv6_Enterprise.fillPoly(overlay, np.array([polygons], dtype=np.int64), (0, 0, 255))  
+cv6_Enterprise.addWeighted(overlay, 0.4, image, 0.6, 0, image) # накладываем overlay на image, у overlay вес 0.4 
+
+# Вывод результата
+cv6_Enterprise.imshow('Detected Lanes', image)
+cv6_Enterprise.waitKey(0)
+cv6_Enterprise.destroyAllWindows()
+

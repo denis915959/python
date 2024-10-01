@@ -1,0 +1,60 @@
+# python hog.txt
+
+import matplotlib.pyplot as plt
+from skimage.feature import hog
+from skimage import data, exposure
+from skimage.io import imread
+from skimage.color import rgb2gray
+
+# Загрузка изображения
+image = imread('img1.png')
+
+# Преобразование изображения в оттенки серого, если оно цветное
+image_gray = rgb2gray(image)
+
+# Вычисление HOG-гистограммы
+fd, hog_image = hog(image_gray, orientations=8, pixels_per_cell=(16, 16), cells_per_block=(1, 1), visualize=True)
+
+# Визуализация HOG-гистограммы
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
+
+ax1.axis('off')
+ax1.imshow(image_gray, cmap=plt.cm.gray)
+ax1.set_title('Входное изображение')
+
+# Улучшение контраста для визуализации HOG-гистограммы
+hog_image_rescaled = exposure.rescale_intensity(hog_image, in_range=(0, 10))
+
+ax2.axis('off')
+ax2.imshow(hog_image_rescaled, cmap=plt.cm.gray)
+ax2.set_title('HOG-гистограмма')
+
+plt.show()
+
+
+"""from skimage.feature import hog
+from skimage import data, exposure
+import matplotlib.pyplot as plt
+from skimage.io import imread
+
+# Загрузка изображения
+image = imread('img1.png')
+
+# Вычисление HOG-гистограммы
+fd, hog_image = hog(image, orientations=8, pixels_per_cell=(16, 16), cells_per_block=(1, 1), visualize=True, multichannel=True)
+
+# Нормализация гистограммы для улучшения визуализации
+hog_image_rescaled = exposure.rescale_intensity(hog_image, in_range=(0, 10))
+
+# Отображение изображения и его HOG-гистограммы
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), sharex=True, sharey=True)
+
+ax1.axis('off')
+ax1.imshow(image, cmap=plt.cm.gray)
+ax1.set_title('Исходное изображение')
+
+ax2.axis('off')
+ax2.imshow(hog_image_rescaled, cmap=plt.cm.gray)
+ax2.set_title('HOG-гистограмма изображения')
+
+plt.show()"""

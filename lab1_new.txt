@@ -1,0 +1,84 @@
+# python lab1_new.txt
+
+import numpy as np
+import cv2
+import copy
+
+# Load the image
+image = cv2.imread('road1.jpg')
+
+# Convert the image to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Apply a Gaussian blur to the grayscale image
+blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+# Apply the Canny edge detection algorithm to the blurred image
+edges = cv2.Canny(blurred, 50, 150)
+
+# Define a region of interest (ROI) that covers the area of the road where the lanes are located
+roi = edges[100:300, 100:300]
+
+# Apply the Hough transform to the ROI to detect lines
+lines = cv2.HoughLinesP(roi, 1, np.pi/180, 50, 50, 10)
+
+# Fill the detected lanes with red
+print("len = ", len(lines))
+if(True): #for line in lines:
+    """#x1, y1, x2, y2 = line[0]
+    h = image.shape[0]
+    w = image.shape[1]
+    polygons = np.array([(0,0), (200, 0), (200, 500), (0, 500)])
+    h = image.shape[0]
+    w = image.shape[1]
+    alpha = 20 # прозрачность
+    cv2.fillPoly(image, np.array([polygons], dtype=np.int64), (0, 0, 255, alpha)) """
+
+    polygons = np.array([(0,0), (200, 0), (200, 500), (0, 500)])
+    overlay = copy.deepcopy(image)
+    """x1, y1, x2, y2 = line[0]
+    print("x1 = ", x1)
+    print("y1 = ", y1)
+    print("x2 = ", x2)
+    print("y2 = ", y2)"""
+    cv2.fillPoly(overlay, np.array([polygons], dtype=np.int64), (0, 0, 255))  
+    cv2.addWeighted(overlay, 0.4, image, 0.6, 0, image) # накладываем overlay на image, у overlay вес 40%
+# Display the image
+cv2.imshow('Detected Lanes', image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
+
+"""
+# Преобразование изображения в оттенки серого
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Применение размытия Гаусса
+blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+# Применение алгоритма Canny
+edges = cv2.Canny(blurred, 50, 150)
+
+# Определение области интереса (ROI)
+height, width = image.shape[:2]
+roi = edges[int(height/2):height, :]
+
+# Применение преобразования Хафа для обнаружения линий
+lines = cv2.HoughLinesP(roi, 1, np.pi/180, 100, minLineLength=100, maxLineGap=50)
+
+# Нарисовать обнаруженные линии на исходном изображении
+for line in lines:
+    x1, y1, x2, y2 = line[0]
+    cv2.line(image, (x1, y1 + int(height/2)), (x2, y2 + int(height/2)), (0, 255, 0), 2)
+
+# Отображение результата
+cv2.imshow('Detected Lanes', image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()"""

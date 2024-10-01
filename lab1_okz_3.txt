@@ -1,0 +1,133 @@
+# python lab1_okz_3.txt
+
+"""import numpy as np
+import cv2 as cv
+
+img = cv.imread('road1.jpg')
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+edges = cv.Canny(gray, 130, 150, apertureSize=3)
+#cv.imshow('edges', edges)
+#cv.waitKey(2000)
+
+
+def make_coordinates(image, line_parameters):
+    # Y = MX + B
+    slope, intercept = line_parameters
+    y1 = image.shape[0]
+    y2 = int(y1 * (3/5))
+    x1 = int((y1 - intercept) / slope)
+    x2 = int((y2 - intercept) / slope)
+    return np.array([x1, y1, x2, y2])
+
+
+def average_slope_intercept(image, lines): # усреднение линий
+
+    left_fit = []
+    right_fit = []
+
+    while lines is not None:
+        for line in lines:
+            x1, y1, x2, y2 = line.reshape(4)
+            parameters = np.polyfit((x1, x2), (y1, y2), 1)
+            slope = parameters[0]
+            intercept = parameters[1]
+            if slope < 0:
+                left_fit.append((slope, intercept))
+            else:
+                right_fit.append((slope, intercept))
+
+        left_fit_average = np.average(left_fit, axis=0)
+        print('LEFT: ', left_fit_average)
+        left_line = make_coordinates(image, left_fit_average)
+        right_fit_average = np.average(right_fit, axis=0)
+        right_line = make_coordinates(image, right_fit_average)
+        print('RIGHT: ', right_fit_average)
+        return np.array([left_line, right_line])
+
+
+def display_lines(image, lines):
+    line_image = np.zeros_like(image)
+    if lines is not None:
+        for x1, y1, x2, y2 in lines:
+            cv.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 15)
+    return line_image
+
+
+def mask(image):
+    height = image.shape[0]
+    polygons = np.array([(550, height//3), (680, height//3), (1800, 900), (-1000,900)])
+    mask = np.zeros_like(image)
+    cv.fillPoly(mask, np.array([polygons], dtype=np.int64), 1024)
+    masked_image = cv.bitwise_and(image, mask)
+    return masked_image
+
+image_canny_clone = np.copy(edges)
+img = mask(img)
+
+lines = cv.HoughLinesP(edges, 1,np.pi/180,100,minLineLength=20,maxLineGap=10)
+
+#
+averaged_lines = average_slope_intercept(img, lines)
+
+image_line = display_lines(image_canny_clone, averaged_lines)
+
+combo = cv.addWeighted(image_canny_clone, 0.8, image_line, 0.5, 1) # 0.8 - прозрачность - добавить подписи к переменным в аргументах
+
+cv.imshow("дорога", combo)
+cv.waitKey(0)"""
+"""for line in lines:
+    x1, y1, x2, y2 = line[0]
+    cv.line(img, (x1, y1), (x2,y2),(0,255,0),1)
+cv.imshow('image', img)
+cv.imwrite('image.png', img)
+cv.waitKey(20000)"""
+
+#lines = cv8_hornet.HoughLinesP(image_mask, 1, math.pi/180, 100, minLineLength = 200, maxLineGap = 10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import cv2 as cv8_hornet
+import numpy as np
+import math
+import copy
+
+image = cv8_hornet.imread('road1.jpg')
+
+image_BGR2Gray = cv8_hornet.cvtColor(image, cv8_hornet.COLOR_BGR2GRAY)
+image_blur = image_BGR2Gray #cv8_hornet.GaussianBlur(image_BGR2Gray, (5, 5), 0) # размываем изображение (рекомендованные параметры создателями метода)
+
+
+try:
+    # поиск границ на размытом изображении
+    # изменить имя с canny на другое
+    image_canny = cv8_hornet.Canny(image_blur, 130, 150, apertureSize=3) #Canny(image_blur, 50, 150) # рекомендованные параметры (или 1 к 2 попробовать)
+
+    #image_canny_clone = np.copy(image_canny) # нужен ли клон?
+
+    image_mask = copy.deepcopy(image_canny) # _clone # region_of_interest(image_canny_clone)
+
+    lines = cv8_hornet.HoughLinesP(image_mask, 1, math.pi/180, 100, minLineLength = 200, maxLineGap = 10) # 100 - нижняя граница обнаруженных точек; np.array([()]) - в этом массиве все хранится; minLineLength - минимальная длина линии. Поиграться с этими значениями после тго, как все заработает; maxLineGap - если пропукск меньше этого числа, то 2 линии становятся одной
+    #добавляем линии на изображение
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        cv8_hornet.line(image_mask, (x1, y1), (x2,y2),(0,255,0),1)
+    cv8_hornet.imshow('image', image_mask)
+    cv8_hornet.waitKey(0)
+
+except:
+    print("exception")
+
